@@ -1,4 +1,10 @@
-import { makeProposal, validateProposal } from '../models/proposal.js'
+import {
+  DEFAULT_CURRENCY,
+  PROPOSAL_STATUS,
+  PROPOSAL_STATUSES,
+  makeProposal,
+  validateProposal,
+} from '../models/proposal.js'
 import { NotFoundError, ValidationError } from './errors.js'
 import * as store from './proposalStore.js'
 
@@ -202,6 +208,69 @@ export async function deleteProposal(id) {
   }
 
   return { id }
+}
+
+/**
+ * @typedef {object} ProposalSummary
+ * @property {number} total            Proposal count.
+ * @property {number} pipelineValue    Value of proposals awaiting a decision.
+ * @property {number} wonValue         Value of accepted proposals.
+ * @property {number | null} acceptanceRate Accepted share of decided proposals,
+ *   between 0 and 1. Null when nothing has been decided yet, which is distinct
+ *   from a genuine zero percent.
+ * @property {Record<string, number>} statusCounts Count per status.
+ * @property {string} currency         Currency the totals are expressed in.
+ */
+
+/**
+ * Aggregate figures across all proposals.
+ *
+ * Deliberately a separate call rather than something the UI derives from a
+ * fetched list: totals must cover every record, so a paginated list could not
+ * produce them correctly, and a real backend would answer this from a single
+ * summary endpoint instead of sending every proposal to the browser.
+ *
+ * @returns {Promise<ProposalSummary>}
+ */
+export async function fetchProposalSummary() {
+  await delay()
+
+  const records = store.all()
+
+  const statusCounts = Object.fromEntries(
+    PROPOSAL_STATUSES.map((status) => [status, 0]),
+  )
+
+  let pipelineValue = 0
+  let wonValue = 0
+
+  for (const record of records) {
+    if (record.status in statusCounts) {
+      statusCounts[record.status] += 1
+    }
+
+    if (record.status === PROPOSAL_STATUS.SENT) {
+      pipelineValue += record.amount
+    }
+
+    if (record.status === PROPOSAL_STATUS.ACCEPTED) {
+      wonValue += record.amount
+    }
+  }
+
+  const decided =
+    statusCounts[PROPOSAL_STATUS.ACCEPTED] +
+    statusCounts[PROPOSAL_STATUS.DECLINED]
+
+  return {
+    total: records.length,
+    pipelineValue,
+    wonValue,
+    acceptanceRate:
+      decided > 0 ? statusCounts[PROPOSAL_STATUS.ACCEPTED] / decided : null,
+    statusCounts,
+    currency: DEFAULT_CURRENCY,
+  }
 }
 
 /** Restore seed data. Intended for tests and development tooling. */

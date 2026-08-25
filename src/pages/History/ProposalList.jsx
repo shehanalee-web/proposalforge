@@ -1,5 +1,5 @@
 import { formatCurrency, formatDate } from '../../utils/format.js'
-import StatusBadge from './StatusBadge.jsx'
+import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
 import styles from './ProposalList.module.css'
 
 function ProposalList({ proposals }) {
