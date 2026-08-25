@@ -1,0 +1,40 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/*
+ * Tints are derived from the existing status tokens with color-mix rather than
+ * hard-coded, so a change to a status colour flows through automatically.
+ */
+
+.draft {
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface-active);
+  border-color: var(--color-border-strong);
+}
+
+.sent {
+  color: var(--color-info);
+  background-color: color-mix(in srgb, var(--color-info) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-info) 32%, transparent);
+}
+
+.accepted {
+  color: var(--color-success);
+  background-color: color-mix(in srgb, var(--color-success) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 32%, transparent);
+}
+
+.declined {
+  color: var(--color-danger);
+  background-color: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-danger) 32%, transparent);
+}
