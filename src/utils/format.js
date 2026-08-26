@@ -39,3 +39,23 @@ export function formatDate(iso) {
     year: 'numeric',
   }).format(date)
 }
+
+/**
+ * Format an ISO timestamp as a 12-hour clock time.
+ *
+ * @param {string | null | undefined} iso
+ * @returns {string}
+ */
+export function formatTime(iso) {
+  if (!iso) return EM_DASH
+
+  const date = new Date(iso)
+
+  if (Number.isNaN(date.getTime())) return EM_DASH
+
+  return new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  }).format(date)
+}

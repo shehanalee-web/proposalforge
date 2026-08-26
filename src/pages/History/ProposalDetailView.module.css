@@ -38,7 +38,8 @@
 }
 
 .print,
-.edit {
+.edit,
+.history {
   padding: var(--space-2) var(--space-5);
   border: 1px solid var(--color-accent-border);
   border-radius: var(--radius-md);
@@ -49,11 +50,13 @@
 }
 
 .print:hover:not(:disabled),
-.edit:hover {
+.edit:hover,
+.history:hover:not(:disabled) {
   background-color: var(--color-accent-soft-hover);
 }
 
-.print:disabled {
+.print:disabled,
+.history:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -246,6 +249,7 @@
   .download,
   .print,
   .edit,
+  .history,
   .duplicate {
     width: 100%;
     text-align: center;

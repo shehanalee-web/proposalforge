@@ -10,6 +10,7 @@ const EMPTY_SUMMARY = {
   acceptanceRate: null,
   statusCounts: {},
   currency: 'USD',
+  versionCount: 0,
 }
 
 /**

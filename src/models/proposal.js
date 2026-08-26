@@ -7,6 +7,8 @@
  * from any layer.
  */
 
+import { ensureProposalVersions } from './proposalVersion.js'
+
 export const PROPOSAL_STATUS = Object.freeze({
   DRAFT: 'draft',
   SENT: 'sent',
@@ -68,6 +70,8 @@ export const DEFAULT_CURRENCY = 'USD'
  * @property {string | null} validUntil       ISO date the offer expires.
  * @property {string} createdAt               ISO timestamp.
  * @property {string} updatedAt               ISO timestamp.
+ * @property {number} currentVersion          Version number currently applied.
+ * @property {import('./proposalVersion.js').ProposalVersion[]} versions
  */
 
 /**
@@ -122,7 +126,7 @@ export function makeLineItem(input = {}) {
 export function makeProposal(input = {}) {
   const timestamp = new Date().toISOString()
 
-  return {
+  const proposal = {
     id: input.id ?? createId('prop'),
     title: input.title ?? '',
     clientName: input.clientName ?? '',
@@ -141,7 +145,11 @@ export function makeProposal(input = {}) {
     validUntil: input.validUntil ?? null,
     createdAt: input.createdAt ?? timestamp,
     updatedAt: input.updatedAt ?? timestamp,
+    currentVersion: input.currentVersion ?? 0,
+    versions: input.versions ?? [],
   }
+
+  return ensureProposalVersions(proposal)
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
