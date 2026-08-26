@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
 import { getDisplayStatus } from '../../models/proposal.js'
 import { formatCurrency, formatDateTime } from '../../utils/format.js'
+import { proposalPath } from '../../workspace/paths.js'
 import styles from './RecentProposals.module.css'
 
 const SKELETON_ROWS = 4
@@ -44,7 +45,7 @@ function RecentProposals({ proposals, loading, error, onRetry }) {
       {proposals.map((proposal) => (
         <li key={proposal.id} className={styles.row}>
           <div className={styles.main}>
-            <Link to={`/history/${proposal.id}`} className={styles.title}>
+            <Link to={proposalPath(proposal.id)} className={styles.title}>
               {proposal.title}
             </Link>
             <span className={styles.client}>

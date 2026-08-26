@@ -1,3 +1,7 @@
+import { DEFAULT_LAYOUT_ID } from '../layouts/ids.js'
+import { resolveLayoutId } from '../layouts/registry.js'
+import { ensureProposalBlocks, syncLegacyFromBlocks } from '../blocks/hydrate.js'
+
 /**
  * Proposal model.
  *
@@ -87,6 +91,9 @@ export const DEFAULT_CURRENCY = 'USD'
  * @property {string | null} lastViewedAt     When a client last opened the portal.
  * @property {string | null} acceptedAt       When a client accepted the proposal.
  * @property {string} clientFeedback          Comment from a revision request.
+ * @property {string} layoutId                Registered layout id (portrait, landscape, …).
+ * @property {import('../blocks/instance.js').BlockInstance[]} blocks Ordered Block Engine instances.
+ * @property {object[]} [images]              Gallery fallback mirrored from blocks.
  * @property {number} [currentVersion]        Active version number, when history exists.
  * @property {object[]} [versions]            Snapshot history, when present.
  * @property {string} createdAt               ISO timestamp.
@@ -144,6 +151,8 @@ export function makeLineItem(input = {}) {
  */
 export function makeProposal(input = {}) {
   const timestamp = new Date().toISOString()
+  const blocks = ensureProposalBlocks(input)
+  const legacy = syncLegacyFromBlocks(blocks, input)
 
   return {
     id: input.id ?? createId('prop'),
@@ -153,19 +162,22 @@ export function makeProposal(input = {}) {
     company: input.company ?? '',
     projectType: input.projectType ?? PROJECT_TYPES[0],
     status: input.status ?? PROPOSAL_STATUS.DRAFT,
-    amount: Number(input.amount ?? 0),
+    amount: Number(legacy.amount ?? input.amount ?? 0),
     currency: input.currency ?? DEFAULT_CURRENCY,
-    summary: input.summary ?? '',
-    sections: (input.sections ?? []).map(makeSection),
-    items: (input.items ?? []).map(makeLineItem),
-    terms: input.terms ?? '',
+    summary: legacy.summary,
+    sections: (legacy.sections ?? []).map(makeSection),
+    items: (legacy.items ?? []).map(makeLineItem),
+    terms: legacy.terms,
     notes: input.notes ?? '',
     tags: [...(input.tags ?? [])],
+    images: [...(legacy.images ?? [])],
     validUntil: input.validUntil ?? null,
     shareToken: input.shareToken ?? createId('share'),
     lastViewedAt: input.lastViewedAt ?? null,
     acceptedAt: input.acceptedAt ?? null,
     clientFeedback: input.clientFeedback ?? '',
+    layoutId: resolveLayoutId(input.layoutId ?? DEFAULT_LAYOUT_ID),
+    blocks,
     currentVersion: input.currentVersion ?? 0,
     versions: Array.isArray(input.versions) ? [...input.versions] : [],
     createdAt: input.createdAt ?? timestamp,

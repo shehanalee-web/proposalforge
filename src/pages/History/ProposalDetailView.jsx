@@ -4,6 +4,9 @@ import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
 import { getDisplayStatus } from '../../models/proposal.js'
 import { getClientPortalPath } from '../../utils/clientProposal.js'
 import { formatCurrency, formatDate, formatDateTime } from '../../utils/format.js'
+import { getLayout } from '../../layouts/registry.js'
+import LayoutPicker from '../../layouts/screen/LayoutPicker.jsx'
+import { PATH, proposalEditPath } from '../../workspace/paths.js'
 import styles from './ProposalDetailView.module.css'
 
 function MetaItem({ label, children }) {
@@ -21,13 +24,16 @@ function ProposalDetailView({
   onDownloadPdf,
   onPrint,
   onCopyLink,
+  onLayoutChange,
+  layoutSaving,
   linkCopied,
   exporting,
   exportError,
 }) {
-  const busy = Boolean(exporting)
+  const busy = Boolean(exporting) || Boolean(layoutSaving)
   const clientPath = getClientPortalPath(proposal.shareToken)
   const hasFeedback = Boolean(proposal.clientFeedback?.trim())
+  const layout = getLayout(proposal.layoutId)
 
   return (
     <article className={styles.document}>
@@ -55,7 +61,7 @@ function ProposalDetailView({
           >
             {exporting === 'print' ? 'Preparing print…' : 'Print proposal'}
           </button>
-          <Link to={`/history/${proposal.id}/edit`} className={styles.edit}>
+          <Link to={proposalEditPath(proposal.id)} className={styles.edit}>
             Edit proposal
           </Link>
           <button
@@ -90,6 +96,7 @@ function ProposalDetailView({
         <MetaItem label="Accepted">
           {formatDateTime(proposal.acceptedAt)}
         </MetaItem>
+        <MetaItem label="Layout">{layout.label}</MetaItem>
       </dl>
 
       <section className={styles.share}>
@@ -119,10 +126,16 @@ function ProposalDetailView({
         </section>
       ) : null}
 
-      <ProposalContent proposal={proposal} />
+      <LayoutPicker
+        value={proposal.layoutId}
+        onChange={onLayoutChange}
+        disabled={busy}
+      />
 
-      <Link to="/history" className={styles.back}>
-        Back to history
+      <ProposalContent proposal={proposal} showSignature />
+
+      <Link to={PATH.PROPOSALS} className={styles.back}>
+        Back to proposals
       </Link>
     </article>
   )

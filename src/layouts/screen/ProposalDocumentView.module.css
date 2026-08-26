@@ -1,0 +1,23 @@
+.document {
+  display: grid;
+  gap: var(--space-6);
+  font-family: var(--doc-body-font, inherit);
+  color: var(--color-text);
+}
+
+.region {
+  display: grid;
+  gap: var(--space-6);
+  min-width: 0;
+}
+
+.split {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+}

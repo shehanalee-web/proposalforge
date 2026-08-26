@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { useTemplates } from '../../hooks/useTemplates.js'
 import { formatCurrency } from '../../utils/format.js'
+import { getLayout } from '../../layouts/registry.js'
 import styles from './NewProposal.module.css'
 
 function TemplatePicker({ onSelect }) {
@@ -54,6 +55,8 @@ function TemplatePicker({ onSelect }) {
             </p>
             <p className={styles.pickerMeta}>
               {formatCurrency(template.amount, template.currency)}
+              {' · '}
+              {getLayout(template.defaultLayoutId).label}
             </p>
           </div>
           <button

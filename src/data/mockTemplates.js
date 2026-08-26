@@ -1,3 +1,5 @@
+import { LAYOUT_ID } from '../layouts/ids.js'
+
 /**
  * Seed templates for development.
  *
@@ -50,6 +52,7 @@ export const MOCK_TEMPLATES = [
       'This proposal is valid for 30 days from the issue date.\n\nA 40% deposit is due on acceptance, with the balance invoiced on delivery. Invoices are payable within 14 days.\n\nEach deliverable includes two rounds of consolidated feedback. Additional rounds are billed separately.',
     notes:
       'Ask the client for existing brand assets and competitor examples before the discovery workshop.',
+    defaultLayoutId: LAYOUT_ID.LANDSCAPE,
     createdAt: '2026-08-01T10:00:00.000Z',
     updatedAt: '2026-08-12T14:30:00.000Z',
   },

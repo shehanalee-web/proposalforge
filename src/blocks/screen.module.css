@@ -1,0 +1,54 @@
+.logo {
+  width: var(--space-8);
+  height: var(--space-8);
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-raised);
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.stackItem {
+  display: grid;
+  gap: var(--space-1);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.stackItem:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.people {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-4);
+}
+
+.person {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.quote {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+}
+
+.file {
+  color: var(--doc-accent, var(--color-accent));
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.file:hover {
+  color: var(--color-accent-hover);
+}

@@ -1,4 +1,5 @@
 import { PROPOSAL_STATUS } from '../models/proposal.js'
+import { LAYOUT_ID } from '../layouts/ids.js'
 
 /**
  * Seed data for development.
@@ -42,6 +43,7 @@ export const MOCK_PROPOSALS = [
     validUntil: '2026-09-10',
     shareToken: 'share-1001',
     lastViewedAt: '2026-08-20T14:30:00.000Z',
+    layoutId: LAYOUT_ID.LANDSCAPE,
     items: [
       { id: 'item-1001-1', description: 'Identity system', amount: 12000 },
       { id: 'item-1001-2', description: 'Brand guidelines', amount: 6500 },

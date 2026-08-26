@@ -1,9 +1,11 @@
 import { NavLink } from 'react-router'
 import Icon from '../Icon/Icon.jsx'
-import { NAV_ITEMS } from '../../navigation.js'
+import { listNavGroups } from '../../workspace/registry.js'
 import styles from './Sidebar.module.css'
 
 function Sidebar() {
+  const groups = listNavGroups()
+
   return (
     <aside className={styles.sidebar}>
       <div className={styles.brand}>
@@ -13,24 +15,29 @@ function Sidebar() {
         <span className={styles.wordmark}>ProposalForge</span>
       </div>
 
-      <nav aria-label="Main navigation">
-        <ul className={styles.nav}>
-          {NAV_ITEMS.map((item) => (
-            <li key={item.to}>
-              <NavLink
-                to={item.to}
-                end={item.to === '/'}
-                aria-label={item.label}
-                className={({ isActive }) =>
-                  isActive ? `${styles.link} ${styles.linkActive}` : styles.link
-                }
-              >
-                <Icon name={item.icon} className={styles.icon} />
-                <span className={styles.label}>{item.label}</span>
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+      <nav className={styles.navWrap} aria-label="Main navigation">
+        {groups.map((group) => (
+          <div key={group.id} className={styles.group}>
+            <p className={styles.groupLabel}>{group.label}</p>
+            <ul className={styles.nav}>
+              {group.modules.map((item) => (
+                <li key={item.id}>
+                  <NavLink
+                    to={item.path}
+                    end={item.path === '/'}
+                    aria-label={item.label}
+                    className={({ isActive }) =>
+                      isActive ? `${styles.link} ${styles.linkActive}` : styles.link
+                    }
+                  >
+                    <Icon name={item.icon} className={styles.icon} />
+                    <span className={styles.label}>{item.label}</span>
+                  </NavLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </nav>
     </aside>
   )

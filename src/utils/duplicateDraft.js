@@ -24,5 +24,7 @@ export function toDuplicateDraft(proposal) {
     terms: proposal.terms ?? '',
     notes: proposal.notes ?? '',
     tags: proposal.tags ?? [],
+    layoutId: proposal.layoutId,
+    blocks: proposal.blocks ?? [],
   }
 }

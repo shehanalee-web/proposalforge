@@ -2,13 +2,14 @@ import { Link } from 'react-router'
 import { formatCurrency, formatDateTime } from '../../utils/format.js'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
 import { getDisplayStatus } from '../../models/proposal.js'
+import { proposalPath } from '../../workspace/paths.js'
 import styles from './ProposalList.module.css'
 
 function ProposalList({ proposals }) {
   return (
     <div className={styles.wrapper}>
       <table className={styles.table}>
-        <caption className={styles.caption}>Proposal history</caption>
+        <caption className={styles.caption}>Proposals</caption>
         <thead>
           <tr>
             <th scope="col">Proposal</th>
@@ -27,7 +28,7 @@ function ProposalList({ proposals }) {
               <td data-label="Proposal">
                 <span className={styles.stack}>
                   <Link
-                    to={`/history/${proposal.id}`}
+                    to={proposalPath(proposal.id)}
                     className={styles.primary}
                   >
                     {proposal.title}
