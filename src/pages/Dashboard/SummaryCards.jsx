@@ -26,7 +26,7 @@ function buildCards(summary) {
       key: 'pipeline',
       label: 'Pipeline value',
       value: formatCurrency(summary.pipelineValue, summary.currency),
-      meta: `${counts.sent ?? 0} awaiting a decision`,
+      meta: `${(counts.sent ?? 0) + (counts.revision_requested ?? 0)} awaiting a decision`,
     },
     {
       key: 'won',

@@ -8,10 +8,12 @@ import ProposalEdit from './pages/History/ProposalEdit.jsx'
 import Settings from './pages/Settings/Settings.jsx'
 import Templates from './pages/Templates/Templates.jsx'
 import TemplateEditor from './pages/Templates/TemplateEditor.jsx'
+import ClientPortal from './pages/ClientPortal/ClientPortal.jsx'
 
 function App() {
   return (
     <Routes>
+      <Route path="/p/:token" element={<ClientPortal />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="new" element={<NewProposal />} />

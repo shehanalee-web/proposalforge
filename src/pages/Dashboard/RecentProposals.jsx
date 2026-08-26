@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
-import { formatCurrency, formatDate } from '../../utils/format.js'
+import { getDisplayStatus } from '../../models/proposal.js'
+import { formatCurrency, formatDateTime } from '../../utils/format.js'
 import styles from './RecentProposals.module.css'
 
 const SKELETON_ROWS = 4
@@ -57,11 +58,15 @@ function RecentProposals({ proposals, loading, error, onRetry }) {
               {formatCurrency(proposal.amount, proposal.currency)}
             </span>
             <span className={styles.date}>
-              {formatDate(proposal.updatedAt)}
+              {proposal.lastViewedAt
+                ? `Viewed ${formatDateTime(proposal.lastViewedAt)}`
+                : proposal.acceptedAt
+                  ? `Accepted ${formatDateTime(proposal.acceptedAt)}`
+                  : formatDateTime(proposal.updatedAt)}
             </span>
           </div>
 
-          <StatusBadge status={proposal.status} />
+          <StatusBadge status={getDisplayStatus(proposal)} />
         </li>
       ))}
     </ul>

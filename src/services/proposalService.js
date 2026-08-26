@@ -1,7 +1,9 @@
 import {
   DEFAULT_CURRENCY,
+  DISPLAY_STATUS,
   PROPOSAL_STATUS,
   PROPOSAL_STATUSES,
+  getDisplayStatus,
   makeProposal,
   validateProposal,
 } from '../models/proposal.js'
@@ -94,7 +96,11 @@ export async function fetchProposals(options = {}) {
 
   let items = store.all()
 
-  if (status) {
+  if (status === DISPLAY_STATUS.VIEWED) {
+    items = items.filter(
+      (proposal) => getDisplayStatus(proposal) === DISPLAY_STATUS.VIEWED,
+    )
+  } else if (status) {
     items = items.filter((proposal) => proposal.status === status)
   }
 
@@ -177,6 +183,7 @@ export async function updateProposal(id, changes = {}) {
     ...changes,
     id: existing.id,
     createdAt: existing.createdAt,
+    shareToken: existing.shareToken,
     updatedAt: new Date().toISOString(),
   })
 
@@ -249,7 +256,10 @@ export async function fetchProposalSummary() {
       statusCounts[record.status] += 1
     }
 
-    if (record.status === PROPOSAL_STATUS.SENT) {
+    if (
+      record.status === PROPOSAL_STATUS.SENT ||
+      record.status === PROPOSAL_STATUS.REVISION_REQUESTED
+    ) {
       pipelineValue += record.amount
     }
 
@@ -271,6 +281,149 @@ export async function fetchProposalSummary() {
     statusCounts,
     currency: DEFAULT_CURRENCY,
   }
+}
+
+function persistIdentity(existing, changes, timestamp) {
+  return makeProposal({
+    ...existing,
+    ...changes,
+    id: existing.id,
+    createdAt: existing.createdAt,
+    shareToken: existing.shareToken,
+    updatedAt: timestamp,
+  })
+}
+
+function requireByShareToken(token) {
+  if (!token) {
+    throw new NotFoundError('No proposal found for this client link.')
+  }
+
+  const proposal = store.findByShareToken(token)
+
+  if (!proposal) {
+    throw new NotFoundError('No proposal found for this client link.')
+  }
+
+  return proposal
+}
+
+/**
+ * Load a proposal for the client portal and record that it was viewed.
+ *
+ * Viewing does not change `updatedAt`, so a client opening the link does not
+ * shuffle studio sort order. Version snapshots stay untouched.
+ *
+ * @param {string} token
+ * @returns {Promise<import('../models/proposal.js').Proposal>}
+ * @throws {NotFoundError}
+ */
+export async function fetchClientProposal(token) {
+  await delay()
+
+  const existing = requireByShareToken(token)
+  const viewed = persistIdentity(
+    existing,
+    { lastViewedAt: new Date().toISOString() },
+    existing.updatedAt,
+  )
+
+  return store.replace(existing.id, viewed)
+}
+
+/**
+ * Accept a proposal from the client portal.
+ *
+ * @param {string} token
+ * @returns {Promise<import('../models/proposal.js').Proposal>}
+ * @throws {NotFoundError|ValidationError}
+ */
+export async function acceptProposal(token) {
+  await delay()
+
+  const existing = requireByShareToken(token)
+
+  if (existing.status === PROPOSAL_STATUS.ACCEPTED) {
+    return existing
+  }
+
+  if (existing.status === PROPOSAL_STATUS.DECLINED) {
+    throw new ValidationError('This proposal can no longer be accepted.', [
+      { field: 'status', message: 'Declined proposals cannot be accepted.' },
+    ])
+  }
+
+  const now = new Date().toISOString()
+  const updated = persistIdentity(
+    existing,
+    {
+      status: PROPOSAL_STATUS.ACCEPTED,
+      acceptedAt: now,
+      lastViewedAt: existing.lastViewedAt ?? now,
+    },
+    now,
+  )
+
+  const errors = validateProposal(updated)
+
+  if (errors.length > 0) {
+    throw new ValidationError('Proposal is not valid.', errors)
+  }
+
+  return store.replace(existing.id, updated)
+}
+
+/**
+ * Save client feedback and mark the proposal as needing a revision.
+ *
+ * @param {string} token
+ * @param {string} comment
+ * @returns {Promise<import('../models/proposal.js').Proposal>}
+ * @throws {NotFoundError|ValidationError}
+ */
+export async function requestProposalChanges(token, comment) {
+  const feedback = typeof comment === 'string' ? comment.trim() : ''
+
+  if (!feedback) {
+    throw new ValidationError('Please add a comment so the studio knows what to change.', [
+      { field: 'clientFeedback', message: 'A comment is required.' },
+    ])
+  }
+
+  await delay()
+
+  const existing = requireByShareToken(token)
+
+  if (existing.status === PROPOSAL_STATUS.ACCEPTED) {
+    throw new ValidationError('This proposal has already been accepted.', [
+      { field: 'status', message: 'Accepted proposals cannot request changes.' },
+    ])
+  }
+
+  if (existing.status === PROPOSAL_STATUS.DECLINED) {
+    throw new ValidationError('This proposal can no longer be revised.', [
+      { field: 'status', message: 'Declined proposals cannot request changes.' },
+    ])
+  }
+
+  const now = new Date().toISOString()
+  const updated = persistIdentity(
+    existing,
+    {
+      status: PROPOSAL_STATUS.REVISION_REQUESTED,
+      clientFeedback: feedback,
+      lastViewedAt: existing.lastViewedAt ?? now,
+    },
+    now,
+  )
+
+  const errors = validateProposal(updated)
+
+  if (errors.length > 0) {
+    throw new ValidationError('Proposal is not valid.', errors)
+  }
+
+  return store.replace(existing.id, updated)
 }
 
 /** Restore seed data. Intended for tests and development tooling. */

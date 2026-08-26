@@ -35,6 +35,11 @@ export function findById(id) {
   return found ? clone(found) : undefined
 }
 
+export function findByShareToken(token) {
+  const found = records.find((record) => record.shareToken === token)
+  return found ? clone(found) : undefined
+}
+
 export function insert(record) {
   records = [...records, clone(record)]
   return clone(record)

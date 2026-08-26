@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useProposal } from '../../hooks/useProposal.js'
+import { getClientPortalUrl } from '../../utils/clientProposal.js'
 import { toDuplicateDraft } from '../../utils/duplicateDraft.js'
 import ProposalDetailView from './ProposalDetailView.jsx'
 import styles from './ProposalDetail.module.css'
@@ -13,11 +14,26 @@ function ProposalDetail() {
   const { proposal, loading, error, notFound, refetch } = useProposal(id)
   const [exporting, setExporting] = useState(null)
   const [exportError, setExportError] = useState(null)
+  const [linkCopied, setLinkCopied] = useState(false)
 
   function handleDuplicate() {
     if (!proposal) return
 
     navigate('/new', { state: { draft: toDuplicateDraft(proposal) } })
+  }
+
+  async function handleCopyLink() {
+    if (!proposal) return
+
+    const url = getClientPortalUrl(proposal.shareToken)
+
+    try {
+      await navigator.clipboard.writeText(url)
+      setLinkCopied(true)
+      window.setTimeout(() => setLinkCopied(false), 2000)
+    } catch {
+      window.prompt('Copy client link', url)
+    }
   }
 
   async function runExport(action) {
@@ -95,6 +111,8 @@ function ProposalDetail() {
         onDuplicate={handleDuplicate}
         onDownloadPdf={() => runExport('download')}
         onPrint={() => runExport('print')}
+        onCopyLink={handleCopyLink}
+        linkCopied={linkCopied}
         exporting={exporting}
         exportError={exportError}
       />

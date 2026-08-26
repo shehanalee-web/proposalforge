@@ -1,6 +1,9 @@
 import { Link } from 'react-router'
-import { formatCurrency, formatDate } from '../../utils/format.js'
+import ProposalContent from '../../components/ProposalContent/ProposalContent.jsx'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
+import { getDisplayStatus } from '../../models/proposal.js'
+import { getClientPortalPath } from '../../utils/clientProposal.js'
+import { formatCurrency, formatDate, formatDateTime } from '../../utils/format.js'
 import styles from './ProposalDetailView.module.css'
 
 function MetaItem({ label, children }) {
@@ -17,15 +20,14 @@ function ProposalDetailView({
   onDuplicate,
   onDownloadPdf,
   onPrint,
+  onCopyLink,
+  linkCopied,
   exporting,
   exportError,
 }) {
-  const hasSections = proposal.sections.length > 0
-  const hasTags = proposal.tags.length > 0
-  const hasItems = proposal.items.length > 0
-  const hasTerms = Boolean(proposal.terms?.trim())
-  const hasNotes = Boolean(proposal.notes?.trim())
   const busy = Boolean(exporting)
+  const clientPath = getClientPortalPath(proposal.shareToken)
+  const hasFeedback = Boolean(proposal.clientFeedback?.trim())
 
   return (
     <article className={styles.document}>
@@ -36,7 +38,7 @@ function ProposalDetailView({
         </div>
 
         <div className={styles.actions}>
-          <StatusBadge status={proposal.status} />
+          <StatusBadge status={getDisplayStatus(proposal)} />
           <button
             type="button"
             className={styles.download}
@@ -82,80 +84,42 @@ function ProposalDetailView({
         </MetaItem>
         <MetaItem label="Valid until">{formatDate(proposal.validUntil)}</MetaItem>
         <MetaItem label="Updated">{formatDate(proposal.updatedAt)}</MetaItem>
+        <MetaItem label="Last viewed">
+          {formatDateTime(proposal.lastViewedAt)}
+        </MetaItem>
+        <MetaItem label="Accepted">
+          {formatDateTime(proposal.acceptedAt)}
+        </MetaItem>
       </dl>
 
-      {proposal.summary ? (
-        <section className={styles.block}>
-          <h3 className={styles.blockTitle}>Summary</h3>
-          <p className={styles.body}>{proposal.summary}</p>
-        </section>
-      ) : null}
-
-      <section className={styles.block}>
-        <h3 className={styles.blockTitle}>Proposal body</h3>
-        {hasSections ? (
-          <ol className={styles.sections}>
-            {proposal.sections.map((section) => (
-              <li key={section.id} className={styles.section}>
-                <h4 className={styles.sectionHeading}>{section.heading}</h4>
-                <p className={styles.body}>{section.body}</p>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className={styles.empty}>No sections on this proposal yet.</p>
-        )}
+      <section className={styles.share}>
+        <div className={styles.shareCopy}>
+          <p className={styles.shareLabel}>Client portal</p>
+          <p className={styles.shareUrl}>{clientPath}</p>
+        </div>
+        <div className={styles.shareActions}>
+          <button
+            type="button"
+            className={styles.print}
+            onClick={onCopyLink}
+            disabled={busy}
+          >
+            {linkCopied ? 'Link copied' : 'Copy client link'}
+          </button>
+          <Link to={clientPath} className={styles.edit}>
+            Open client page
+          </Link>
+        </div>
       </section>
 
-      {hasItems ? (
-        <section className={styles.block}>
-          <h3 className={styles.blockTitle}>Line items</h3>
-          <table className={styles.items}>
-            <thead>
-              <tr>
-                <th scope="col">Description</th>
-                <th scope="col" className={styles.itemAmount}>
-                  Amount
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {proposal.items.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.description || '—'}</td>
-                  <td className={styles.itemAmount}>
-                    {formatCurrency(item.amount, proposal.currency)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {hasFeedback ? (
+        <section className={styles.feedback}>
+          <h3 className={styles.feedbackTitle}>Client feedback</h3>
+          <p className={styles.feedbackBody}>{proposal.clientFeedback}</p>
         </section>
       ) : null}
 
-      {hasTerms ? (
-        <section className={styles.block}>
-          <h3 className={styles.blockTitle}>Terms & conditions</h3>
-          <p className={`${styles.body} ${styles.prewrap}`}>{proposal.terms}</p>
-        </section>
-      ) : null}
-
-      {hasNotes ? (
-        <section className={styles.block}>
-          <h3 className={styles.blockTitle}>Notes</h3>
-          <p className={`${styles.body} ${styles.prewrap}`}>{proposal.notes}</p>
-        </section>
-      ) : null}
-
-      {hasTags ? (
-        <ul className={styles.tags}>
-          {proposal.tags.map((tag) => (
-            <li key={tag} className={styles.tag}>
-              {tag}
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <ProposalContent proposal={proposal} />
 
       <Link to="/history" className={styles.back}>
         Back to history

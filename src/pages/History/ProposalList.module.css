@@ -75,7 +75,7 @@ a.primary:hover {
 }
 
 /*
- * Below 760px a five-column table cannot stay legible, so each row becomes a
+ * Below 760px a multi-column table cannot stay legible, so each row becomes a
  * stacked card. Cell labels come from the data-label attributes, which keeps
  * the field names visible once the header row is hidden.
  */

@@ -12,16 +12,33 @@ export const PROPOSAL_STATUS = Object.freeze({
   SENT: 'sent',
   ACCEPTED: 'accepted',
   DECLINED: 'declined',
+  REVISION_REQUESTED: 'revision_requested',
 })
 
 export const PROPOSAL_STATUSES = Object.freeze(Object.values(PROPOSAL_STATUS))
 
+export const DISPLAY_STATUS = Object.freeze({
+  VIEWED: 'viewed',
+})
+
 export const PROPOSAL_STATUS_LABELS = Object.freeze({
   [PROPOSAL_STATUS.DRAFT]: 'Draft',
   [PROPOSAL_STATUS.SENT]: 'Sent',
+  [DISPLAY_STATUS.VIEWED]: 'Viewed',
   [PROPOSAL_STATUS.ACCEPTED]: 'Accepted',
   [PROPOSAL_STATUS.DECLINED]: 'Declined',
+  [PROPOSAL_STATUS.REVISION_REQUESTED]: 'Revision requested',
 })
+
+/** Status chips shown in history filters, including display-only Viewed. */
+export const LIST_STATUS_FILTERS = Object.freeze([
+  PROPOSAL_STATUS.DRAFT,
+  PROPOSAL_STATUS.SENT,
+  DISPLAY_STATUS.VIEWED,
+  PROPOSAL_STATUS.REVISION_REQUESTED,
+  PROPOSAL_STATUS.ACCEPTED,
+  PROPOSAL_STATUS.DECLINED,
+])
 
 export const PROJECT_TYPES = Object.freeze([
   'Branding',
@@ -45,7 +62,7 @@ export const DEFAULT_CURRENCY = 'USD'
  */
 
 /**
- * @typedef {'draft' | 'sent' | 'accepted' | 'declined'} ProposalStatus
+ * @typedef {'draft' | 'sent' | 'accepted' | 'declined' | 'revision_requested'} ProposalStatus
  */
 
 /**
@@ -66,6 +83,12 @@ export const DEFAULT_CURRENCY = 'USD'
  * @property {string} notes                   Internal or client-facing notes.
  * @property {string[]} tags                  Free-form labels.
  * @property {string | null} validUntil       ISO date the offer expires.
+ * @property {string} shareToken              Unguessable token for the client portal.
+ * @property {string | null} lastViewedAt     When a client last opened the portal.
+ * @property {string | null} acceptedAt       When a client accepted the proposal.
+ * @property {string} clientFeedback          Comment from a revision request.
+ * @property {number} [currentVersion]        Active version number, when history exists.
+ * @property {object[]} [versions]            Snapshot history, when present.
  * @property {string} createdAt               ISO timestamp.
  * @property {string} updatedAt               ISO timestamp.
  */
@@ -139,9 +162,51 @@ export function makeProposal(input = {}) {
     notes: input.notes ?? '',
     tags: [...(input.tags ?? [])],
     validUntil: input.validUntil ?? null,
+    shareToken: input.shareToken ?? createId('share'),
+    lastViewedAt: input.lastViewedAt ?? null,
+    acceptedAt: input.acceptedAt ?? null,
+    clientFeedback: input.clientFeedback ?? '',
+    currentVersion: input.currentVersion ?? 0,
+    versions: Array.isArray(input.versions) ? [...input.versions] : [],
     createdAt: input.createdAt ?? timestamp,
     updatedAt: input.updatedAt ?? timestamp,
   }
+}
+
+/**
+ * Status shown in studio lists. A sent proposal that a client has opened
+ * displays as Viewed without changing the stored lifecycle status.
+ *
+ * @param {Proposal} proposal
+ * @returns {string}
+ */
+export function getDisplayStatus(proposal) {
+  if (proposal.status === PROPOSAL_STATUS.ACCEPTED) {
+    return PROPOSAL_STATUS.ACCEPTED
+  }
+
+  if (proposal.status === PROPOSAL_STATUS.REVISION_REQUESTED) {
+    return PROPOSAL_STATUS.REVISION_REQUESTED
+  }
+
+  if (proposal.lastViewedAt && proposal.status === PROPOSAL_STATUS.SENT) {
+    return DISPLAY_STATUS.VIEWED
+  }
+
+  return proposal.status
+}
+
+/**
+ * Whether a client can still accept or request changes.
+ *
+ * @param {Proposal} proposal
+ * @returns {boolean}
+ */
+export function canClientRespond(proposal) {
+  return (
+    proposal.status !== PROPOSAL_STATUS.ACCEPTED &&
+    proposal.status !== PROPOSAL_STATUS.DECLINED
+  )
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

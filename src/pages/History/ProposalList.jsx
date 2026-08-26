@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
-import { formatCurrency, formatDate } from '../../utils/format.js'
+import { formatCurrency, formatDateTime } from '../../utils/format.js'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
+import { getDisplayStatus } from '../../models/proposal.js'
 import styles from './ProposalList.module.css'
 
 function ProposalList({ proposals }) {
@@ -15,7 +16,8 @@ function ProposalList({ proposals }) {
             <th scope="col" className={styles.numeric}>
               Value
             </th>
-            <th scope="col">Updated</th>
+            <th scope="col">Last viewed</th>
+            <th scope="col">Accepted</th>
             <th scope="col">Status</th>
           </tr>
         </thead>
@@ -44,9 +46,14 @@ function ProposalList({ proposals }) {
               <td data-label="Value" className={styles.numeric}>
                 {formatCurrency(proposal.amount, proposal.currency)}
               </td>
-              <td data-label="Updated">{formatDate(proposal.updatedAt)}</td>
+              <td data-label="Last viewed">
+                {formatDateTime(proposal.lastViewedAt)}
+              </td>
+              <td data-label="Accepted">
+                {formatDateTime(proposal.acceptedAt)}
+              </td>
               <td data-label="Status">
-                <StatusBadge status={proposal.status} />
+                <StatusBadge status={getDisplayStatus(proposal)} />
               </td>
             </tr>
           ))}
