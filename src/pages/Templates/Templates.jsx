@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { formatCurrency } from '../../utils/format.js'
+import { getLayout } from '../../layouts/registry.js'
 import { proposalFromTemplate } from '../../utils/proposalFromTemplate.js'
 import { toDuplicateTemplate } from '../../utils/duplicateTemplate.js'
 import { useTemplates } from '../../hooks/useTemplates.js'
 import { useCreateTemplate } from '../../hooks/useCreateTemplate.js'
 import { useDeleteTemplate } from '../../hooks/useDeleteTemplate.js'
+import { PATH } from '../../workspace/paths.js'
 import styles from './Templates.module.css'
 
 const SKELETON_ROWS = 3
@@ -21,7 +23,7 @@ function Templates() {
   const isInitialLoad = loading && templates.length === 0
 
   function startFromTemplate(template) {
-    navigate('/new', {
+    navigate(PATH.NEW_PROPOSAL, {
       state: { draft: proposalFromTemplate(template), source: 'template' },
     })
   }
@@ -110,6 +112,8 @@ function Templates() {
                 )}
                 <p className={styles.meta}>
                   {formatCurrency(template.amount, template.currency)}
+                  {' · '}
+                  {getLayout(template.defaultLayoutId).label}
                   {' · '}
                   {sectionCount} {sectionCount === 1 ? 'section' : 'sections'}
                   {' · '}

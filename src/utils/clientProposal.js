@@ -45,6 +45,7 @@ export function getActiveProposal(proposal) {
       snapshot.projectType ?? metadata.projectType ?? proposal.projectType,
     tags: snapshot.tags ?? metadata.tags ?? proposal.tags,
     validUntil: snapshot.validUntil ?? metadata.validUntil ?? proposal.validUntil,
+    layoutId: snapshot.layoutId ?? metadata.layoutId ?? proposal.layoutId,
   }
 }
 

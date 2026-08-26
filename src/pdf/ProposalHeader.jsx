@@ -13,15 +13,21 @@ function Meta({ label, value }) {
   )
 }
 
-function ProposalHeader({ proposal, settings }) {
+function ProposalHeader({ proposal, settings, brand }) {
   const studioName = settings.studioName?.trim() || 'ProposalForge'
   const status = PROPOSAL_STATUS_LABELS[proposal.status] ?? proposal.status
+  const accent = brand?.colors?.accent
 
   return (
     <View style={styles.header}>
       <View style={styles.brandBand}>
         <View>
-          <View style={styles.brandMark} />
+          <View
+            style={[
+              styles.brandMark,
+              accent ? { backgroundColor: accent } : null,
+            ]}
+          />
           <Text style={styles.studioName}>{studioName}</Text>
           {settings.about ? (
             <Text style={styles.studioAbout}>{settings.about}</Text>
@@ -34,7 +40,7 @@ function ProposalHeader({ proposal, settings }) {
         </View>
       </View>
 
-      <View style={styles.accentBar} />
+      <View style={[styles.accentBar, accent ? { backgroundColor: accent } : null]} />
 
       <View style={styles.metaRow}>
         <Meta label="Number" value={formatProposalNumber(proposal.id)} />

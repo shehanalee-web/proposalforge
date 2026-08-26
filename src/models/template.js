@@ -1,4 +1,6 @@
 import { DEFAULT_CURRENCY, makeLineItem, makeSection } from './proposal.js'
+import { DEFAULT_LAYOUT_ID } from '../layouts/ids.js'
+import { resolveLayoutId } from '../layouts/registry.js'
 
 /**
  * Proposal template model.
@@ -18,6 +20,7 @@ import { DEFAULT_CURRENCY, makeLineItem, makeSection } from './proposal.js'
  * @property {string} currency
  * @property {string} terms
  * @property {string} notes
+ * @property {string} defaultLayoutId         Layout applied to new proposals from this template.
  * @property {string} createdAt
  * @property {string} updatedAt
  */
@@ -59,6 +62,7 @@ export function makeTemplate(input = {}) {
     currency: DEFAULT_CURRENCY,
     terms: input.terms ?? '',
     notes: input.notes ?? '',
+    defaultLayoutId: resolveLayoutId(input.defaultLayoutId ?? DEFAULT_LAYOUT_ID),
     createdAt: input.createdAt ?? timestamp,
     updatedAt: input.updatedAt ?? timestamp,
   }

@@ -1,30 +1,18 @@
 import { useState } from 'react'
 import { useParams } from 'react-router'
-import Icon from '../../components/Icon/Icon.jsx'
 import ProposalContent from '../../components/ProposalContent/ProposalContent.jsx'
-import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
 import { useAcceptProposal } from '../../hooks/useAcceptProposal.js'
 import { useClientProposal } from '../../hooks/useClientProposal.js'
 import { useRequestProposalChanges } from '../../hooks/useRequestProposalChanges.js'
-import { useSettings } from '../../hooks/useSettings.js'
 import { canClientRespond, PROPOSAL_STATUS } from '../../models/proposal.js'
 import { getActiveProposal } from '../../utils/clientProposal.js'
-import { formatDate, formatDateTime } from '../../utils/format.js'
+import { getLayout } from '../../layouts/registry.js'
+import { formatDateTime } from '../../utils/format.js'
 import styles from './ClientPortal.module.css'
-
-function MetaItem({ label, children }) {
-  return (
-    <div className={styles.metaItem}>
-      <dt className={styles.metaLabel}>{label}</dt>
-      <dd className={styles.metaValue}>{children}</dd>
-    </div>
-  )
-}
 
 function ClientPortal() {
   const { token } = useParams()
   const { proposal, loading, error, notFound, refetch } = useClientProposal(token)
-  const { settings } = useSettings()
   const { accept, submitting: accepting, error: acceptError } = useAcceptProposal()
   const {
     requestChanges,
@@ -41,7 +29,7 @@ function ClientPortal() {
   const [exportError, setExportError] = useState(null)
 
   const document = proposal ? getActiveProposal(proposal) : null
-  const studioName = settings?.studioName?.trim() || 'ProposalForge'
+  const layout = getLayout(document?.layoutId)
   const busy = accepting || requesting || Boolean(exporting)
   const canRespond = proposal ? canClientRespond(proposal) : false
 
@@ -149,31 +137,11 @@ function ClientPortal() {
 
   return (
     <div className={styles.shell}>
-      <main className={styles.main}>
+      <main
+        className={styles.main}
+        style={{ width: `min(${layout.screen.maxWidth}, 100%)` }}
+      >
         <article className={styles.document}>
-          <header className={styles.cover}>
-            <div className={styles.brand}>
-              <span className={styles.mark}>
-                <Icon name="logo" size={18} />
-              </span>
-              <span className={styles.studio}>{studioName}</span>
-            </div>
-
-            <p className={styles.kicker}>{document.projectType}</p>
-            <h1 className={styles.title}>{document.title}</h1>
-
-            <dl className={styles.meta}>
-              <MetaItem label="Client">{document.clientName || '—'}</MetaItem>
-              <MetaItem label="Status">
-                <StatusBadge status={proposal.status} />
-              </MetaItem>
-              <MetaItem label="Date">{formatDate(proposal.createdAt)}</MetaItem>
-              <MetaItem label="Valid until">
-                {formatDate(document.validUntil)}
-              </MetaItem>
-            </dl>
-          </header>
-
           {justAccepted || accepted ? (
             <section className={styles.confirmation} aria-live="polite">
               <p className={styles.confirmationTitle}>Proposal accepted</p>
@@ -209,8 +177,11 @@ function ClientPortal() {
 
           <ProposalContent
             proposal={document}
+            includeCover
             showNotes={false}
             showTags={false}
+            showSignature
+            status={proposal.status}
           />
 
           <section className={styles.actions}>

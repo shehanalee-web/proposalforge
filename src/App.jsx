@@ -9,6 +9,18 @@ import Settings from './pages/Settings/Settings.jsx'
 import Templates from './pages/Templates/Templates.jsx'
 import TemplateEditor from './pages/Templates/TemplateEditor.jsx'
 import ClientPortal from './pages/ClientPortal/ClientPortal.jsx'
+import BrandKit from './pages/BrandKit/BrandKit.jsx'
+import Services from './pages/Services/Services.jsx'
+import Assets from './pages/Assets/Assets.jsx'
+import ContentLibrary from './pages/ContentLibrary/ContentLibrary.jsx'
+import CaseStudies from './pages/CaseStudies/CaseStudies.jsx'
+import Testimonials from './pages/Testimonials/Testimonials.jsx'
+import Team from './pages/Team/Team.jsx'
+import {
+  HistoryDetailRedirect,
+  HistoryEditRedirect,
+  HistoryIndexRedirect,
+} from './workspace/HistoryRedirects.jsx'
 
 function App() {
   return (
@@ -20,9 +32,19 @@ function App() {
         <Route path="templates" element={<Templates />} />
         <Route path="templates/new" element={<TemplateEditor />} />
         <Route path="templates/:id/edit" element={<TemplateEditor />} />
-        <Route path="history" element={<History />} />
-        <Route path="history/:id/edit" element={<ProposalEdit />} />
-        <Route path="history/:id" element={<ProposalDetail />} />
+        <Route path="proposals" element={<History />} />
+        <Route path="proposals/:id/edit" element={<ProposalEdit />} />
+        <Route path="proposals/:id" element={<ProposalDetail />} />
+        <Route path="history" element={<HistoryIndexRedirect />} />
+        <Route path="history/:id/edit" element={<HistoryEditRedirect />} />
+        <Route path="history/:id" element={<HistoryDetailRedirect />} />
+        <Route path="brand-kit" element={<BrandKit />} />
+        <Route path="services" element={<Services />} />
+        <Route path="assets" element={<Assets />} />
+        <Route path="content-library" element={<ContentLibrary />} />
+        <Route path="case-studies" element={<CaseStudies />} />
+        <Route path="testimonials" element={<Testimonials />} />
+        <Route path="team" element={<Team />} />
         <Route path="settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

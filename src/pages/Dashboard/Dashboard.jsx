@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { useProposals } from '../../hooks/useProposals.js'
 import { useProposalSummary } from '../../hooks/useProposalSummary.js'
+import { PATH } from '../../workspace/paths.js'
 import SummaryCards from './SummaryCards.jsx'
 import RecentProposals from './RecentProposals.jsx'
 import styles from './Dashboard.module.css'
@@ -34,7 +35,7 @@ function Dashboard() {
             Once you create a proposal it will show up here, along with your
             pipeline value and win rate.
           </p>
-          <Link to="/new" className={styles.primaryAction}>
+          <Link to={PATH.NEW_PROPOSAL} className={styles.primaryAction}>
             Create your first proposal
           </Link>
         </div>
@@ -54,7 +55,7 @@ function Dashboard() {
       <div className={styles.panel}>
         <div className={styles.panelHeader}>
           <h2 className={styles.panelTitle}>Recent proposals</h2>
-          <Link to="/history" className={styles.panelLink}>
+          <Link to={PATH.PROPOSALS} className={styles.panelLink}>
             View all
           </Link>
         </div>
@@ -75,7 +76,7 @@ function Dashboard() {
           </p>
         </div>
 
-        <Link to="/new" className={styles.primaryAction}>
+        <Link to={PATH.NEW_PROPOSAL} className={styles.primaryAction}>
           New proposal
         </Link>
       </div>

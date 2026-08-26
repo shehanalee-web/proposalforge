@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useProposal } from '../../hooks/useProposal.js'
+import { useUpdateProposal } from '../../hooks/useUpdateProposal.js'
 import { getClientPortalUrl } from '../../utils/clientProposal.js'
 import { toDuplicateDraft } from '../../utils/duplicateDraft.js'
+import { PATH } from '../../workspace/paths.js'
 import ProposalDetailView from './ProposalDetailView.jsx'
 import styles from './ProposalDetail.module.css'
 
@@ -12,6 +14,7 @@ function ProposalDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { proposal, loading, error, notFound, refetch } = useProposal(id)
+  const { update, submitting: layoutSaving } = useUpdateProposal()
   const [exporting, setExporting] = useState(null)
   const [exportError, setExportError] = useState(null)
   const [linkCopied, setLinkCopied] = useState(false)
@@ -19,7 +22,17 @@ function ProposalDetail() {
   function handleDuplicate() {
     if (!proposal) return
 
-    navigate('/new', { state: { draft: toDuplicateDraft(proposal) } })
+    navigate(PATH.NEW_PROPOSAL, { state: { draft: toDuplicateDraft(proposal) } })
+  }
+
+  async function handleLayoutChange(layoutId) {
+    if (!proposal || layoutId === proposal.layoutId || layoutSaving) return
+
+    const updated = await update(proposal.id, { layoutId })
+
+    if (updated) {
+      await refetch()
+    }
   }
 
   async function handleCopyLink() {
@@ -67,8 +80,8 @@ function ProposalDetail() {
           <p className={styles.stateText}>
             This proposal does not exist, or it was lost when the app reloaded.
           </p>
-          <Link to="/history" className={styles.action}>
-            Back to history
+          <Link to={PATH.PROPOSALS} className={styles.action}>
+            Back to proposals
           </Link>
         </div>
       </section>
@@ -112,6 +125,8 @@ function ProposalDetail() {
         onDownloadPdf={() => runExport('download')}
         onPrint={() => runExport('print')}
         onCopyLink={handleCopyLink}
+        onLayoutChange={handleLayoutChange}
+        layoutSaving={layoutSaving}
         linkCopied={linkCopied}
         exporting={exporting}
         exportError={exportError}

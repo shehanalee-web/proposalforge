@@ -1,8 +1,14 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { PROJECT_TYPES } from '../../models/proposal.js'
+import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
 import { useCreateProposal } from '../../hooks/useCreateProposal.js'
 import { proposalFromTemplate } from '../../utils/proposalFromTemplate.js'
+import { PATH } from '../../workspace/paths.js'
+import { ensureProposalBlocks } from '../../blocks/hydrate.js'
+import { BLOCK_TYPE } from '../../blocks/ids.js'
+import { updateBlocksByType } from '../../blocks/instance.js'
+import BlockComposer from '../../blocks/BlockComposer.jsx'
 import ProposalForm from './ProposalForm.jsx'
 import TemplatePicker from './TemplatePicker.jsx'
 import styles from './NewProposal.module.css'
@@ -16,6 +22,7 @@ const EMPTY_FORM = {
   amount: '',
   summary: '',
   validUntil: '',
+  layoutId: DEFAULT_LAYOUT_ID,
 }
 
 function valuesFromDraft(draft) {
@@ -30,21 +37,21 @@ function valuesFromDraft(draft) {
     amount: draft.amount ?? '',
     summary: draft.summary ?? '',
     validUntil: draft.validUntil ?? '',
+    layoutId: draft.layoutId ?? DEFAULT_LAYOUT_ID,
   }
 }
 
 function extrasFromDraft(draft) {
-  if (!draft) return {}
+  if (!draft) return { blocks: ensureProposalBlocks({}) }
 
-  const extras = {}
-
-  if (draft.sections) extras.sections = draft.sections
-  if (draft.tags) extras.tags = draft.tags
-  if (draft.items) extras.items = draft.items
-  if (draft.terms != null) extras.terms = draft.terms
-  if (draft.notes != null) extras.notes = draft.notes
-
-  return extras
+  return {
+    sections: draft.sections,
+    tags: draft.tags ?? [],
+    items: draft.items,
+    terms: draft.terms ?? '',
+    notes: draft.notes ?? '',
+    blocks: ensureProposalBlocks(draft),
+  }
 }
 
 function toPayload(values, extras) {
@@ -57,6 +64,7 @@ function toPayload(values, extras) {
     amount: values.amount === '' ? 0 : Number(values.amount),
     summary: values.summary,
     validUntil: values.validUntil || null,
+    layoutId: values.layoutId ?? DEFAULT_LAYOUT_ID,
     ...extras,
   }
 }
@@ -72,9 +80,12 @@ function NewProposal() {
   const [localDraft, setLocalDraft] = useState(null)
   const [source, setSource] = useState(locationSource ?? null)
   const [values, setValues] = useState(() => valuesFromDraft(locationDraft))
+  const [blocks, setBlocks] = useState(() =>
+    ensureProposalBlocks(locationDraft ?? {}),
+  )
 
   const draft = localDraft ?? locationDraft
-  const extras = extrasFromDraft(draft)
+  const extras = { ...extrasFromDraft(draft), blocks }
   const fromTemplate = source === 'template'
 
   const requestError =
@@ -82,12 +93,19 @@ function NewProposal() {
 
   function handleChange(name, value) {
     setValues((current) => ({ ...current, [name]: value }))
+
+    if (name === 'summary') {
+      setBlocks((current) =>
+        updateBlocksByType(current, BLOCK_TYPE.EXECUTIVE_SUMMARY, { body: value }),
+      )
+    }
   }
 
   function startBlank() {
     setLocalDraft(null)
     setSource(null)
     setValues(EMPTY_FORM)
+    setBlocks(ensureProposalBlocks({}))
     setStep('form')
   }
 
@@ -96,6 +114,7 @@ function NewProposal() {
     setLocalDraft(next)
     setSource('template')
     setValues(valuesFromDraft(next))
+    setBlocks(ensureProposalBlocks(next))
     setStep('form')
   }
 
@@ -105,7 +124,7 @@ function NewProposal() {
     const created = await create(toPayload(values, extras))
 
     if (created) {
-      navigate('/history')
+      navigate(PATH.PROPOSALS)
     }
   }
 
@@ -199,7 +218,13 @@ function NewProposal() {
           onSubmit={handleSubmit}
           submitting={submitting}
           fieldErrors={fieldErrors}
-        />
+        >
+          <BlockComposer
+            blocks={blocks}
+            onChange={setBlocks}
+            disabled={submitting}
+          />
+        </ProposalForm>
       </div>
     </section>
   )

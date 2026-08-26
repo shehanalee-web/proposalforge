@@ -1,4 +1,6 @@
 import { PROJECT_TYPES } from '../../models/proposal.js'
+import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
+import LayoutPicker from '../../layouts/screen/LayoutPicker.jsx'
 import styles from './ProposalForm.module.css'
 
 function Field({ id, label, error, children }) {
@@ -27,6 +29,7 @@ function ProposalForm({
   fieldErrors = {},
   submitLabel = 'Create draft',
   submittingLabel = 'Creating…',
+  children,
 }) {
   function handleChange(event) {
     onChange(event.target.name, event.target.value)
@@ -162,6 +165,12 @@ function ProposalForm({
         </Field>
       </div>
 
+      <LayoutPicker
+        value={values.layoutId ?? DEFAULT_LAYOUT_ID}
+        onChange={(layoutId) => onChange('layoutId', layoutId)}
+        disabled={submitting}
+      />
+
       <Field id="summary" label="Summary" error={fieldErrors.summary}>
         <textarea
           id="summary"
@@ -173,6 +182,8 @@ function ProposalForm({
           disabled={submitting}
         />
       </Field>
+
+      {children}
 
       <div className={styles.actions}>
         <button type="submit" className={styles.submit} disabled={submitting}>

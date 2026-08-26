@@ -22,6 +22,11 @@ export const styles = StyleSheet.create({
     paddingBottom: 56,
     paddingHorizontal: 48,
   },
+  pageLandscape: {
+    paddingTop: 28,
+    paddingBottom: 48,
+    paddingHorizontal: 36,
+  },
 
   header: {
     marginBottom: 22,
@@ -251,5 +256,47 @@ export const styles = StyleSheet.create({
   footerText: {
     fontSize: 8,
     color: colors.muted,
+  },
+
+  pageRow: {
+    flexDirection: 'row',
+    gap: 20,
+    marginBottom: 16,
+  },
+  pageRowCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  signatureRow: {
+    flexDirection: 'row',
+    gap: 28,
+  },
+  signatureCol: {
+    flex: 1,
+  },
+  signatureLine: {
+    minHeight: 22,
+    marginTop: 18,
+    marginBottom: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.ink,
+    justifyContent: 'flex-end',
+  },
+
+  galleryRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  galleryItem: {
+    width: '31%',
+  },
+  galleryImage: {
+    width: '100%',
+    height: 90,
+    objectFit: 'cover',
+    marginBottom: 4,
+    backgroundColor: colors.soft,
   },
 })

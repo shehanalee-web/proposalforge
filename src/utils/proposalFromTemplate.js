@@ -28,5 +28,6 @@ export function proposalFromTemplate(template) {
     terms: template.terms ?? '',
     notes: template.notes ?? '',
     tags: [],
+    layoutId: template.defaultLayoutId,
   }
 }
