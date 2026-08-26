@@ -20,6 +20,9 @@ export function toDuplicateDraft(proposal) {
     summary: proposal.summary ?? '',
     validUntil: proposal.validUntil ?? '',
     sections: proposal.sections ?? [],
+    items: proposal.items ?? [],
+    terms: proposal.terms ?? '',
+    notes: proposal.notes ?? '',
     tags: proposal.tags ?? [],
   }
 }

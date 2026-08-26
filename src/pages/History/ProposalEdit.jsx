@@ -23,8 +23,10 @@ function valuesFromProposal(proposal) {
 
 /**
  * Fields the edit form is allowed to send. Everything else on the stored
- * record — status, currency, sections, tags, and any future document body —
- * is omitted so `updateProposal` keeps the existing values.
+ * record — status, currency, sections, items, terms, notes, tags, and any
+ * future document body — is omitted so `updateProposal` keeps the existing
+ * values. That also means editing a proposal created from a template cannot
+ * mutate the template.
  */
 function toEditableChanges(values) {
   return {
@@ -122,8 +124,8 @@ function ProposalEdit() {
   return (
     <section className={styles.page}>
       <p className={styles.intro}>
-        Update the essentials. Status, sections and tags are not on this form
-        and will be left unchanged.
+        Update the essentials. Status, sections, line items, terms and tags are
+        not on this form and will be left unchanged.
       </p>
 
       {requestError ? (

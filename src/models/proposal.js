@@ -61,10 +61,20 @@ export const DEFAULT_CURRENCY = 'USD'
  * @property {string} currency                ISO 4217 currency code.
  * @property {string} summary                 Short plain-text overview.
  * @property {ProposalSection[]} sections     Ordered document body.
+ * @property {ProposalLineItem[]} items       Priced line items.
+ * @property {string} terms                   Terms & conditions (plain text).
+ * @property {string} notes                   Internal or client-facing notes.
  * @property {string[]} tags                  Free-form labels.
  * @property {string | null} validUntil       ISO date the offer expires.
  * @property {string} createdAt               ISO timestamp.
  * @property {string} updatedAt               ISO timestamp.
+ */
+
+/**
+ * @typedef {object} ProposalLineItem
+ * @property {string} id
+ * @property {string} description
+ * @property {number} amount
  */
 
 function createId(prefix) {
@@ -86,6 +96,18 @@ export function makeSection(input = {}) {
     id: input.id ?? createId('sec'),
     heading: input.heading ?? '',
     body: input.body ?? '',
+  }
+}
+
+/**
+ * @param {Partial<ProposalLineItem>} [input]
+ * @returns {ProposalLineItem}
+ */
+export function makeLineItem(input = {}) {
+  return {
+    id: input.id ?? createId('item'),
+    description: input.description ?? '',
+    amount: Number(input.amount ?? 0),
   }
 }
 
@@ -112,6 +134,9 @@ export function makeProposal(input = {}) {
     currency: input.currency ?? DEFAULT_CURRENCY,
     summary: input.summary ?? '',
     sections: (input.sections ?? []).map(makeSection),
+    items: (input.items ?? []).map(makeLineItem),
+    terms: input.terms ?? '',
+    notes: input.notes ?? '',
     tags: [...(input.tags ?? [])],
     validUntil: input.validUntil ?? null,
     createdAt: input.createdAt ?? timestamp,
@@ -155,6 +180,17 @@ export function validateProposal(proposal) {
   if (!Number.isFinite(proposal.amount) || proposal.amount < 0) {
     errors.push({ field: 'amount', message: 'Amount must be zero or greater.' })
   }
+
+  const items = proposal.items ?? []
+
+  items.forEach((item, index) => {
+    if (!Number.isFinite(item.amount) || item.amount < 0) {
+      errors.push({
+        field: `items.${index}.amount`,
+        message: 'Line item amounts must be zero or greater.',
+      })
+    }
+  })
 
   return errors
 }

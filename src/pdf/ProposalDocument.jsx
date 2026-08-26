@@ -48,6 +48,12 @@ function ProposalDocument({ proposal, settings }) {
         <ProjectDescription proposal={proposal} />
         <ProposalPricing proposal={proposal} />
         <ProposalTerms proposal={proposal} />
+        {proposal.notes?.trim() ? (
+          <View style={styles.section} wrap={false}>
+            <Text style={styles.sectionTitle}>Notes</Text>
+            <Text style={styles.body}>{proposal.notes.trim()}</Text>
+          </View>
+        ) : null}
         <ProposalFooter settings={settings} />
       </Page>
     </Document>

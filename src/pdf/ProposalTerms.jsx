@@ -53,6 +53,23 @@ function buildTerms(proposal) {
 }
 
 function ProposalTerms({ proposal }) {
+  const custom = proposal.terms?.trim()
+
+  if (custom) {
+    const paragraphs = custom.split(/\n{2,}/)
+
+    return (
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Terms & conditions</Text>
+        {paragraphs.map((paragraph, index) => (
+          <View key={index} style={styles.termItem}>
+            <Text style={styles.termBody}>{paragraph.trim()}</Text>
+          </View>
+        ))}
+      </View>
+    )
+  }
+
   const terms = buildTerms(proposal)
 
   return (

@@ -9,6 +9,12 @@ const ICONS = {
     </>
   ),
   new: <path d="M12 5v14M5 12h14" />,
+  templates: (
+    <>
+      <rect x="8" y="4" width="12" height="15" rx="1.75" />
+      <path d="M6 7.5v11.25A1.75 1.75 0 0 0 7.75 20.5H16" />
+    </>
+  ),
   history: (
     <>
       <circle cx="12" cy="12" r="8.5" />

@@ -22,6 +22,9 @@ function ProposalDetailView({
 }) {
   const hasSections = proposal.sections.length > 0
   const hasTags = proposal.tags.length > 0
+  const hasItems = proposal.items.length > 0
+  const hasTerms = Boolean(proposal.terms?.trim())
+  const hasNotes = Boolean(proposal.notes?.trim())
   const busy = Boolean(exporting)
 
   return (
@@ -103,6 +106,46 @@ function ProposalDetailView({
           <p className={styles.empty}>No sections on this proposal yet.</p>
         )}
       </section>
+
+      {hasItems ? (
+        <section className={styles.block}>
+          <h3 className={styles.blockTitle}>Line items</h3>
+          <table className={styles.items}>
+            <thead>
+              <tr>
+                <th scope="col">Description</th>
+                <th scope="col" className={styles.itemAmount}>
+                  Amount
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {proposal.items.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.description || '—'}</td>
+                  <td className={styles.itemAmount}>
+                    {formatCurrency(item.amount, proposal.currency)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      ) : null}
+
+      {hasTerms ? (
+        <section className={styles.block}>
+          <h3 className={styles.blockTitle}>Terms & conditions</h3>
+          <p className={`${styles.body} ${styles.prewrap}`}>{proposal.terms}</p>
+        </section>
+      ) : null}
+
+      {hasNotes ? (
+        <section className={styles.block}>
+          <h3 className={styles.blockTitle}>Notes</h3>
+          <p className={`${styles.body} ${styles.prewrap}`}>{proposal.notes}</p>
+        </section>
+      ) : null}
 
       {hasTags ? (
         <ul className={styles.tags}>
