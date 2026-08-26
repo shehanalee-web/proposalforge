@@ -37,6 +37,7 @@
   gap: var(--space-3);
 }
 
+.print,
 .edit {
   padding: var(--space-2) var(--space-5);
   border: 1px solid var(--color-accent-border);
@@ -47,8 +48,42 @@
   font-weight: 600;
 }
 
+.print:hover:not(:disabled),
 .edit:hover {
   background-color: var(--color-accent-soft-hover);
+}
+
+.print:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.download {
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  box-shadow: var(--shadow-accent);
+}
+
+.download:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+}
+
+.download:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.exportError {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--color-danger) 32%, transparent);
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface);
+  color: var(--color-danger);
+  font-size: var(--text-sm);
 }
 
 .duplicate {
@@ -61,8 +96,13 @@
   box-shadow: var(--shadow-accent);
 }
 
-.duplicate:hover {
+.duplicate:hover:not(:disabled) {
   background-color: var(--color-accent-hover);
+}
+
+.duplicate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .meta {
@@ -165,6 +205,8 @@
     width: 100%;
   }
 
+  .download,
+  .print,
   .edit,
   .duplicate {
     width: 100%;

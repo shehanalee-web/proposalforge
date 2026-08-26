@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useProposal } from '../../hooks/useProposal.js'
 import { toDuplicateDraft } from '../../utils/duplicateDraft.js'
@@ -10,11 +11,36 @@ function ProposalDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { proposal, loading, error, notFound, refetch } = useProposal(id)
+  const [exporting, setExporting] = useState(null)
+  const [exportError, setExportError] = useState(null)
 
   function handleDuplicate() {
     if (!proposal) return
 
     navigate('/new', { state: { draft: toDuplicateDraft(proposal) } })
+  }
+
+  async function runExport(action) {
+    if (!proposal || exporting) return
+
+    setExportError(null)
+    setExporting(action)
+
+    try {
+      const { downloadProposalPdf, printProposalPdf } = await import(
+        '../../pdf/generateProposalPdf.js'
+      )
+
+      if (action === 'download') {
+        await downloadProposalPdf(proposal)
+      } else {
+        await printProposalPdf(proposal)
+      }
+    } catch (caught) {
+      setExportError(caught)
+    } finally {
+      setExporting(null)
+    }
   }
 
   if (notFound) {
@@ -64,7 +90,14 @@ function ProposalDetail() {
 
   return (
     <section className={styles.page}>
-      <ProposalDetailView proposal={proposal} onDuplicate={handleDuplicate} />
+      <ProposalDetailView
+        proposal={proposal}
+        onDuplicate={handleDuplicate}
+        onDownloadPdf={() => runExport('download')}
+        onPrint={() => runExport('print')}
+        exporting={exporting}
+        exportError={exportError}
+      />
     </section>
   )
 }

@@ -12,9 +12,17 @@ function MetaItem({ label, children }) {
   )
 }
 
-function ProposalDetailView({ proposal, onDuplicate }) {
+function ProposalDetailView({
+  proposal,
+  onDuplicate,
+  onDownloadPdf,
+  onPrint,
+  exporting,
+  exportError,
+}) {
   const hasSections = proposal.sections.length > 0
   const hasTags = proposal.tags.length > 0
+  const busy = Boolean(exporting)
 
   return (
     <article className={styles.document}>
@@ -26,14 +34,41 @@ function ProposalDetailView({ proposal, onDuplicate }) {
 
         <div className={styles.actions}>
           <StatusBadge status={proposal.status} />
+          <button
+            type="button"
+            className={styles.download}
+            onClick={onDownloadPdf}
+            disabled={busy}
+          >
+            {exporting === 'download' ? 'Preparing PDF…' : 'Download PDF'}
+          </button>
+          <button
+            type="button"
+            className={styles.print}
+            onClick={onPrint}
+            disabled={busy}
+          >
+            {exporting === 'print' ? 'Preparing print…' : 'Print proposal'}
+          </button>
           <Link to={`/history/${proposal.id}/edit`} className={styles.edit}>
             Edit proposal
           </Link>
-          <button type="button" className={styles.duplicate} onClick={onDuplicate}>
+          <button
+            type="button"
+            className={styles.duplicate}
+            onClick={onDuplicate}
+            disabled={busy}
+          >
             Duplicate proposal
           </button>
         </div>
       </header>
+
+      {exportError ? (
+        <p className={styles.exportError} role="alert">
+          {exportError.message || 'Could not generate the PDF. Please try again.'}
+        </p>
+      ) : null}
 
       <dl className={styles.meta}>
         <MetaItem label="Client">{proposal.clientName || '—'}</MetaItem>
