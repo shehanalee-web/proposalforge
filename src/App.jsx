@@ -3,6 +3,8 @@ import Layout from './components/Layout/Layout.jsx'
 import Dashboard from './pages/Dashboard/Dashboard.jsx'
 import NewProposal from './pages/NewProposal/NewProposal.jsx'
 import History from './pages/History/History.jsx'
+import ProposalDetail from './pages/History/ProposalDetail.jsx'
+import ProposalEdit from './pages/History/ProposalEdit.jsx'
 import Settings from './pages/Settings/Settings.jsx'
 
 function App() {
@@ -12,6 +14,8 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="new" element={<NewProposal />} />
         <Route path="history" element={<History />} />
+        <Route path="history/:id/edit" element={<ProposalEdit />} />
+        <Route path="history/:id" element={<ProposalDetail />} />
         <Route path="settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

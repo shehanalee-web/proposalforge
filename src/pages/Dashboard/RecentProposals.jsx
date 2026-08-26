@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
 import { formatCurrency, formatDate } from '../../utils/format.js'
 import styles from './RecentProposals.module.css'
@@ -42,7 +43,9 @@ function RecentProposals({ proposals, loading, error, onRetry }) {
       {proposals.map((proposal) => (
         <li key={proposal.id} className={styles.row}>
           <div className={styles.main}>
-            <span className={styles.title}>{proposal.title}</span>
+            <Link to={`/history/${proposal.id}`} className={styles.title}>
+              {proposal.title}
+            </Link>
             <span className={styles.client}>
               {proposal.clientName}
               {proposal.company ? ` · ${proposal.company}` : ''}

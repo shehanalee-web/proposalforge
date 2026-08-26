@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import { formatCurrency, formatDate } from '../../utils/format.js'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
 import styles from './ProposalList.module.css'
@@ -23,7 +24,12 @@ function ProposalList({ proposals }) {
             <tr key={proposal.id}>
               <td data-label="Proposal">
                 <span className={styles.stack}>
-                  <span className={styles.primary}>{proposal.title}</span>
+                  <Link
+                    to={`/history/${proposal.id}`}
+                    className={styles.primary}
+                  >
+                    {proposal.title}
+                  </Link>
                   <span className={styles.secondary}>
                     {proposal.projectType}
                   </span>
