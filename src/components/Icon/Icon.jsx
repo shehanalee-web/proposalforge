@@ -84,6 +84,68 @@ const ICONS = {
       <circle cx="12.75" cy="17" r="2" />
     </>
   ),
+  grip: (
+    <>
+      <circle cx="9" cy="7" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="7" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="12" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="12" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="9" cy="17" r="1.15" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="17" r="1.15" fill="currentColor" stroke="none" />
+    </>
+  ),
+  more: (
+    <>
+      <circle cx="12" cy="6.5" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="17.5" r="1.2" fill="currentColor" stroke="none" />
+    </>
+  ),
+  check: <path d="M5 12.5 9.5 17 19 7.5" />,
+  typeArchitecture: (
+    <>
+      <path d="M4 20.5h16" />
+      <path d="M6.5 20.5V10l5.5-5.5L17.5 10v10.5" />
+      <path d="M10.5 20.5v-4.5h3v4.5" />
+    </>
+  ),
+  typeMotion: (
+    <>
+      <rect x="4" y="6" width="16" height="12" rx="2" />
+      <path d="m10 9.5 5 2.5-5 2.5V9.5Z" />
+    </>
+  ),
+  typeMarketing: (
+    <>
+      <path d="M5 10.25v3.5h3.25L15 18V6.5l-6.75 3.75H5Z" />
+      <path d="M17.25 9.75a2.75 2.75 0 0 1 0 4.5" />
+    </>
+  ),
+  typeAgency: (
+    <>
+      <path d="M12 4.5 13.4 9h4.7L14.7 11.8 16.1 16.5 12 13.6 7.9 16.5 9.3 11.8 6 9h4.6L12 4.5Z" />
+    </>
+  ),
+  typeConstruction: (
+    <>
+      <path d="M4 20.5h16" />
+      <path d="M7 20.5V12h10v8.5" />
+      <path d="M7 12 12 6.75 17 12" />
+    </>
+  ),
+  typeSoftware: (
+    <>
+      <path d="m8 9-3.5 3L8 15M16 9l3.5 3L16 15M13.25 7.5 10.75 16.5" />
+    </>
+  ),
+  typeCatalogue: (
+    <>
+      <rect x="4" y="4.5" width="7" height="7" rx="1.25" />
+      <rect x="13" y="4.5" width="7" height="7" rx="1.25" />
+      <rect x="4" y="13.5" width="7" height="7" rx="1.25" />
+      <rect x="13" y="13.5" width="7" height="7" rx="1.25" />
+    </>
+  ),
 }
 
 function Icon({ name, size = 18, className }) {

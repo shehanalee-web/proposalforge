@@ -7,6 +7,8 @@ import {
   makeExecutiveSummaryData,
   makeTermsData,
 } from './schemas.js'
+import { flattenCommercialItems } from '../models/commercial.js'
+import { computeCommercials } from '../utils/commercialTotals.js'
 
 /**
  * Default assembly for a new proposal. Every built-in type is present so
@@ -22,8 +24,8 @@ export const DEFAULT_BLOCK_SEQUENCE = Object.freeze([
   { type: BLOCK_TYPE.TIMELINE, enabled: false },
   { type: BLOCK_TYPE.DELIVERABLES, enabled: false },
   { type: BLOCK_TYPE.SPECIFICATIONS, enabled: false },
-  { type: BLOCK_TYPE.TEAM, enabled: false },
-  { type: BLOCK_TYPE.TESTIMONIALS, enabled: false },
+  { type: BLOCK_TYPE.TEAM, enabled: true },
+  { type: BLOCK_TYPE.TESTIMONIALS, enabled: true },
   { type: BLOCK_TYPE.FAQ, enabled: false },
   { type: BLOCK_TYPE.TERMS, enabled: true },
   { type: BLOCK_TYPE.SIGNATURE, enabled: true },
@@ -126,11 +128,12 @@ export function syncLegacyFromBlocks(blocks, proposal = {}) {
   const galleryBlock = list.find((block) => block.type === BLOCK_TYPE.GALLERY)
   const richText = list.filter((block) => block.type === BLOCK_TYPE.RICH_TEXT)
 
-  const items = pricingBlock?.data.items ?? proposal.items ?? []
-  const amountFromItems = items.reduce(
-    (total, item) => total + (Number(item.amount) || 0),
-    0,
-  )
+  const items = Array.isArray(pricingBlock?.data.modules)
+    ? flattenCommercialItems(pricingBlock.data.modules)
+    : pricingBlock?.data.items ?? proposal.items ?? []
+  const commercialTotal = Array.isArray(pricingBlock?.data.modules)
+    ? computeCommercials(pricingBlock.data.modules).grandTotal
+    : items.reduce((total, item) => total + (Number(item.amount) || 0), 0)
 
   return {
     summary: summaryBlock?.data.body?.trim() || proposal.summary || '',
@@ -141,7 +144,10 @@ export function syncLegacyFromBlocks(blocks, proposal = {}) {
       body: block.data.body ?? '',
     })),
     items,
-    amount: items.length > 0 ? amountFromItems : Number(proposal.amount ?? 0),
+    amount:
+      Array.isArray(pricingBlock?.data.modules) || items.length > 0
+        ? commercialTotal
+        : Number(proposal.amount ?? 0),
     images: (galleryBlock?.data.items ?? []).map((item) => ({
       id: item.id,
       url: item.url,

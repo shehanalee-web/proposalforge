@@ -299,4 +299,24 @@ export const styles = StyleSheet.create({
     marginBottom: 4,
     backgroundColor: colors.soft,
   },
+  coverImage: {
+    width: '100%',
+    height: 160,
+    objectFit: 'cover',
+    marginTop: 10,
+    backgroundColor: colors.soft,
+  },
+  portrait: {
+    width: 48,
+    height: 48,
+    objectFit: 'cover',
+    marginBottom: 6,
+    backgroundColor: colors.soft,
+  },
+  signatureMark: {
+    width: 120,
+    height: 36,
+    objectFit: 'contain',
+    marginBottom: 6,
+  },
 })

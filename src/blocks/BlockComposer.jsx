@@ -17,7 +17,9 @@ import {
   makeTestimonialItem,
   makeTimelineItem,
 } from './schemas.js'
-import { makeLineItem as makePriceItem } from '../models/proposal.js'
+import ImageUpload from '../components/ImageUpload/ImageUpload.jsx'
+import CommercialBuilder from '../components/CommercialBuilder/CommercialBuilder.jsx'
+import { DEFAULT_CURRENCY } from '../models/proposal.js'
 import styles from './BlockComposer.module.css'
 
 function Field({ label, children }) {
@@ -64,7 +66,7 @@ function Repeat({ items, onChange, makeItem, renderItem, addLabel }) {
   )
 }
 
-function BlockFields({ block, onData }) {
+function BlockFields({ block, onData, disabled = false, currency = DEFAULT_CURRENCY }) {
   const data = block.data
   const set = (patch) => onData(patch)
 
@@ -95,13 +97,12 @@ function BlockFields({ block, onData }) {
               onChange={(event) => set({ subheading: event.target.value })}
             />
           </Field>
-          <Field label="Image URL">
-            <input
-              className={styles.input}
-              value={data.imageUrl}
-              onChange={(event) => set({ imageUrl: event.target.value })}
-            />
-          </Field>
+          <ImageUpload
+            label="Cover image"
+            value={data.imageUrl}
+            onChange={(url) => set({ imageUrl: url })}
+            disabled={disabled}
+          />
         </>
       )
     case BLOCK_TYPE.EXECUTIVE_SUMMARY:
@@ -146,15 +147,12 @@ function BlockFields({ block, onData }) {
           onChange={(items) => set({ items })}
           renderItem={(item, index, patch) => (
             <>
-              <Field label="Image URL">
-                <input
-                  className={styles.input}
-                  value={item.url}
-                  onChange={(event) =>
-                    patch(index, { ...item, url: event.target.value })
-                  }
-                />
-              </Field>
+              <ImageUpload
+                label="Image"
+                value={item.url}
+                onChange={(url) => patch(index, { ...item, url })}
+                disabled={disabled}
+              />
               <Field label="Caption">
                 <input
                   className={styles.input}
@@ -170,49 +168,12 @@ function BlockFields({ block, onData }) {
       )
     case BLOCK_TYPE.PRICING:
       return (
-        <>
-          <Repeat
-            items={data.items}
-            makeItem={() => makePriceItem()}
-            addLabel="Add line"
-            onChange={(items) => set({ items })}
-            renderItem={(item, index, patch) => (
-              <>
-                <Field label="Description">
-                  <input
-                    className={styles.input}
-                    value={item.description}
-                    onChange={(event) =>
-                      patch(index, { ...item, description: event.target.value })
-                    }
-                  />
-                </Field>
-                <Field label="Amount">
-                  <input
-                    className={styles.input}
-                    type="number"
-                    min="0"
-                    value={item.amount}
-                    onChange={(event) =>
-                      patch(index, {
-                        ...item,
-                        amount: Number(event.target.value) || 0,
-                      })
-                    }
-                  />
-                </Field>
-              </>
-            )}
-          />
-          <Field label="Notes">
-            <textarea
-              className={styles.input}
-              rows={2}
-              value={data.notes}
-              onChange={(event) => set({ notes: event.target.value })}
-            />
-          </Field>
-        </>
+        <CommercialBuilder
+          data={data}
+          disabled={disabled}
+          currency={currency}
+          onChange={(patch) => set(patch)}
+        />
       )
     case BLOCK_TYPE.TIMELINE:
       return (
@@ -355,6 +316,12 @@ function BlockFields({ block, onData }) {
                   }
                 />
               </Field>
+              <ImageUpload
+                label="Portrait"
+                value={item.photoUrl}
+                onChange={(url) => patch(index, { ...item, photoUrl: url })}
+                disabled={disabled}
+              />
             </>
           )}
         />
@@ -405,6 +372,12 @@ function BlockFields({ block, onData }) {
                   }
                 />
               </Field>
+              <ImageUpload
+                label="Portrait"
+                value={item.portraitUrl}
+                onChange={(url) => patch(index, { ...item, portraitUrl: url })}
+                disabled={disabled}
+              />
             </>
           )}
         />
@@ -478,15 +451,21 @@ function BlockFields({ block, onData }) {
                   }
                 />
               </Field>
-              <Field label="URL">
-                <input
-                  className={styles.input}
-                  value={item.url}
-                  onChange={(event) =>
-                    patch(index, { ...item, url: event.target.value })
-                  }
-                />
-              </Field>
+              <ImageUpload
+                label="File"
+                variant="file"
+                accept="application/pdf,image/*,.pdf"
+                fileName={item.name}
+                value={item.url}
+                disabled={disabled}
+                onChange={(url, asset) =>
+                  patch(index, {
+                    ...item,
+                    url,
+                    name: item.name || asset?.name || '',
+                  })
+                }
+              />
             </>
           )}
         />
@@ -496,7 +475,12 @@ function BlockFields({ block, onData }) {
   }
 }
 
-function BlockComposer({ blocks, onChange, disabled = false }) {
+function BlockComposer({
+  blocks,
+  onChange,
+  disabled = false,
+  currency = DEFAULT_CURRENCY,
+}) {
   const list = blocks ?? []
 
   function update(next) {
@@ -569,12 +553,16 @@ function BlockComposer({ blocks, onChange, disabled = false }) {
                 </div>
               </div>
               <div className={styles.cardBody}>
-                <BlockFields
-                  block={block}
-                  onData={(data) =>
-                    update(updateBlockData(list, block.id, data))
-                  }
-                />
+                <fieldset className={styles.fields} disabled={disabled}>
+                  <BlockFields
+                    block={block}
+                    disabled={disabled}
+                    currency={currency}
+                    onData={(data) =>
+                      update(updateBlockData(list, block.id, data))
+                    }
+                  />
+                </fieldset>
               </div>
             </li>
           )

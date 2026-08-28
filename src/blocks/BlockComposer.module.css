@@ -100,9 +100,16 @@
 }
 
 .cardBody {
+  padding: var(--space-4);
+}
+
+.fields {
   display: grid;
   gap: var(--space-3);
-  padding: var(--space-4);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
 }
 
 .field {

@@ -1,9 +1,21 @@
 import Icon from '../components/Icon/Icon.jsx'
 import StatusBadge from '../components/StatusBadge/StatusBadge.jsx'
-import { formatCurrency, formatDate } from '../utils/format.js'
+import { formatDate } from '../utils/format.js'
 import { LAYOUT_ID } from '../layouts/ids.js'
-import { getPricingRows, sumAmounts } from '../utils/proposalPricing.js'
-import { studioNameFromBrand } from './brand.js'
+import {
+  getCommercialModules,
+} from '../utils/commercialTotals.js'
+import CommercialDocument from '../components/CommercialBuilder/CommercialDocument.jsx'
+import {
+  resolveCoverImage,
+  resolveLogoUrl,
+  resolvePaymentTerms,
+  resolveTeamMembers,
+  resolveTermsBody,
+  resolveTestimonials,
+  signatoryFromBrand,
+  studioNameFromBrand,
+} from './brand.js'
 import { BLOCK_TYPE } from './ids.js'
 import { isBlockDataEmpty } from './schemas.js'
 import styles from '../layouts/blocks/blocks.module.css'
@@ -36,7 +48,8 @@ export function CoverScreen({ instance, proposal, brand, settings, layout, statu
     : styles.cover
   const heading = data.heading?.trim() || proposal.title
   const kicker = data.kicker?.trim() || proposal.projectType
-  const logoUrl = brand?.logos?.light || brand?.logos?.primary
+  const logoUrl = resolveLogoUrl(brand, 'light')
+  const coverImage = resolveCoverImage(instance, brand)
 
   return (
     <header className={coverClass}>
@@ -56,6 +69,9 @@ export function CoverScreen({ instance, proposal, brand, settings, layout, statu
         <h1 className={styles.coverTitle}>{heading}</h1>
         {data.subheading?.trim() ? (
           <p className={styles.body}>{data.subheading}</p>
+        ) : null}
+        {coverImage ? (
+          <img src={coverImage} alt="" className={extra.coverImage} />
         ) : null}
       </div>
 
@@ -115,52 +131,15 @@ export function GalleryScreen({ instance }) {
 }
 
 export function PricingScreen({ instance, proposal }) {
-  const fromBlock = instance.data.items ?? []
-  const rows =
-    fromBlock.length > 0
-      ? fromBlock.map((item) => ({
-          id: item.id,
-          description: item.description,
-          amount: Number(item.amount) || 0,
-        }))
-      : getPricingRows(proposal)
-  const total = sumAmounts(rows)
+  const modules = getCommercialModules(instance, proposal)
 
   return (
     <BlockFrame title="Investment">
-      <table className={styles.items}>
-        <thead>
-          <tr>
-            <th scope="col">Description</th>
-            <th scope="col" className={styles.itemAmount}>
-              Amount
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.description || '—'}</td>
-              <td className={styles.itemAmount}>
-                {formatCurrency(row.amount, proposal.currency)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <dl className={styles.totals}>
-        <div className={styles.totalRow}>
-          <dt>Subtotal</dt>
-          <dd>{formatCurrency(total, proposal.currency)}</dd>
-        </div>
-        <div className={`${styles.totalRow} ${styles.grandTotal}`}>
-          <dt>Total</dt>
-          <dd>{formatCurrency(total, proposal.currency)}</dd>
-        </div>
-      </dl>
-      {instance.data.notes?.trim() ? (
-        <p className={styles.body}>{instance.data.notes}</p>
-      ) : null}
+      <CommercialDocument
+        modules={modules}
+        notes={instance.data.notes}
+        currency={proposal.currency}
+      />
     </BlockFrame>
   )
 }
@@ -228,8 +207,8 @@ export function SpecificationsScreen({ instance }) {
   )
 }
 
-export function TeamScreen({ instance }) {
-  const members = (instance.data.members ?? []).filter((member) => member.name?.trim())
+export function TeamScreen({ instance, brand }) {
+  const members = resolveTeamMembers(instance, brand)
   if (members.length === 0) return null
 
   return (
@@ -237,6 +216,9 @@ export function TeamScreen({ instance }) {
       <ul className={extra.people}>
         {members.map((member) => (
           <li key={member.id} className={extra.person}>
+            {member.photoUrl?.trim() ? (
+              <img src={member.photoUrl} alt="" className={extra.portrait} />
+            ) : null}
             <p className={styles.sectionHeading}>{member.name}</p>
             {member.role ? <p className={styles.kicker}>{member.role}</p> : null}
             {member.bio ? <p className={styles.body}>{member.bio}</p> : null}
@@ -247,8 +229,8 @@ export function TeamScreen({ instance }) {
   )
 }
 
-export function TestimonialsScreen({ instance }) {
-  const items = (instance.data.items ?? []).filter((item) => item.quote?.trim())
+export function TestimonialsScreen({ instance, brand }) {
+  const items = resolveTestimonials(instance, brand)
   if (items.length === 0) return null
 
   return (
@@ -256,6 +238,9 @@ export function TestimonialsScreen({ instance }) {
       <ul className={extra.stack}>
         {items.map((item) => (
           <li key={item.id} className={extra.quote}>
+            {item.portraitUrl?.trim() ? (
+              <img src={item.portraitUrl} alt="" className={extra.portrait} />
+            ) : null}
             <p className={styles.body}>“{item.quote}”</p>
             <p className={styles.galleryCaption}>
               {[item.authorName, item.authorRole, item.company]
@@ -289,19 +274,28 @@ export function FaqScreen({ instance }) {
   )
 }
 
-export function TermsScreen({ instance }) {
-  const body = instance.data.body?.trim()
-  if (!body) return null
+export function TermsScreen({ instance, proposal, brand }) {
+  const body = resolveTermsBody(instance, proposal, brand)
+  const payment = resolvePaymentTerms(instance, proposal, brand)
+  if (!body && !payment) return null
 
   return (
     <BlockFrame title="Terms & conditions">
-      <p className={`${styles.body} ${styles.prewrap}`}>{body}</p>
+      {body ? <p className={`${styles.body} ${styles.prewrap}`}>{body}</p> : null}
+      {payment ? (
+        <>
+          <h3 className={styles.blockTitle}>Payment terms</h3>
+          <p className={`${styles.body} ${styles.prewrap}`}>{payment}</p>
+        </>
+      ) : null}
     </BlockFrame>
   )
 }
 
 export function SignatureScreen({ instance, proposal, brand, settings }) {
-  const studioName = studioNameFromBrand(brand, settings)
+  const studioName = signatoryFromBrand(brand, settings)
+  const role = brand?.signature?.role?.trim() || 'Authorised representative'
+  const signatureImage = brand?.signature?.imageUrl
 
   return (
     <section className={styles.signature}>
@@ -312,8 +306,11 @@ export function SignatureScreen({ instance, proposal, brand, settings }) {
       </div>
       <div className={styles.signCol}>
         <h3 className={styles.blockTitle}>{instance.data.studioLabel || 'Studio'}</h3>
+        {signatureImage ? (
+          <img src={signatureImage} alt="" className={extra.signatureMark} />
+        ) : null}
         <p className={styles.signLine}>{studioName}</p>
-        <p className={styles.signHint}>Authorised representative</p>
+        <p className={styles.signHint}>{role}</p>
       </div>
     </section>
   )

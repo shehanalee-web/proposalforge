@@ -7,6 +7,7 @@ import { useUpdateProposal } from '../../hooks/useUpdateProposal.js'
 import ProposalForm from '../NewProposal/ProposalForm.jsx'
 import { PATH, proposalPath } from '../../workspace/paths.js'
 import { ensureProposalBlocks } from '../../blocks/hydrate.js'
+import { computeCommercials } from '../../utils/commercialTotals.js'
 import { BLOCK_TYPE } from '../../blocks/ids.js'
 import { updateBlocksByType } from '../../blocks/instance.js'
 import BlockComposer from '../../blocks/BlockComposer.jsx'
@@ -78,6 +79,20 @@ function ProposalEdit() {
     }
   }
 
+  function handleBlocksChange(next) {
+    setBlocks(next)
+
+    const pricing = next.find((block) => block.type === BLOCK_TYPE.PRICING)
+    if (!pricing || !values) return
+
+    const total = computeCommercials(pricing.data.modules ?? []).grandTotal
+    const nextAmount = String(total)
+
+    if (values.amount !== nextAmount) {
+      setDraft({ ...values, amount: nextAmount })
+    }
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
 
@@ -138,8 +153,9 @@ function ProposalEdit() {
   return (
     <section className={styles.page}>
       <p className={styles.intro}>
-        Update the essentials, layout and content blocks. Disabling a block hides
-        it without deleting its content. Status is not changed here.
+        Edit branding details, pricing, layout, validity dates and every content
+        block — including team, images and PDFs. Disabling a block hides it
+        without deleting its content.
       </p>
 
       {requestError ? (
@@ -171,8 +187,9 @@ function ProposalEdit() {
         >
           <BlockComposer
             blocks={documentBlocks}
-            onChange={setBlocks}
+            onChange={handleBlocksChange}
             disabled={submitting}
+            currency={proposal.currency}
           />
         </ProposalForm>
       </div>

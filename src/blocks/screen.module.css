@@ -52,3 +52,26 @@
 .file:hover {
   color: var(--color-accent-hover);
 }
+
+.coverImage {
+  width: 100%;
+  max-height: 16rem;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-raised);
+}
+
+.portrait {
+  width: 4.5rem;
+  height: 4.5rem;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-raised);
+}
+
+.signatureMark {
+  width: 8.5rem;
+  max-height: 3rem;
+  object-fit: contain;
+  object-position: left center;
+}

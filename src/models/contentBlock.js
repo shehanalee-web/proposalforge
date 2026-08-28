@@ -51,7 +51,7 @@ export const CONTENT_BLOCK_TYPE_LABELS = Object.freeze({
   [CONTENT_BLOCK_TYPE.GALLERY]: 'Image gallery',
   [CONTENT_BLOCK_TYPE.VIDEO]: 'Video',
   [CONTENT_BLOCK_TYPE.BEFORE_AFTER]: 'Before / after',
-  [CONTENT_BLOCK_TYPE.PRICING]: 'Pricing table',
+  [CONTENT_BLOCK_TYPE.PRICING]: 'Commercials',
   [CONTENT_BLOCK_TYPE.OPTIONAL_PRICING]: 'Optional pricing',
   [CONTENT_BLOCK_TYPE.ALTERNATIVES]: 'Alternatives',
   [CONTENT_BLOCK_TYPE.TABLE]: 'Table',

@@ -1,5 +1,10 @@
 import { createRecordId } from '../models/ids.js'
 import { BLOCK_TYPE } from './ids.js'
+import {
+  flattenCommercialItems,
+  makeCommercialModule,
+  modulesFromLegacyItems,
+} from '../models/commercial.js'
 
 function items(list, makeItem) {
   return Array.isArray(list) ? list.map(makeItem) : []
@@ -46,9 +51,14 @@ export function makeGalleryData(input = {}) {
 }
 
 export function makePricingData(input = {}) {
+  const modules = Array.isArray(input.modules)
+    ? input.modules.map((module) => makeCommercialModule(module))
+    : modulesFromLegacyItems(input.items)
+
   return {
     notes: input.notes ?? '',
-    items: items(input.items, (item) => makePricingItem(item)),
+    modules,
+    items: flattenCommercialItems(modules),
   }
 }
 
@@ -95,6 +105,7 @@ export function makeTeamMemberData(input = {}) {
     name: input.name ?? '',
     role: input.role ?? '',
     bio: input.bio ?? '',
+    photoUrl: input.photoUrl ?? '',
   }
 }
 
@@ -109,6 +120,7 @@ export function makeTestimonialItem(input = {}) {
     authorName: input.authorName ?? '',
     authorRole: input.authorRole ?? '',
     company: input.company ?? '',
+    portraitUrl: input.portraitUrl ?? '',
   }
 }
 
@@ -207,10 +219,20 @@ export function isBlockDataEmpty(type, data = {}) {
       return !data.items?.some((item) => hasText(item.question, item.answer))
     case BLOCK_TYPE.ATTACHMENTS:
       return !data.items?.some((item) => hasText(item.name, item.url))
-    case BLOCK_TYPE.PRICING:
-      return !data.items?.some(
-        (item) => hasText(item.description) || Number(item.amount) > 0,
-      )
+    case BLOCK_TYPE.PRICING: {
+      const hasModules = data.modules?.some((module) => {
+        if (module.items?.length) {
+          return module.items.some(
+            (item) =>
+              hasText(item.description, item.title) ||
+              Number(item.unitPrice ?? item.amount) > 0 ||
+              Number(item.percent) > 0,
+          )
+        }
+        return Number(module.value) > 0 || Number(module.rate) > 0
+      })
+      return !hasModules && !hasText(data.notes)
+    }
     case BLOCK_TYPE.SPECIFICATIONS:
       return !data.rows?.some((row) => hasText(row.label, row.value))
     case BLOCK_TYPE.TEAM:
