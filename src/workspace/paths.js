@@ -1,8 +1,8 @@
 /**
  * Canonical studio routes.
  *
- * Proposal create stays at `/new` so the existing editor is unchanged.
- * `/history` is a compatibility alias for `/proposals` (see App routes).
+ * `/new` is the Create Proposal journey. The editor at
+ * `/proposals/:id/edit` owns document editing after a proposal exists.
  */
 
 export const PATH = Object.freeze({

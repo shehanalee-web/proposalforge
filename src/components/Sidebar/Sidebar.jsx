@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router'
 import Icon from '../Icon/Icon.jsx'
 import { listNavGroups } from '../../workspace/registry.js'
+import { WORKSPACE_MODULE } from '../../workspace/ids.js'
 import styles from './Sidebar.module.css'
 
 function Sidebar() {
@@ -26,9 +27,17 @@ function Sidebar() {
                     to={item.path}
                     end={item.path === '/'}
                     aria-label={item.label}
-                    className={({ isActive }) =>
-                      isActive ? `${styles.link} ${styles.linkActive}` : styles.link
-                    }
+                    className={({ isActive }) => {
+                      const classes = [styles.link]
+
+                      if (item.id === WORKSPACE_MODULE.CREATE_PROPOSAL) {
+                        classes.push(styles.linkCreate)
+                      }
+
+                      if (isActive) classes.push(styles.linkActive)
+
+                      return classes.join(' ')
+                    }}
                   >
                     <Icon name={item.icon} className={styles.icon} />
                     <span className={styles.label}>{item.label}</span>

@@ -1,9 +1,12 @@
-import { View, Text } from '@react-pdf/renderer'
+import { View, Text, Image } from '@react-pdf/renderer'
 import { formatDate } from '../utils/format.js'
+import { signatoryFromBrand } from '../blocks/brand.js'
 import { styles } from './pdfStyles.js'
 
-function PdfSignature({ proposal, settings }) {
-  const studioName = settings.studioName?.trim() || 'ProposalForge'
+function PdfSignature({ proposal, settings, brand }) {
+  const studioName = signatoryFromBrand(brand, settings)
+  const role = brand?.signature?.role?.trim() || 'Authorised representative'
+  const signatureImage = brand?.signature?.imageUrl
   const accepted = Boolean(proposal.acceptedAt)
 
   return (
@@ -23,10 +26,13 @@ function PdfSignature({ proposal, settings }) {
         </View>
         <View style={styles.signatureCol}>
           <Text style={styles.metaLabel}>Studio</Text>
+          {signatureImage ? (
+            <Image src={signatureImage} style={styles.signatureMark} />
+          ) : null}
           <View style={styles.signatureLine}>
             <Text style={styles.body}>{studioName}</Text>
           </View>
-          <Text style={styles.footerText}>Authorised representative</Text>
+          <Text style={styles.footerText}>{role}</Text>
         </View>
       </View>
     </View>

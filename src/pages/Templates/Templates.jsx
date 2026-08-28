@@ -1,35 +1,41 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router'
+import Icon from '../../components/Icon/Icon.jsx'
 import { formatCurrency } from '../../utils/format.js'
 import { getLayout } from '../../layouts/registry.js'
-import { proposalFromTemplate } from '../../utils/proposalFromTemplate.js'
 import { toDuplicateTemplate } from '../../utils/duplicateTemplate.js'
+import { exportTemplate } from '../../utils/exportTemplate.js'
+import { getProposalTypeLabel } from '../../models/proposalType.js'
 import { useTemplates } from '../../hooks/useTemplates.js'
 import { useCreateTemplate } from '../../hooks/useCreateTemplate.js'
 import { useDeleteTemplate } from '../../hooks/useDeleteTemplate.js'
-import { PATH } from '../../workspace/paths.js'
+import { useUpdateTemplate } from '../../hooks/useUpdateTemplate.js'
+import { setDefaultTemplate } from '../../services/templateService.js'
+import { PATH, templateEditPath } from '../../workspace/paths.js'
 import styles from './Templates.module.css'
 
 const SKELETON_ROWS = 3
 
 function Templates() {
-  const navigate = useNavigate()
   const { templates, loading, error, refetch } = useTemplates()
   const { create, submitting: duplicating } = useCreateTemplate()
+  const { update, submitting: renaming } = useUpdateTemplate()
   const { remove, submitting: deleting, error: deleteError } = useDeleteTemplate()
+
   const [pendingDeleteId, setPendingDeleteId] = useState(null)
   const [busyId, setBusyId] = useState(null)
+  const [openMenuId, setOpenMenuId] = useState(null)
+  const [renameTarget, setRenameTarget] = useState(null)
+  const [renameValue, setRenameValue] = useState('')
+  const [actionError, setActionError] = useState(null)
 
   const isInitialLoad = loading && templates.length === 0
-
-  function startFromTemplate(template) {
-    navigate(PATH.NEW_PROPOSAL, {
-      state: { draft: proposalFromTemplate(template), source: 'template' },
-    })
-  }
+  const locked = duplicating || deleting || renaming
 
   async function handleDuplicate(template) {
+    setOpenMenuId(null)
     setBusyId(template.id)
+    setActionError(null)
 
     const created = await create(toDuplicateTemplate(template))
 
@@ -40,8 +46,57 @@ function Templates() {
     }
   }
 
+  async function handleSetDefault(template) {
+    setOpenMenuId(null)
+    setBusyId(template.id)
+    setActionError(null)
+
+    try {
+      await setDefaultTemplate(template.id)
+      await refetch()
+    } catch (caught) {
+      setActionError(caught)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  function handleExport(template) {
+    setOpenMenuId(null)
+    exportTemplate(template)
+  }
+
+  function startRename(template) {
+    setOpenMenuId(null)
+    setRenameTarget(template)
+    setRenameValue(template.title)
+    setActionError(null)
+  }
+
+  async function confirmRename(event) {
+    event.preventDefault()
+    if (!renameTarget) return
+
+    const title = renameValue.trim()
+    if (!title) return
+
+    setBusyId(renameTarget.id)
+
+    const updated = await update(renameTarget.id, { title })
+
+    setBusyId(null)
+
+    if (updated) {
+      setRenameTarget(null)
+      await refetch()
+    } else {
+      setActionError(new Error('Could not rename the template. Please try again.'))
+    }
+  }
+
   async function confirmDelete(id) {
     setBusyId(id)
+    setActionError(null)
 
     const deleted = await remove(id)
 
@@ -83,10 +138,10 @@ function Templates() {
         <div className={styles.state}>
           <p className={styles.stateTitle}>No templates yet</p>
           <p className={styles.stateText}>
-            Save reusable sections, pricing and terms so new proposals start
-            closer to finished.
+            Save reusable sections, pricing and terms here. New proposals pick
+            a type from Create Proposal — they do not start from this list.
           </p>
-          <Link to="/templates/new" className={styles.primary}>
+          <Link to={PATH.NEW_TEMPLATE} className={styles.primary}>
             Create template
           </Link>
         </div>
@@ -100,17 +155,24 @@ function Templates() {
           const pendingDelete = pendingDeleteId === template.id
           const sectionCount = template.sections.length
           const itemCount = template.items.length
+          const typeLabel = getProposalTypeLabel(template.proposalType)
 
           return (
-            <li key={template.id} className={styles.card}>
+            <li key={template.id} className={`${styles.card} ${openMenuId === template.id ? styles.cardMenuOpen : ''}`}>
               <div className={styles.cardBody}>
-                <h2 className={styles.cardTitle}>{template.title}</h2>
+                <div className={styles.cardTitleRow}>
+                  <h2 className={styles.cardTitle}>{template.title}</h2>
+                  {template.isDefault ? (
+                    <span className={styles.badge}>Default</span>
+                  ) : null}
+                </div>
                 {template.description ? (
                   <p className={styles.cardDescription}>{template.description}</p>
                 ) : (
                   <p className={styles.cardDescriptionMuted}>No description</p>
                 )}
                 <p className={styles.meta}>
+                  {typeLabel ? `${typeLabel} · ` : ''}
                   {formatCurrency(template.amount, template.currency)}
                   {' · '}
                   {getLayout(template.defaultLayoutId).label}
@@ -145,36 +207,56 @@ function Templates() {
                 </div>
               ) : (
                 <div className={styles.actions}>
-                  <button
-                    type="button"
-                    className={styles.primary}
-                    onClick={() => startFromTemplate(template)}
-                    disabled={busy || duplicating || deleting}
-                  >
-                    Use template
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.secondary}
-                    onClick={() => handleDuplicate(template)}
-                    disabled={busy || duplicating || deleting}
-                  >
-                    {busy && duplicating ? 'Duplicating…' : 'Duplicate'}
-                  </button>
                   <Link
-                    to={`/templates/${template.id}/edit`}
-                    className={styles.secondary}
+                    to={templateEditPath(template.id)}
+                    className={styles.primary}
                   >
-                    Edit
+                    Open Template
                   </Link>
-                  <button
-                    type="button"
-                    className={styles.dangerGhost}
-                    onClick={() => setPendingDeleteId(template.id)}
-                    disabled={busy || duplicating || deleting}
-                  >
-                    Delete
-                  </button>
+                  <OverflowMenu
+                    open={openMenuId === template.id}
+                    disabled={busy || locked}
+                    onToggle={() =>
+                      setOpenMenuId((current) =>
+                        current === template.id ? null : template.id,
+                      )
+                    }
+                    onClose={() => setOpenMenuId(null)}
+                    items={[
+                      {
+                        id: 'duplicate',
+                        label: busy && duplicating ? 'Duplicating…' : 'Duplicate',
+                        onSelect: () => handleDuplicate(template),
+                      },
+                      {
+                        id: 'rename',
+                        label: 'Rename',
+                        onSelect: () => startRename(template),
+                      },
+                      {
+                        id: 'default',
+                        label: template.isDefault
+                          ? 'Default template'
+                          : 'Set as Default',
+                        disabled: template.isDefault,
+                        onSelect: () => handleSetDefault(template),
+                      },
+                      {
+                        id: 'export',
+                        label: 'Export',
+                        onSelect: () => handleExport(template),
+                      },
+                      {
+                        id: 'delete',
+                        label: 'Delete',
+                        danger: true,
+                        onSelect: () => {
+                          setOpenMenuId(null)
+                          setPendingDeleteId(template.id)
+                        },
+                      },
+                    ]}
+                  />
                 </div>
               )}
             </li>
@@ -188,24 +270,127 @@ function Templates() {
     <section className={styles.page}>
       <div className={styles.toolbar}>
         <p className={styles.intro}>
-          Reusable proposal starting points. Using a template copies its data
-          into a new proposal — the original stays unchanged.
+          Manage reusable templates for proposal types. Open a template to edit
+          it. Creating a proposal happens from Create Proposal, not from this
+          library.
         </p>
         {templates.length > 0 ? (
-          <Link to="/templates/new" className={styles.primary}>
+          <Link to={PATH.NEW_TEMPLATE} className={styles.primary}>
             Create template
           </Link>
         ) : null}
       </div>
 
-      {deleteError ? (
+      {deleteError || actionError ? (
         <p className={styles.banner} role="alert">
-          {deleteError.message || 'Could not delete the template. Please try again.'}
+          {(deleteError || actionError).message ||
+            'Could not update the template. Please try again.'}
         </p>
       ) : null}
 
       <div className={styles.panel}>{renderContent()}</div>
+
+      {renameTarget ? (
+        <div className={styles.renameBackdrop}>
+          <form
+            className={styles.renameDialog}
+            onSubmit={confirmRename}
+            aria-labelledby="rename-template-title"
+          >
+            <h2 id="rename-template-title" className={styles.renameTitle}>
+              Rename template
+            </h2>
+            <label className={styles.renameLabel} htmlFor="rename-template">
+              Template name
+            </label>
+            <input
+              id="rename-template"
+              className={styles.renameInput}
+              value={renameValue}
+              onChange={(event) => setRenameValue(event.target.value)}
+              autoFocus
+              required
+            />
+            <div className={styles.renameActions}>
+              <button
+                type="button"
+                className={styles.secondary}
+                onClick={() => setRenameTarget(null)}
+                disabled={renaming}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className={styles.primary}
+                disabled={renaming || !renameValue.trim()}
+              >
+                {renaming ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
     </section>
+  )
+}
+
+function OverflowMenu({ open, disabled, items, onToggle, onClose }) {
+  const rootRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return undefined
+
+    function handlePointer(event) {
+      if (!rootRef.current?.contains(event.target)) onClose()
+    }
+
+    function handleKey(event) {
+      if (event.key === 'Escape') onClose()
+    }
+
+    document.addEventListener('mousedown', handlePointer)
+    document.addEventListener('keydown', handleKey)
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointer)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [open, onClose])
+
+  return (
+    <div className={styles.overflow} ref={rootRef}>
+      <button
+        type="button"
+        className={styles.overflowTrigger}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Template actions"
+        disabled={disabled}
+        onClick={onToggle}
+      >
+        <Icon name="more" size={16} />
+      </button>
+      {open ? (
+        <ul className={styles.overflowMenu} role="menu">
+          {items.map((item) => (
+            <li key={item.id} role="none">
+              <button
+                type="button"
+                role="menuitem"
+                className={
+                  item.danger ? styles.overflowDanger : styles.overflowItem
+                }
+                disabled={disabled || item.disabled}
+                onClick={item.onSelect}
+              >
+                {item.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   )
 }
 

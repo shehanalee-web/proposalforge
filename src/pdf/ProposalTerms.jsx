@@ -1,5 +1,6 @@
 import { View, Text } from '@react-pdf/renderer'
 import { formatDate } from '../utils/format.js'
+import { resolvePaymentTerms, resolveTermsBody } from '../blocks/brand.js'
 import { styles } from './pdfStyles.js'
 
 function buildTerms(proposal) {
@@ -52,8 +53,9 @@ function buildTerms(proposal) {
   ]
 }
 
-function ProposalTerms({ proposal }) {
-  const custom = proposal.terms?.trim()
+function ProposalTerms({ proposal, brand }) {
+  const custom = resolveTermsBody(null, proposal, brand)
+  const payment = resolvePaymentTerms(null, proposal, brand)
 
   if (custom) {
     const paragraphs = custom.split(/\n{2,}/)
@@ -66,6 +68,12 @@ function ProposalTerms({ proposal }) {
             <Text style={styles.termBody}>{paragraph.trim()}</Text>
           </View>
         ))}
+        {payment ? (
+          <View style={styles.termItem}>
+            <Text style={styles.termTitle}>Payment terms</Text>
+            <Text style={styles.termBody}>{payment}</Text>
+          </View>
+        ) : null}
       </View>
     )
   }
@@ -81,6 +89,12 @@ function ProposalTerms({ proposal }) {
           <Text style={styles.termBody}>{term.body}</Text>
         </View>
       ))}
+      {payment ? (
+        <View style={styles.termItem}>
+          <Text style={styles.termTitle}>Payment terms</Text>
+          <Text style={styles.termBody}>{payment}</Text>
+        </View>
+      ) : null}
     </View>
   )
 }

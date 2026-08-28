@@ -21,6 +21,29 @@
   text-overflow: ellipsis;
 }
 
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.create {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  box-shadow: var(--shadow-accent);
+}
+
+.create:hover {
+  background-color: var(--color-accent-hover);
+}
+
 .avatar {
   flex-shrink: 0;
   width: var(--space-10);
@@ -47,5 +70,9 @@
   .header {
     left: 0;
     padding-inline: var(--space-4);
+  }
+
+  .create {
+    padding-inline: var(--space-3);
   }
 }

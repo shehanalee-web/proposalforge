@@ -2,6 +2,7 @@ import { SCREEN_BLOCK } from '../blocks/ids.js'
 import { getScreenBlock } from '../blocks/blockRegistry.js'
 import { getLayout } from '../registry.js'
 import { useSettings } from '../../hooks/useSettings.js'
+import { useBrandKit } from '../../hooks/useBrandKit.js'
 import { brandToCssVars, resolveBrand } from '../../blocks/brand.js'
 import { BLOCK_TYPE } from '../../blocks/ids.js'
 import { placeBlocks } from '../../blocks/place.js'
@@ -31,9 +32,10 @@ function ProposalDocumentView({
   status,
 }) {
   const { settings: loadedSettings } = useSettings()
+  const { kit } = useBrandKit()
   const resolvedSettings = settings ?? loadedSettings
   const layout = getLayout(proposal.layoutId)
-  const brand = resolveBrand(resolvedSettings)
+  const brand = resolveBrand(resolvedSettings, kit)
   const options = { includeCover, showNotes, showTags, showSignature }
   const context = {
     proposal,

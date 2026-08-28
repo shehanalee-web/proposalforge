@@ -91,6 +91,9 @@
 
 .primaryAction {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: var(--space-2) var(--space-5);
   border-radius: var(--radius-md);
   background-color: var(--color-accent);

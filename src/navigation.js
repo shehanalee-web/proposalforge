@@ -19,7 +19,7 @@ export function getPageTitle(pathname) {
 
   if (exact) return exact.label
 
-  if (pathname === PATH.NEW_PROPOSAL) return 'New proposal'
+  if (pathname === PATH.NEW_PROPOSAL) return 'Create Proposal'
   if (/^\/templates\/new\/?$/.test(pathname)) return 'Create template'
   if (/^\/templates\/[^/]+\/edit\/?$/.test(pathname)) return 'Edit template'
   if (pathname.startsWith(PATH.TEMPLATES)) return 'Templates'

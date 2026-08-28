@@ -72,12 +72,12 @@ function Dashboard() {
         <div>
           <h2 className={styles.calloutTitle}>Start a new proposal</h2>
           <p className={styles.calloutText}>
-            Draft a proposal from scratch and send it to a client.
+            Choose a workspace, brand and proposal type to get started.
           </p>
         </div>
 
         <Link to={PATH.NEW_PROPOSAL} className={styles.primaryAction}>
-          New proposal
+          Create proposal
         </Link>
       </div>
     </section>

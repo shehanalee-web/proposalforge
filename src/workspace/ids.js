@@ -7,6 +7,7 @@
 
 export const WORKSPACE_MODULE = Object.freeze({
   DASHBOARD: 'dashboard',
+  CREATE_PROPOSAL: 'create-proposal',
   PROPOSALS: 'proposals',
   TEMPLATES: 'templates',
   BRAND_KIT: 'brand-kit',

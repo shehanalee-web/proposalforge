@@ -27,8 +27,8 @@ function ProposalForm({
   onSubmit,
   submitting,
   fieldErrors = {},
-  submitLabel = 'Create draft',
-  submittingLabel = 'Creating…',
+  submitLabel = 'Save changes',
+  submittingLabel = 'Saving…',
   children,
 }) {
   function handleChange(event) {
@@ -37,6 +37,7 @@ function ProposalForm({
 
   return (
     <form className={styles.form} onSubmit={onSubmit} noValidate>
+      <p className={styles.section}>Details</p>
       <div className={styles.grid}>
         <Field id="title" label="Title" error={fieldErrors.title}>
           <input
@@ -165,13 +166,15 @@ function ProposalForm({
         </Field>
       </div>
 
+      <p className={styles.section}>Layout</p>
       <LayoutPicker
         value={values.layoutId ?? DEFAULT_LAYOUT_ID}
         onChange={(layoutId) => onChange('layoutId', layoutId)}
         disabled={submitting}
       />
 
-      <Field id="summary" label="Summary" error={fieldErrors.summary}>
+      <p className={styles.section}>Content</p>
+      <Field id="summary" label="Executive summary" error={fieldErrors.summary}>
         <textarea
           id="summary"
           name="summary"

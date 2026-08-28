@@ -1,17 +1,18 @@
 import { createElement } from 'react'
 import { pdf } from '@react-pdf/renderer'
+import { fetchBrandKit } from '../services/brandKitService.js'
 import { fetchSettings } from '../services/settingsService.js'
 import ProposalDocument from './ProposalDocument.jsx'
 import { toPdfFilename } from './pdfFormat.js'
 
-export async function renderProposalPdfBlob(proposal, settings) {
-  const document = createElement(ProposalDocument, { proposal, settings })
+export async function renderProposalPdfBlob(proposal, settings, kit) {
+  const document = createElement(ProposalDocument, { proposal, settings, kit })
   return pdf(document).toBlob()
 }
 
 export async function loadProposalPdfContext(proposal) {
-  const settings = await fetchSettings()
-  const blob = await renderProposalPdfBlob(proposal, settings)
+  const [settings, kit] = await Promise.all([fetchSettings(), fetchBrandKit()])
+  const blob = await renderProposalPdfBlob(proposal, settings, kit)
 
   return { blob, filename: toPdfFilename(proposal) }
 }
