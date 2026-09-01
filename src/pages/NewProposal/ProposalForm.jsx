@@ -3,7 +3,7 @@ import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
 import LayoutPicker from '../../layouts/screen/LayoutPicker.jsx'
 import styles from './ProposalForm.module.css'
 
-function Field({ id, label, error, children }) {
+function Field({ id, label, error, hint, children }) {
   const errorId = `${id}-error`
 
   return (
@@ -12,6 +12,11 @@ function Field({ id, label, error, children }) {
         {label}
       </label>
       {children}
+      {hint && !error ? (
+        <p id={`${id}-hint`} className={styles.hint}>
+          {hint}
+        </p>
+      ) : null}
       {error ? (
         <p id={errorId} className={styles.fieldError} role="alert">
           {error}
@@ -132,20 +137,23 @@ function ProposalForm({
           />
         </Field>
 
-        <Field id="amount" label="Amount (USD)" error={fieldErrors.amount}>
+        <Field
+          id="amount"
+          label="Amount (USD)"
+          error={fieldErrors.amount}
+          hint="Updated live from the Commercials block."
+        >
           <input
             id="amount"
             name="amount"
-            type="number"
-            min="0"
-            step="1"
-            inputMode="numeric"
+            type="text"
+            inputMode="decimal"
             className={styles.input}
             value={values.amount}
-            onChange={handleChange}
-            disabled={submitting}
+            readOnly
+            disabled
             aria-invalid={Boolean(fieldErrors.amount)}
-            aria-describedby={fieldErrors.amount ? 'amount-error' : undefined}
+            aria-describedby={fieldErrors.amount ? 'amount-error' : 'amount-hint'}
           />
         </Field>
 

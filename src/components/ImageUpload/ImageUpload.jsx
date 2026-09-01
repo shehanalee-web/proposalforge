@@ -30,6 +30,12 @@ function filesFromDataTransfer(dataTransfer) {
     .filter(Boolean)
 }
 
+function isTypingTarget(node) {
+  if (!node || typeof node !== 'object') return false
+  const tag = node.tagName
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || node.isContentEditable
+}
+
 /**
  * Unified media field. Authors drop, click, paste or pick a local file.
  * The returned URL is stored on the record — remote URLs already on a
@@ -50,7 +56,9 @@ function ImageUpload({
   const generatedId = useId()
   const inputId = id ?? generatedId
   const inputRef = useRef(null)
+  const surfaceRef = useRef(null)
   const [dragOver, setDragOver] = useState(false)
+  const [armed, setArmed] = useState(false)
   const [progress, setProgress] = useState(null)
   const [error, setError] = useState(null)
   const [localPreview, setLocalPreview] = useState(null)
@@ -59,12 +67,29 @@ function ImageUpload({
   const uploading = progress !== null && progress < 100
   const showImage =
     variant === 'image' && Boolean(localPreview || (url && looksLikeImageUrl(url)))
+  const hasFile = Boolean(url || localPreview)
+  const handleFilesRef = useRef(null)
 
   useEffect(() => {
     return () => {
       if (localPreview) URL.revokeObjectURL(localPreview)
     }
   }, [localPreview])
+
+  useEffect(() => {
+    if (!armed || disabled) return undefined
+
+    function onWindowPaste(event) {
+      if (isTypingTarget(event.target)) return
+      const files = filesFromDataTransfer(event.clipboardData)
+      if (files.length === 0) return
+      event.preventDefault()
+      handleFilesRef.current?.(files)
+    }
+
+    window.addEventListener('paste', onWindowPaste)
+    return () => window.removeEventListener('paste', onWindowPaste)
+  }, [armed, disabled])
 
   function openPicker() {
     if (disabled || uploading) return
@@ -105,6 +130,10 @@ function ImageUpload({
     }
   }
 
+  useEffect(() => {
+    handleFilesRef.current = handleFiles
+  })
+
   function handleDrop(event) {
     event.preventDefault()
     setDragOver(false)
@@ -122,6 +151,8 @@ function ImageUpload({
     event.stopPropagation()
     if (disabled || uploading) return
     setError(null)
+    if (localPreview) URL.revokeObjectURL(localPreview)
+    setLocalPreview(null)
     onChange('', null)
   }
 
@@ -141,7 +172,11 @@ function ImageUpload({
     .join(' ')
 
   return (
-    <div className={styles.root}>
+    <div
+      className={styles.root}
+      onMouseEnter={() => setArmed(true)}
+      onMouseLeave={() => setArmed(false)}
+    >
       {label ? (
         <span className={styles.label} id={`${inputId}-label`}>
           {label}
@@ -149,11 +184,18 @@ function ImageUpload({
       ) : null}
 
       <div
+        ref={surfaceRef}
         tabIndex={disabled ? -1 : 0}
         className={surfaceClass}
         aria-labelledby={label ? `${inputId}-label` : undefined}
         aria-describedby={error ? `${inputId}-error` : `${inputId}-hint`}
         aria-disabled={disabled || uploading}
+        onFocus={() => setArmed(true)}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) {
+            setArmed(false)
+          }
+        }}
         onClick={openPicker}
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {
@@ -208,7 +250,7 @@ function ImageUpload({
           </div>
         ) : null}
 
-        {url && !uploading ? (
+        {hasFile && !uploading ? (
           <div className={styles.actions}>
             <button
               type="button"

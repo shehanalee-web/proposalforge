@@ -83,14 +83,17 @@ function ProposalEdit() {
     setBlocks(next)
 
     const pricing = next.find((block) => block.type === BLOCK_TYPE.PRICING)
-    if (!pricing || !values) return
+    if (!pricing) return
 
-    const total = computeCommercials(pricing.data.modules ?? []).grandTotal
-    const nextAmount = String(total)
+    const nextAmount = String(
+      computeCommercials(pricing.data.modules ?? []).grandTotal,
+    )
 
-    if (values.amount !== nextAmount) {
-      setDraft({ ...values, amount: nextAmount })
-    }
+    setDraft((current) => {
+      const base = current ?? (proposal ? valuesFromProposal(proposal) : null)
+      if (!base || base.amount === nextAmount) return current
+      return { ...base, amount: nextAmount }
+    })
   }
 
   async function handleSubmit(event) {

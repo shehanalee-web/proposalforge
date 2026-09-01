@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import Icon from '../Icon/Icon.jsx'
 import { TAX_MODE } from '../../models/brandKit.js'
 import {
@@ -14,6 +13,7 @@ import {
   makeRecurringLine,
   modulesFromLegacyItems,
   reorderList,
+  reorderListById,
 } from '../../models/commercial.js'
 import { computeCommercials, formatMoney } from '../../utils/commercialTotals.js'
 import { useBrandKit } from '../../hooks/useBrandKit.js'
@@ -28,6 +28,12 @@ const ADDABLE = [
   COMMERCIAL_MODULE.DISCOUNT,
   COMMERCIAL_MODULE.TAX,
 ]
+
+const LINE_DRAG = 'application/x-pf-line'
+const MODULE_DRAG = 'application/x-pf-module'
+
+/** Native drag kind — React state in dragstart can cancel HTML5 drag. */
+const dnd = { kind: null }
 
 function Field({ label, children, className }) {
   return (
@@ -54,7 +60,18 @@ function MoneyInput({ value, onChange, disabled }) {
 }
 
 function LineTable({ columns, rows, moduleId, onReorder, disabled, children }) {
-  const [dragIndex, setDragIndex] = useState(null)
+  function payloadFor(itemId) {
+    return `line:${moduleId}:${itemId}`
+  }
+
+  function parseLinePayload(event) {
+    const raw =
+      event.dataTransfer.getData(LINE_DRAG) ||
+      event.dataTransfer.getData('text/plain')
+    const match = String(raw).match(/^line:([^:]+):(.+)$/)
+    if (!match || match[1] !== moduleId) return null
+    return match[2]
+  }
 
   return (
     <div className={styles.tableWrap}>
@@ -73,49 +90,60 @@ function LineTable({ columns, rows, moduleId, onReorder, disabled, children }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, index) => (
-            <tr
-              key={row.id}
-              className={dragIndex === index ? styles.rowDragging : undefined}
-              onDragOver={(event) => {
-                event.preventDefault()
-                event.dataTransfer.dropEffect = 'move'
-              }}
-              onDrop={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-                const payload = event.dataTransfer.getData('text/plain')
-                const match = payload.match(/^line:([^:]+):(\d+)$/)
-                if (!match || match[1] !== moduleId) return
-                const from = Number(match[2])
-                if (Number.isFinite(from)) onReorder(from, index)
-                setDragIndex(null)
-              }}
-            >
-              <td className={styles.handleCol}>
-                <button
-                  type="button"
-                  className={styles.grip}
-                  draggable={!disabled}
-                  disabled={disabled}
-                  aria-label="Reorder row"
-                  onDragStart={(event) => {
-                    event.stopPropagation()
-                    event.dataTransfer.setData(
-                      'text/plain',
-                      `line:${moduleId}:${index}`,
-                    )
-                    event.dataTransfer.effectAllowed = 'move'
-                    setDragIndex(index)
-                  }}
-                  onDragEnd={() => setDragIndex(null)}
-                >
-                  <Icon name="grip" size={14} />
-                </button>
+          {rows.length === 0 ? (
+            <tr>
+              <td className={styles.emptyCell} colSpan={columns.length + 2}>
+                No lines in this block.
               </td>
-              {children(row, index)}
             </tr>
-          ))}
+          ) : (
+            rows.map((row, index) => (
+              <tr
+                key={row.id}
+                onDragOver={(event) => {
+                  if (dnd.kind !== 'line') return
+                  event.preventDefault()
+                  event.stopPropagation()
+                  event.dataTransfer.dropEffect = 'move'
+                }}
+                onDrop={(event) => {
+                  const fromId = parseLinePayload(event)
+                  if (!fromId) return
+                  event.preventDefault()
+                  event.stopPropagation()
+                  onReorder(fromId, row.id)
+                  dnd.kind = null
+                }}
+              >
+                <td className={styles.handleCol}>
+                  <button
+                    type="button"
+                    className={styles.grip}
+                    draggable={!disabled}
+                    disabled={disabled}
+                    aria-label="Reorder row"
+                    data-grip="true"
+                    onDragStart={(event) => {
+                      event.stopPropagation()
+                      const payload = payloadFor(row.id)
+                      event.dataTransfer.setData(LINE_DRAG, payload)
+                      event.dataTransfer.setData('text/plain', payload)
+                      event.dataTransfer.effectAllowed = 'move'
+                      dnd.kind = 'line'
+                      event.currentTarget.closest('tr')?.classList.add(styles.rowDragging)
+                    }}
+                    onDragEnd={(event) => {
+                      dnd.kind = null
+                      event.currentTarget.closest('tr')?.classList.remove(styles.rowDragging)
+                    }}
+                  >
+                    <Icon name="grip" size={14} />
+                  </button>
+                </td>
+                {children(row, index)}
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>
@@ -213,7 +241,7 @@ function ModuleEditor({ module, totals, currency, onPatch, onRemoveItem, onAddIt
                   type="button"
                   className={styles.tiny}
                   disabled={disabled}
-                  onClick={() => onRemoveItem(index)}
+                  onClick={() => onRemoveItem(item.id)}
                 >
                   Remove
                 </button>
@@ -309,7 +337,7 @@ function ModuleEditor({ module, totals, currency, onPatch, onRemoveItem, onAddIt
                     type="button"
                     className={styles.tiny}
                     disabled={disabled}
-                    onClick={() => onRemoveItem(index)}
+                    onClick={() => onRemoveItem(item.id)}
                   >
                     Remove
                   </button>
@@ -389,7 +417,7 @@ function ModuleEditor({ module, totals, currency, onPatch, onRemoveItem, onAddIt
                   type="button"
                   className={styles.tiny}
                   disabled={disabled}
-                  onClick={() => onRemoveItem(index)}
+                  onClick={() => onRemoveItem(item.id)}
                 >
                   Remove
                 </button>
@@ -483,16 +511,16 @@ function CommercialBuilder({ data, onChange, currency = DEFAULT_CURRENCY, disabl
     ? data.modules
     : modulesFromLegacyItems(data.items)
   const totals = computeCommercials(modules)
-  const [dragIndex, setDragIndex] = useState(null)
   const hasTax = modules.some((module) => module.type === COMMERCIAL_MODULE.TAX)
 
   function setModules(next) {
-    onChange({ modules: next })
+    const resolved = typeof next === 'function' ? next(modules) : next
+    onChange({ modules: resolved })
   }
 
   function patchModule(id, patch) {
-    setModules(
-      modules.map((module) => (module.id === id ? { ...module, ...patch } : module)),
+    setModules((current) =>
+      current.map((module) => (module.id === id ? { ...module, ...patch } : module)),
     )
   }
 
@@ -505,7 +533,7 @@ function CommercialBuilder({ data, onChange, currency = DEFAULT_CURRENCY, disabl
       extras.label = (kit.vatNumber || kit.tax.registered) ? 'VAT' : 'Tax'
     }
 
-    setModules([...modules, createCommercialModule(type, extras)])
+    setModules((current) => [...current, createCommercialModule(type, extras)])
   }
 
   return (
@@ -559,21 +587,28 @@ function CommercialBuilder({ data, onChange, currency = DEFAULT_CURRENCY, disabl
       </div>
 
       <ol className={styles.modules}>
-        {modules.map((module, index) => (
+        {modules.map((module) => (
           <li
             key={module.id}
-            className={`${styles.module} ${dragIndex === index ? styles.moduleDragging : ''}`}
+            className={styles.module}
             onDragOver={(event) => {
+              if (dnd.kind !== 'module') return
               event.preventDefault()
               event.dataTransfer.dropEffect = 'move'
             }}
             onDrop={(event) => {
-              event.preventDefault()
-              const payload = event.dataTransfer.getData('text/plain')
+              const payload =
+                event.dataTransfer.getData(MODULE_DRAG) ||
+                event.dataTransfer.getData('text/plain')
               if (!payload.startsWith('module:')) return
-              const from = Number(payload.slice(7))
-              if (Number.isFinite(from)) setModules(reorderList(modules, from, index))
-              setDragIndex(null)
+              event.preventDefault()
+              const fromId = payload.slice(7)
+              setModules((current) => {
+                const from = current.findIndex((entry) => entry.id === fromId)
+                const to = current.findIndex((entry) => entry.id === module.id)
+                return reorderList(current, from, to)
+              })
+              dnd.kind = null
             }}
           >
             <div className={styles.moduleHead}>
@@ -584,11 +619,17 @@ function CommercialBuilder({ data, onChange, currency = DEFAULT_CURRENCY, disabl
                 disabled={disabled}
                 aria-label={`Reorder ${COMMERCIAL_MODULE_LABELS[module.type]}`}
                 onDragStart={(event) => {
-                  event.dataTransfer.setData('text/plain', `module:${index}`)
+                  const payload = `module:${module.id}`
+                  event.dataTransfer.setData(MODULE_DRAG, payload)
+                  event.dataTransfer.setData('text/plain', payload)
                   event.dataTransfer.effectAllowed = 'move'
-                  setDragIndex(index)
+                  dnd.kind = 'module'
+                  event.currentTarget.closest('li')?.classList.add(styles.moduleDragging)
                 }}
-                onDragEnd={() => setDragIndex(null)}
+                onDragEnd={(event) => {
+                  dnd.kind = null
+                  event.currentTarget.closest('li')?.classList.remove(styles.moduleDragging)
+                }}
               >
                 <Icon name="grip" size={14} />
               </button>
@@ -611,7 +652,9 @@ function CommercialBuilder({ data, onChange, currency = DEFAULT_CURRENCY, disabl
                 className={styles.tiny}
                 disabled={disabled}
                 onClick={() =>
-                  setModules(modules.filter((entry) => entry.id !== module.id))
+                  setModules((current) =>
+                    current.filter((entry) => entry.id !== module.id),
+                  )
                 }
               >
                 Remove
@@ -634,17 +677,17 @@ function CommercialBuilder({ data, onChange, currency = DEFAULT_CURRENCY, disabl
                     ),
                   })
                 }}
-                onRemoveItem={(itemIndex) =>
+                onRemoveItem={(itemId) =>
                   patchModule(module.id, {
-                    items: module.items.filter((_, i) => i !== itemIndex),
+                    items: (module.items ?? []).filter((item) => item.id !== itemId),
                   })
                 }
                 onAddItem={(item) =>
                   patchModule(module.id, { items: [...(module.items ?? []), item] })
                 }
-                onReorderItems={(from, to) =>
+                onReorderItems={(fromId, toId) =>
                   patchModule(module.id, {
-                    items: reorderList(module.items ?? [], from, to),
+                    items: reorderListById(module.items ?? [], fromId, toId),
                   })
                 }
               />

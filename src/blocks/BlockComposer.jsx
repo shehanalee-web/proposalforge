@@ -100,6 +100,7 @@ function BlockFields({ block, onData, disabled = false, currency = DEFAULT_CURRE
           <ImageUpload
             label="Cover image"
             value={data.imageUrl}
+            size="cover"
             onChange={(url) => set({ imageUrl: url })}
             disabled={disabled}
           />
@@ -150,6 +151,7 @@ function BlockFields({ block, onData, disabled = false, currency = DEFAULT_CURRE
               <ImageUpload
                 label="Image"
                 value={item.url}
+                size="cover"
                 onChange={(url) => patch(index, { ...item, url })}
                 disabled={disabled}
               />
@@ -317,8 +319,9 @@ function BlockFields({ block, onData, disabled = false, currency = DEFAULT_CURRE
                 />
               </Field>
               <ImageUpload
-                label="Portrait"
+                label="Photo"
                 value={item.photoUrl}
+                size="portrait"
                 onChange={(url) => patch(index, { ...item, photoUrl: url })}
                 disabled={disabled}
               />
@@ -373,8 +376,9 @@ function BlockFields({ block, onData, disabled = false, currency = DEFAULT_CURRE
                 />
               </Field>
               <ImageUpload
-                label="Portrait"
+                label="Avatar"
                 value={item.portraitUrl}
+                size="portrait"
                 onChange={(url) => patch(index, { ...item, portraitUrl: url })}
                 disabled={disabled}
               />

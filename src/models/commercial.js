@@ -67,6 +67,17 @@ function mapItems(list, makeItem) {
 }
 
 /**
+ * New modules start with one blank line so the table is ready to type.
+ * Existing modules keep an empty list — deleting the last row must not
+ * spawn a ghost replacement.
+ */
+function linesOrSeed(input, makeItem, seed) {
+  const items = mapItems(input.items, makeItem)
+  if (items.length > 0) return items
+  return input.id ? items : [seed()]
+}
+
+/**
  * @param {Partial<{ id: string, description: string, quantity: number|string, unit: string, unitPrice: number|string, amount: number|string }>} [input]
  */
 export function makeCommercialLine(input = {}) {
@@ -131,42 +142,40 @@ export function makeCommercialModule(input = {}) {
   const title = input.title ?? DEFAULT_TITLES[type] ?? 'Pricing'
 
   if (type === COMMERCIAL_MODULE.TABLE) {
-    const items = mapItems(input.items, makeCommercialLine)
     return {
       id: input.id ?? createRecordId('cmod'),
       type,
       title,
-      items: items.length > 0 ? items : [makeCommercialLine()],
+      items: linesOrSeed(input, makeCommercialLine, () => makeCommercialLine()),
     }
   }
 
   if (type === COMMERCIAL_MODULE.ADDONS) {
-    const items = mapItems(input.items, makeAddonLine)
     return {
       id: input.id ?? createRecordId('cmod'),
       type,
       title,
-      items: items.length > 0 ? items : [makeAddonLine()],
+      items: linesOrSeed(input, makeAddonLine, () => makeAddonLine()),
     }
   }
 
   if (type === COMMERCIAL_MODULE.MILESTONES) {
-    const items = mapItems(input.items, makeMilestoneLine)
     return {
       id: input.id ?? createRecordId('cmod'),
       type,
       title,
-      items: items.length > 0 ? items : [makeMilestoneLine({ percent: 50 })],
+      items: linesOrSeed(input, makeMilestoneLine, () =>
+        makeMilestoneLine({ percent: 50 }),
+      ),
     }
   }
 
   if (type === COMMERCIAL_MODULE.RECURRING) {
-    const items = mapItems(input.items, makeRecurringLine)
     return {
       id: input.id ?? createRecordId('cmod'),
       type,
       title,
-      items: items.length > 0 ? items : [makeRecurringLine()],
+      items: linesOrSeed(input, makeRecurringLine, () => makeRecurringLine()),
     }
   }
 
@@ -270,6 +279,13 @@ export function reorderList(list, fromIndex, toIndex) {
   const [item] = next.splice(fromIndex, 1)
   next.splice(toIndex, 0, item)
   return next
+}
+
+export function reorderListById(list, fromId, toId) {
+  if (fromId === toId) return list
+  const from = list.findIndex((item) => item.id === fromId)
+  const to = list.findIndex((item) => item.id === toId)
+  return reorderList(list, from, to)
 }
 
 export function createCommercialModule(type, extras = {}) {

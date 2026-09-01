@@ -155,6 +155,12 @@
   opacity: 0.5;
 }
 
+.emptyCell {
+  padding: var(--space-4) var(--space-2) !important;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
 .handleCol,
 .actionCol {
   width: 1%;

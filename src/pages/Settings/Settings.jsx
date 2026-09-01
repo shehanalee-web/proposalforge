@@ -94,8 +94,8 @@ function Settings() {
   return (
     <section className={styles.page}>
       <p className={styles.intro}>
-        These details identify your studio on proposals. They reset when the
-        page reloads — nothing is stored on this device yet.
+        These details identify your studio on proposals. Company name, email
+        and description stay in sync with Brand Kit.
       </p>
 
       {saved ? (
