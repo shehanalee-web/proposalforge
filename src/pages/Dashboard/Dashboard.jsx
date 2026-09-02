@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import { useProposals } from '../../hooks/useProposals.js'
 import { useProposalSummary } from '../../hooks/useProposalSummary.js'
+import { useCreateProposalDialog } from '../../hooks/useCreateProposalDialog.js'
 import { PATH } from '../../workspace/paths.js'
 import SummaryCards from './SummaryCards.jsx'
 import RecentProposals from './RecentProposals.jsx'
@@ -9,6 +10,7 @@ import styles from './Dashboard.module.css'
 const RECENT_LIMIT = 5
 
 function Dashboard() {
+  const { openStart } = useCreateProposalDialog()
   const {
     summary,
     loading: summaryLoading,
@@ -24,7 +26,10 @@ function Dashboard() {
   } = useProposals({ page: 1, pageSize: RECENT_LIMIT })
 
   const isFirstRun =
-    !summaryLoading && !summaryError && summary.total === 0 && !listError
+    !summaryLoading &&
+    !summaryError &&
+    (summary?.total ?? 0) === 0 &&
+    !listError
 
   if (isFirstRun) {
     return (
@@ -35,9 +40,13 @@ function Dashboard() {
             Once you create a proposal it will show up here, along with your
             pipeline value and win rate.
           </p>
-          <Link to={PATH.NEW_PROPOSAL} className={styles.primaryAction}>
+          <button
+            type="button"
+            className={styles.primaryAction}
+            onClick={openStart}
+          >
             Create your first proposal
-          </Link>
+          </button>
         </div>
       </section>
     )
@@ -61,7 +70,7 @@ function Dashboard() {
         </div>
 
         <RecentProposals
-          proposals={proposals}
+          proposals={proposals ?? []}
           loading={listLoading}
           error={listError}
           onRetry={refetchList}
@@ -72,13 +81,17 @@ function Dashboard() {
         <div>
           <h2 className={styles.calloutTitle}>Start a new proposal</h2>
           <p className={styles.calloutText}>
-            Choose a workspace, brand and proposal type to get started.
+            Generate a draft with AI, or start from a template.
           </p>
         </div>
 
-        <Link to={PATH.NEW_PROPOSAL} className={styles.primaryAction}>
+        <button
+          type="button"
+          className={styles.primaryAction}
+          onClick={openStart}
+        >
           Create proposal
-        </Link>
+        </button>
       </div>
     </section>
   )

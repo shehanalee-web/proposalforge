@@ -73,7 +73,10 @@ function ProposalForm({
             onChange={handleChange}
             disabled={submitting}
           >
-            {PROJECT_TYPES.map((type) => (
+            {(PROJECT_TYPES.includes(values.projectType)
+              ? PROJECT_TYPES
+              : [values.projectType, ...PROJECT_TYPES]
+            ).map((type) => (
               <option key={type} value={type}>
                 {type}
               </option>

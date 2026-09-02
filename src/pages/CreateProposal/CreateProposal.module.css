@@ -49,6 +49,32 @@
   font-weight: 600;
 }
 
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.aiLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-accent-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.aiLink:hover {
+  background-color: var(--color-accent-soft-hover);
+  color: var(--color-accent-hover);
+}
+
 .cancel:hover {
   background-color: var(--color-surface-hover);
   color: var(--color-text);
@@ -158,6 +184,10 @@
 
 .typeGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.aiChoice {
+  grid-column: 1 / -1;
 }
 
 .choice,

@@ -46,7 +46,7 @@ export const WORKSPACE_MODULES = Object.freeze([
     status: 'live',
     summary: 'Start a new proposal from workspace, brand and type.',
     description:
-      'A dedicated creation journey. Templates are a library behind this flow, not the entry point.',
+      'A dedicated creation journey. Generate with AI or copy a type’s template into a new document.',
     capabilities: [],
   },
   {

@@ -1,20 +1,23 @@
-import { Link, useLocation } from 'react-router'
+import { useLocation } from 'react-router'
 import { getPageTitle } from '../../navigation.js'
 import { PATH } from '../../workspace/paths.js'
+import { useCreateProposalDialog } from '../../hooks/useCreateProposalDialog.js'
 import styles from './Header.module.css'
 
 function Header() {
   const { pathname } = useLocation()
-  const isCreateFlow = pathname === PATH.NEW_PROPOSAL
+  const { openStart } = useCreateProposalDialog()
+  const isCreateFlow =
+    pathname === PATH.NEW_PROPOSAL || pathname === PATH.PROPOSAL_AI
 
   return (
     <header className={styles.header}>
       <h1 className={styles.title}>{getPageTitle(pathname)}</h1>
       <div className={styles.actions}>
         {isCreateFlow ? null : (
-          <Link to={PATH.NEW_PROPOSAL} className={styles.create}>
+          <button type="button" className={styles.create} onClick={openStart}>
             Create proposal
-          </Link>
+          </button>
         )}
         <span className={styles.avatar} role="img" aria-label="Account">
           PF

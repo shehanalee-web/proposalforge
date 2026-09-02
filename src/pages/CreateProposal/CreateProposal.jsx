@@ -130,13 +130,19 @@ function CreateProposal() {
           <p className={styles.kicker}>New document</p>
           <h2 className={styles.title}>Create a proposal</h2>
           <p className={styles.lede}>
-            Choose the workspace and company identity, then pick a proposal type.
-            We will create the document from that type’s template.
+            Choose the workspace and company identity, then generate a draft
+            with AI or pick a proposal type.
           </p>
         </div>
-        <Link to={PATH.DASHBOARD} className={styles.cancel}>
-          Cancel
-        </Link>
+        <div className={styles.heroActions}>
+          <Link to={PATH.PROPOSAL_AI} className={styles.aiLink}>
+            <Icon name="spark" size={16} />
+            Generate with AI
+          </Link>
+          <Link to={PATH.DASHBOARD} className={styles.cancel}>
+            Cancel
+          </Link>
+        </div>
       </header>
 
       <Stepper step={step} onSelect={setStep} />
@@ -260,6 +266,24 @@ function CreateProposal() {
           </div>
         ) : (
           <div className={styles.typeGrid}>
+            <button
+              type="button"
+              className={`${styles.choice} ${styles.choiceWide} ${styles.aiChoice}`}
+              onClick={() => navigate(PATH.PROPOSAL_AI)}
+            >
+              <span className={styles.choiceMark} aria-hidden="true">
+                <Icon name="spark" size={22} />
+              </span>
+              <span className={styles.choiceBody}>
+                <span className={styles.choiceKicker}>AI wizard</span>
+                <span className={styles.choiceTitle}>Generate with AI</span>
+                <span className={styles.choiceText}>
+                  Answer a few questions. We’ll draft the proposal, then open
+                  the editor with it filled in.
+                </span>
+              </span>
+              <span className={styles.choiceHint}>Start chat</span>
+            </button>
             {PROPOSAL_TYPES.map((type) => {
               const creating = creatingTypeId === type.id
               const busy = submitting && creating

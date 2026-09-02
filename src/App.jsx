@@ -16,6 +16,7 @@ import ContentLibrary from './pages/ContentLibrary/ContentLibrary.jsx'
 import CaseStudies from './pages/CaseStudies/CaseStudies.jsx'
 import Testimonials from './pages/Testimonials/Testimonials.jsx'
 import Team from './pages/Team/Team.jsx'
+import ProposalAi from './pages/ProposalAi/ProposalAi.jsx'
 import {
   HistoryDetailRedirect,
   HistoryEditRedirect,
@@ -26,6 +27,7 @@ function App() {
   return (
     <Routes>
       <Route path="/p/:token" element={<ClientPortal />} />
+      <Route path="/proposal-ai" element={<ProposalAi />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
         <Route path="new" element={<CreateProposal />} />

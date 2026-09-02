@@ -3,6 +3,7 @@ import Sidebar from '../Sidebar/Sidebar.jsx'
 import Header from '../Header/Header.jsx'
 import { CreateProposalProvider } from '../CreateProposal/CreateProposalContext.jsx'
 import CreateProposalDialog from '../CreateProposal/CreateProposalDialog.jsx'
+import StartProposalDialog from '../CreateProposal/StartProposalDialog.jsx'
 import styles from './Layout.module.css'
 
 function Layout() {
@@ -17,6 +18,7 @@ function Layout() {
           </div>
         </main>
       </div>
+      <StartProposalDialog />
       <CreateProposalDialog />
     </CreateProposalProvider>
   )
