@@ -50,11 +50,32 @@ function kindFromFile(file) {
   return ASSET_KIND.OTHER
 }
 
+async function postBytes(path, file, extraHeaders = {}) {
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: {
+      'Content-Type': file.type || 'application/octet-stream',
+      ...extraHeaders,
+    },
+    body: file,
+  })
+
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new ValidationError(payload.message || 'Could not store that file.', [
+      { field: 'file', message: payload.message || 'Upload failed.' },
+    ])
+  }
+
+  return payload
+}
+
 /**
- * Upload a local file into the asset store.
+ * Upload a local file into persistent storage (`public/uploads`).
  *
- * Returns a record whose `url` and `thumbnailUrl` can be stored on a proposal
- * the same way a remote URL would be. Existing http(s) values stay valid.
+ * Returns a library record whose `url` is a stable public path. Proposals
+ * store `asset.id`; renderers resolve that id back to `url` on load.
  *
  * @param {File} file
  * @param {{
@@ -93,22 +114,30 @@ export async function uploadAsset(file, options = {}) {
   }
   await animateProgress(onProgress, 55, 88)
 
-  const asset = makeAsset({
-    name: file.name?.trim() || 'Untitled',
-    kind: kindFromFile(file),
-    mimeType: file.type || 'application/octet-stream',
-    sizeBytes: file.size,
+  const created = await postBytes('/api/assets', file, {
+    'X-File-Name': encodeURIComponent(file.name?.trim() || 'Untitled'),
+  })
+
+  let stored = makeAsset({
+    ...created,
+    kind: created.kind || kindFromFile(file),
     alt: options.alt ?? '',
     caption: options.caption ?? '',
   })
 
-  const errors = validateAsset(asset)
+  if (thumbnailBlob && thumbnailBlob !== file) {
+    stored = makeAsset(
+      await postBytes(`/api/assets/${stored.id}/thumbnail`, thumbnailBlob),
+    )
+  }
+
+  const errors = validateAsset(stored)
 
   if (errors.length > 0) {
     throw new ValidationError('Asset is not valid.', errors)
   }
 
-  const stored = store.insert(asset, file, thumbnailBlob)
+  store.upsert(stored)
   onProgress?.(100)
   return stored
 }
@@ -118,6 +147,7 @@ export async function uploadAsset(file, options = {}) {
  * @returns {Promise<import('../models/asset.js').Asset>}
  */
 export async function fetchAssetById(id) {
+  await store.load()
   const asset = store.findById(id)
 
   if (!asset) {
@@ -129,7 +159,8 @@ export async function fetchAssetById(id) {
   return asset
 }
 
-export function listAssets() {
+export async function listAssets() {
+  await store.load()
   return store.all()
 }
 

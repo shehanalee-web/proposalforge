@@ -25,7 +25,7 @@ export const ASSET_KINDS = Object.freeze(Object.values(ASSET_KIND))
  * @property {string} kind
  * @property {string} mimeType
  * @property {number} sizeBytes
- * @property {string} url            Resolved display URL (blob or remote).
+ * @property {string} url            Permanent public URL (`/uploads/…` or remote).
  * @property {string} thumbnailUrl   Smaller preview URL; falls back to `url`.
  * @property {string} alt
  * @property {string} caption

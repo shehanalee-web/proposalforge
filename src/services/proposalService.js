@@ -8,6 +8,7 @@ import {
   validateProposal,
 } from '../models/proposal.js'
 import { NotFoundError, ValidationError } from './errors.js'
+import { prepareProposalAssets } from './hydrateAssets.js'
 import * as store from './proposalStore.js'
 
 /**
@@ -25,6 +26,15 @@ function delay(ms = MOCK_LATENCY_MS) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms)
   })
+}
+
+async function boot() {
+  await store.ready()
+  await delay()
+}
+
+function present(proposal) {
+  return prepareProposalAssets(proposal)
 }
 
 export const SORTABLE_FIELDS = Object.freeze([
@@ -92,7 +102,7 @@ export async function fetchProposals(options = {}) {
     pageSize,
   } = options
 
-  await delay()
+  await boot()
 
   let items = store.all()
 
@@ -118,7 +128,7 @@ export async function fetchProposals(options = {}) {
     items = items.slice(start, start + pageSize)
   }
 
-  return { items, total }
+  return { items: await Promise.all(items.map(present)), total }
 }
 
 /**
@@ -129,7 +139,7 @@ export async function fetchProposals(options = {}) {
  * @throws {NotFoundError}
  */
 export async function fetchProposalById(id) {
-  await delay()
+  await boot()
 
   const proposal = store.findById(id)
 
@@ -137,7 +147,7 @@ export async function fetchProposalById(id) {
     throw new NotFoundError(`No proposal found with id "${id}".`)
   }
 
-  return proposal
+  return present(proposal)
 }
 
 /**
@@ -155,9 +165,9 @@ export async function createProposal(input) {
     throw new ValidationError('Proposal is not valid.', errors)
   }
 
-  await delay()
+  await boot()
 
-  return store.insert(proposal)
+  return present(await store.insert(proposal))
 }
 
 /**
@@ -193,9 +203,9 @@ export async function updateProposal(id, changes = {}) {
     throw new ValidationError('Proposal is not valid.', errors)
   }
 
-  await delay()
+  await boot()
 
-  return store.replace(id, updated)
+  return present(await store.replace(id, updated))
 }
 
 /**
@@ -206,9 +216,9 @@ export async function updateProposal(id, changes = {}) {
  * @throws {NotFoundError}
  */
 export async function deleteProposal(id) {
-  await delay()
+  await boot()
 
-  const deleted = store.remove(id)
+  const deleted = await store.remove(id)
 
   if (!deleted) {
     throw new NotFoundError(`No proposal found with id "${id}".`)
@@ -240,7 +250,7 @@ export async function deleteProposal(id) {
  * @returns {Promise<ProposalSummary>}
  */
 export async function fetchProposalSummary() {
-  await delay()
+  await boot()
 
   const records = store.all()
 
@@ -319,7 +329,7 @@ function requireByShareToken(token) {
  * @throws {NotFoundError}
  */
 export async function fetchClientProposal(token) {
-  await delay()
+  await boot()
 
   const existing = requireByShareToken(token)
   const viewed = persistIdentity(
@@ -328,7 +338,7 @@ export async function fetchClientProposal(token) {
     existing.updatedAt,
   )
 
-  return store.replace(existing.id, viewed)
+  return present(await store.replace(existing.id, viewed))
 }
 
 /**
@@ -339,12 +349,12 @@ export async function fetchClientProposal(token) {
  * @throws {NotFoundError|ValidationError}
  */
 export async function acceptProposal(token) {
-  await delay()
+  await boot()
 
   const existing = requireByShareToken(token)
 
   if (existing.status === PROPOSAL_STATUS.ACCEPTED) {
-    return existing
+    return present(existing)
   }
 
   if (existing.status === PROPOSAL_STATUS.DECLINED) {
@@ -370,7 +380,7 @@ export async function acceptProposal(token) {
     throw new ValidationError('Proposal is not valid.', errors)
   }
 
-  return store.replace(existing.id, updated)
+  return present(await store.replace(existing.id, updated))
 }
 
 /**
@@ -390,7 +400,7 @@ export async function requestProposalChanges(token, comment) {
     ])
   }
 
-  await delay()
+  await boot()
 
   const existing = requireByShareToken(token)
 
@@ -423,10 +433,10 @@ export async function requestProposalChanges(token, comment) {
     throw new ValidationError('Proposal is not valid.', errors)
   }
 
-  return store.replace(existing.id, updated)
+  return present(await store.replace(existing.id, updated))
 }
 
 /** Restore seed data. Intended for tests and development tooling. */
-export function resetProposals() {
-  store.reset()
+export async function resetProposals() {
+  await store.reset()
 }

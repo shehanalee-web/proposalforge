@@ -11,6 +11,9 @@ function capitalize(value) {
 function looksLikeImageUrl(url) {
   if (!url) return false
   if (url.startsWith('blob:') || url.startsWith('data:image')) return true
+  if (url.startsWith('/uploads/') && /\.(png|jpe?g|gif|webp|svg)(\?|#|$)/i.test(url)) {
+    return true
+  }
   return /\.(png|jpe?g|gif|webp|svg)(\?|#|$)/i.test(url)
 }
 
@@ -38,8 +41,8 @@ function isTypingTarget(node) {
 
 /**
  * Unified media field. Authors drop, click, paste or pick a local file.
- * The returned URL is stored on the record — remote URLs already on a
- * proposal continue to preview and can be replaced or removed.
+ * The returned public URL (and asset record) is stored on the proposal —
+ * remote URLs already on a record continue to preview and can be replaced.
  */
 function ImageUpload({
   id,

@@ -151,6 +151,7 @@ export function syncLegacyFromBlocks(blocks, proposal = {}) {
     images: (galleryBlock?.data.items ?? []).map((item) => ({
       id: item.id,
       url: item.url,
+      assetId: item.assetId,
       caption: item.caption,
     })),
   }

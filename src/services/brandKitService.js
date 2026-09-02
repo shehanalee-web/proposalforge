@@ -60,6 +60,7 @@ function syncSettingsFromKit(kit) {
  * @returns {Promise<import('../models/brandKit.js').BrandKit>}
  */
 export async function fetchBrandKit() {
+  await store.ready()
   await delay()
   return store.get()
 }
@@ -70,6 +71,7 @@ export async function fetchBrandKit() {
  * @throws {ValidationError}
  */
 export async function updateBrandKit(changes = {}) {
+  await store.ready()
   const updated = withResolvedType(
     makeBrandKit({
       ...store.get(),
@@ -86,11 +88,11 @@ export async function updateBrandKit(changes = {}) {
 
   await delay()
 
-  const saved = store.set(updated)
+  const saved = await store.set(updated)
   syncSettingsFromKit(saved)
   return saved
 }
 
-export function resetBrandKit() {
-  store.reset()
+export async function resetBrandKit() {
+  await store.reset()
 }

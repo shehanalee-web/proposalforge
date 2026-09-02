@@ -1,3 +1,4 @@
+import { persistableUrl } from '../utils/publicUrl.js'
 import { createRecordId, EMAIL_PATTERN } from './ids.js'
 
 /**
@@ -269,11 +270,11 @@ export function makeAssetRef(input = null) {
   }
 
   if (typeof input === 'string') {
-    if (
-      input.startsWith('blob:') ||
-      input.startsWith('data:') ||
-      /^https?:/i.test(input)
-    ) {
+    if (input.startsWith('blob:') || input.startsWith('data:')) {
+      return { assetId: null, url: '' }
+    }
+
+    if (/^https?:/i.test(input) || input.startsWith('/uploads/')) {
       return { assetId: null, url: input }
     }
 
@@ -282,7 +283,7 @@ export function makeAssetRef(input = null) {
 
   return {
     assetId: input.assetId ?? input.id ?? null,
-    url: input.url ?? '',
+    url: persistableUrl(input.url ?? ''),
   }
 }
 

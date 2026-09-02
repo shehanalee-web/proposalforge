@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import WorkspacePlaceholder from '../../components/WorkspacePlaceholder/WorkspacePlaceholder.jsx'
 import styles from '../../components/WorkspacePlaceholder/WorkspacePlaceholder.module.css'
 import { listAssets } from '../../services/assetService.js'
@@ -11,7 +12,19 @@ function formatBytes(bytes) {
 }
 
 function Assets() {
-  const assets = listAssets()
+  const [assets, setAssets] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+
+    listAssets().then((records) => {
+      if (!cancelled) setAssets(records)
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <WorkspacePlaceholder moduleId={WORKSPACE_MODULE.ASSETS}>

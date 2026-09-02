@@ -1,97 +1,61 @@
 /**
- * In-memory backing store for uploaded files.
+ * Client cache of Asset Library records.
  *
- * Follows the same pattern as `proposalStore`: this is the only module that
- * holds blobs, and the only one a real storage backend would replace.
- * Object URLs are created once per asset so renderers can keep using a URL
- * string — the same contract as remote files.
+ * Files live on disk under `/uploads/<id>/…`. This module only holds metadata
+ * returned by the local uploads API. `url` is always a public path, never a
+ * browser object URL.
  */
 
-/** @typedef {import('../models/asset.js').Asset} Asset */
+import { makeAsset } from '../models/asset.js'
 
-/**
- * @typedef {object} StoredAsset
- * @property {Asset} meta
- * @property {Blob} blob
- * @property {Blob | null} thumbnailBlob
- * @property {string} url
- * @property {string} thumbnailUrl
- */
-
-/** @type {Map<string, StoredAsset>} */
+/** @type {Map<string, import('../models/asset.js').Asset>} */
 const records = new Map()
+let loaded = false
+let pending = null
 
-function cloneMeta(meta, url, thumbnailUrl) {
-  return {
-    ...meta,
-    url,
-    thumbnailUrl: thumbnailUrl || url,
-  }
+function remember(asset) {
+  const next = makeAsset(asset)
+  records.set(next.id, next)
+  return next
 }
 
-/**
- * @param {Asset} meta
- * @param {Blob} blob
- * @param {Blob | null} thumbnailBlob
- * @returns {Asset}
- */
-export function insert(meta, blob, thumbnailBlob = null) {
-  const url = URL.createObjectURL(blob)
-  const thumbnailUrl = thumbnailBlob
-    ? URL.createObjectURL(thumbnailBlob)
-    : url
+export async function load() {
+  if (loaded) return
+  if (pending) return pending
 
-  records.set(meta.id, {
-    meta: { ...meta },
-    blob,
-    thumbnailBlob,
-    url,
-    thumbnailUrl,
-  })
+  pending = (async () => {
+    try {
+      const response = await fetch('/api/assets')
+      if (!response.ok) return
+      const list = await response.json()
+      if (!Array.isArray(list)) return
+      records.clear()
+      for (const entry of list) remember(entry)
+      loaded = true
+    } catch {
+      loaded = true
+    } finally {
+      pending = null
+    }
+  })()
 
-  return cloneMeta(meta, url, thumbnailUrl)
+  return pending
 }
 
-/**
- * @param {string} id
- * @returns {Asset | undefined}
- */
+export function upsert(asset) {
+  return remember(asset)
+}
+
 export function findById(id) {
-  const found = records.get(id)
-  return found
-    ? cloneMeta(found.meta, found.url, found.thumbnailUrl)
-    : undefined
+  return records.get(id)
 }
 
-/**
- * @returns {Asset[]}
- */
 export function all() {
-  return [...records.values()].map((entry) =>
-    cloneMeta(entry.meta, entry.url, entry.thumbnailUrl),
-  )
-}
-
-/**
- * @param {string} id
- * @returns {boolean}
- */
-export function remove(id) {
-  const found = records.get(id)
-
-  if (!found) return false
-
-  URL.revokeObjectURL(found.url)
-  if (found.thumbnailUrl !== found.url) {
-    URL.revokeObjectURL(found.thumbnailUrl)
-  }
-
-  records.delete(id)
-  return true
+  return [...records.values()].map((asset) => makeAsset(asset))
 }
 
 export function reset() {
-  for (const id of [...records.keys()]) {
-    remove(id)
-  }
+  records.clear()
+  loaded = false
+  pending = null
 }

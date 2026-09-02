@@ -44,6 +44,10 @@ export const portraitLayout = {
     orientation: 'portrait',
     sequence: [
       {
+        type: 'content',
+        accept: [BLOCK_TYPE.COVER],
+      },
+      {
         type: 'stack',
         chrome: [PDF_BLOCK.HEADER, PDF_BLOCK.CLIENT],
         blocks: [

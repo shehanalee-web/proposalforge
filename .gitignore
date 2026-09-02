@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Persistent local uploads (files + JSON indexes)
+public/uploads/**
+!public/uploads/.gitkeep
+data/*.json
+
 # Environment variables and secrets
 .env
 .env.*

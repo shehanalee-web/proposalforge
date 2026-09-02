@@ -22,6 +22,27 @@ import CommercialBuilder from '../components/CommercialBuilder/CommercialBuilder
 import { DEFAULT_CURRENCY } from '../models/proposal.js'
 import styles from './BlockComposer.module.css'
 
+function applyAsset(fields, url, asset) {
+  if (!url || !asset) {
+    return {
+      ...fields,
+      assetId: '',
+      url: '',
+      mimeType: '',
+      sizeBytes: 0,
+    }
+  }
+
+  return {
+    ...fields,
+    assetId: asset.id,
+    url: asset.url,
+    mimeType: asset.mimeType,
+    sizeBytes: asset.sizeBytes,
+    name: fields.name || asset.name || '',
+  }
+}
+
 function Field({ label, children }) {
   return (
     <label className={styles.field}>
@@ -101,7 +122,12 @@ function BlockFields({ block, onData, disabled = false, currency = DEFAULT_CURRE
             label="Cover image"
             value={data.imageUrl}
             size="cover"
-            onChange={(url) => set({ imageUrl: url })}
+            onChange={(url, asset) =>
+              set({
+                imageUrl: asset?.url ?? url ?? '',
+                imageAssetId: asset?.id ?? '',
+              })
+            }
             disabled={disabled}
           />
         </>
@@ -152,7 +178,13 @@ function BlockFields({ block, onData, disabled = false, currency = DEFAULT_CURRE
                 label="Image"
                 value={item.url}
                 size="cover"
-                onChange={(url) => patch(index, { ...item, url })}
+                onChange={(url, asset) =>
+                  patch(index, {
+                    ...item,
+                    url: asset?.url ?? url ?? '',
+                    assetId: asset?.id ?? '',
+                  })
+                }
                 disabled={disabled}
               />
               <Field label="Caption">
@@ -322,7 +354,13 @@ function BlockFields({ block, onData, disabled = false, currency = DEFAULT_CURRE
                 label="Photo"
                 value={item.photoUrl}
                 size="portrait"
-                onChange={(url) => patch(index, { ...item, photoUrl: url })}
+                onChange={(url, asset) =>
+                  patch(index, {
+                    ...item,
+                    photoUrl: asset?.url ?? url ?? '',
+                    photoAssetId: asset?.id ?? '',
+                  })
+                }
                 disabled={disabled}
               />
             </>
@@ -379,7 +417,13 @@ function BlockFields({ block, onData, disabled = false, currency = DEFAULT_CURRE
                 label="Avatar"
                 value={item.portraitUrl}
                 size="portrait"
-                onChange={(url) => patch(index, { ...item, portraitUrl: url })}
+                onChange={(url, asset) =>
+                  patch(index, {
+                    ...item,
+                    portraitUrl: asset?.url ?? url ?? '',
+                    portraitAssetId: asset?.id ?? '',
+                  })
+                }
                 disabled={disabled}
               />
             </>
@@ -463,11 +507,14 @@ function BlockFields({ block, onData, disabled = false, currency = DEFAULT_CURRE
                 value={item.url}
                 disabled={disabled}
                 onChange={(url, asset) =>
-                  patch(index, {
-                    ...item,
-                    url,
-                    name: item.name || asset?.name || '',
-                  })
+                  patch(
+                    index,
+                    applyAsset(
+                      { ...item, name: item.name || asset?.name || '' },
+                      url,
+                      asset,
+                    ),
+                  )
                 }
               />
             </>

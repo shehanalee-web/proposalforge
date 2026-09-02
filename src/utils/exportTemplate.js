@@ -9,17 +9,13 @@ export function exportTemplate(template) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'template'
 
-  const blob = new Blob([`${JSON.stringify(template, null, 2)}\n`], {
-    type: 'application/json',
-  })
-  const url = URL.createObjectURL(blob)
+  const json = `${JSON.stringify(template, null, 2)}\n`
   const link = document.createElement('a')
 
-  link.href = url
+  link.href = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`
   link.download = `${slug}.json`
   link.rel = 'noopener'
   document.body.append(link)
   link.click()
   link.remove()
-  URL.revokeObjectURL(url)
 }

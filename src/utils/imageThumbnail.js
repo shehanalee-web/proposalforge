@@ -59,14 +59,14 @@ async function decodeImage(file) {
     return createImageBitmap(file)
   }
 
-  const objectUrl = URL.createObjectURL(file)
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = () => reject(reader.error || new Error('Could not read this image.'))
+    reader.readAsDataURL(file)
+  })
 
-  try {
-    const image = await loadHtmlImage(objectUrl)
-    return image
-  } finally {
-    URL.revokeObjectURL(objectUrl)
-  }
+  return loadHtmlImage(dataUrl)
 }
 
 function loadHtmlImage(src) {

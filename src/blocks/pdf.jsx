@@ -18,6 +18,7 @@ import {
 import { BLOCK_TYPE } from './ids.js'
 import { isBlockDataEmpty } from './schemas.js'
 import { styles } from '../pdf/pdfStyles.js'
+import { toAbsoluteUrl } from '../utils/publicUrl.js'
 
 function titleStyle(brand) {
   const accent = brand?.colors?.accent
@@ -443,7 +444,7 @@ export function AttachmentsPdf({ instance, brand }) {
       {items.map((item) => (
         <Text key={item.id} style={styles.body}>
           {item.url ? (
-            <Link src={item.url}>{item.name || item.url}</Link>
+            <Link src={toAbsoluteUrl(item.url)}>{item.name || item.url}</Link>
           ) : (
             item.name
           )}

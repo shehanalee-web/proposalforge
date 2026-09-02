@@ -24,6 +24,7 @@ export function makeCoverData(input = {}) {
     heading: input.heading ?? '',
     subheading: input.subheading ?? '',
     imageUrl: input.imageUrl ?? '',
+    imageAssetId: input.imageAssetId ?? '',
   }
 }
 
@@ -42,6 +43,7 @@ export function makeGalleryItem(input = {}) {
   return {
     id: input.id ?? createRecordId('img'),
     url: input.url ?? input.src ?? '',
+    assetId: input.assetId ?? '',
     caption: input.caption ?? input.alt ?? '',
   }
 }
@@ -106,6 +108,7 @@ export function makeTeamMemberData(input = {}) {
     role: input.role ?? '',
     bio: input.bio ?? '',
     photoUrl: input.photoUrl ?? '',
+    photoAssetId: input.photoAssetId ?? '',
   }
 }
 
@@ -121,6 +124,7 @@ export function makeTestimonialItem(input = {}) {
     authorRole: input.authorRole ?? '',
     company: input.company ?? '',
     portraitUrl: input.portraitUrl ?? '',
+    portraitAssetId: input.portraitAssetId ?? '',
   }
 }
 
@@ -154,7 +158,10 @@ export function makeSignatureData(input = {}) {
 export function makeAttachmentItem(input = {}) {
   return {
     id: input.id ?? createRecordId('att'),
+    assetId: input.assetId ?? '',
     name: input.name ?? '',
+    mimeType: input.mimeType ?? '',
+    sizeBytes: Number(input.sizeBytes ?? 0),
     url: input.url ?? '',
   }
 }
@@ -200,7 +207,7 @@ function hasText(...values) {
 export function isBlockDataEmpty(type, data = {}) {
   switch (type) {
     case BLOCK_TYPE.COVER:
-      return !hasText(data.heading, data.subheading, data.imageUrl)
+      return !hasText(data.heading, data.subheading, data.imageUrl, data.imageAssetId)
     case BLOCK_TYPE.EXECUTIVE_SUMMARY:
     case BLOCK_TYPE.TERMS:
       return !hasText(data.body)
@@ -208,7 +215,7 @@ export function isBlockDataEmpty(type, data = {}) {
     case BLOCK_TYPE.CUSTOM:
       return !hasText(data.heading, data.body)
     case BLOCK_TYPE.GALLERY:
-      return !data.items?.some((item) => hasText(item.url, item.caption))
+      return !data.items?.some((item) => hasText(item.url, item.assetId, item.caption))
     case BLOCK_TYPE.TIMELINE:
       return !data.items?.some((item) => hasText(item.title, item.date, item.body))
     case BLOCK_TYPE.DELIVERABLES:
@@ -218,7 +225,7 @@ export function isBlockDataEmpty(type, data = {}) {
     case BLOCK_TYPE.FAQ:
       return !data.items?.some((item) => hasText(item.question, item.answer))
     case BLOCK_TYPE.ATTACHMENTS:
-      return !data.items?.some((item) => hasText(item.name, item.url))
+      return !data.items?.some((item) => hasText(item.name, item.url, item.assetId))
     case BLOCK_TYPE.PRICING: {
       const hasModules = data.modules?.some((module) => {
         if (module.items?.length) {
