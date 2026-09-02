@@ -47,6 +47,54 @@ const QUESTIONS = {
 const OPENING =
   "Hi — I'll draft a proposal with you, one question at a time. The preview on the right fills in as we go. What industry is this for?"
 
+/**
+ * Longer phrases first so “project type” wins over “project”.
+ * Used to detect labelled bulk pastes and to strip those labels from values.
+ */
+const FIELD_LABEL_DEFS = [
+  ['project type', 'projectType'],
+  ['project', 'projectType'],
+  ['deliverables', 'deliverables'],
+  ['deliverable', 'deliverables'],
+  ['scope', 'deliverables'],
+  ['industry', 'industry'],
+  ['sector', 'industry'],
+  ['vertical', 'industry'],
+  ['company', 'company'],
+  ['client', 'company'],
+  ['organisation', 'company'],
+  ['organization', 'company'],
+  ['firm', 'company'],
+  ['budget', 'pricing'],
+  ['pricing', 'pricing'],
+  ['fee', 'pricing'],
+  ['price', 'pricing'],
+  ['cost', 'pricing'],
+  ['estimate', 'pricing'],
+  ['timeline', 'timeline'],
+  ['duration', 'timeline'],
+  ['deadline', 'timeline'],
+  ['schedule', 'timeline'],
+  ['style', 'style'],
+  ['tone', 'style'],
+  ['terms', 'terms'],
+].sort((a, b) => b[0].length - a[0].length)
+
+const LABEL_BODY = FIELD_LABEL_DEFS.map(([label]) =>
+  label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+'),
+).join('|')
+
+const LABEL_TOKEN = new RegExp(
+  `(^|[\\n\\r;]+|\\s+)(${LABEL_BODY})(?:\\s*[:\\-–—]\\s*|\\s+)`,
+  'gi',
+)
+
+const LABEL_AT_START = new RegExp(`^(${LABEL_BODY})(?:\\s*[:\\-–—]\\s*|\\s+)`, 'i')
+
+const LABEL_TO_FIELD = new Map(
+  FIELD_LABEL_DEFS.map(([label, field]) => [label.toLowerCase(), field]),
+)
+
 function messageId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return `msg-${crypto.randomUUID()}`
@@ -65,6 +113,17 @@ function user(text) {
 
 function questionText(field) {
   return QUESTIONS[field]
+}
+
+function normalizeLabel(label) {
+  return String(label ?? '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function fieldFromLabel(label) {
+  return LABEL_TO_FIELD.get(normalizeLabel(label)) ?? null
 }
 
 function isSkip(text, field) {
@@ -90,7 +149,7 @@ function extractPricing(text) {
   if (thousand) return Math.round(Number(thousand[1]) * 1000) || 0
 
   const labeled = text.match(
-    /(?:budget|fee|price|cost|quote|estimate|retainer|usd)\s*(?:of|is|at|:)?\s*\$?\s*([\d,]+(?:\.\d+)?)/i,
+    /(?:budget|fee|price|cost|quote|estimate|usd)\s*(?:of|is|at|:)?\s*\$?\s*([\d,]+(?:\.\d+)?)/i,
   )
   if (labeled) return Number(labeled[1].replace(/,/g, '')) || 0
 
@@ -101,6 +160,11 @@ function extractPricing(text) {
   if (bare) return Number(bare[1].replace(/,/g, '')) || 0
 
   return 0
+}
+
+function extractCurrency(text) {
+  const match = String(text).match(/\b(USD|EUR|GBP|AED|AUD|CAD)\b/i)
+  return match ? match[1].toUpperCase() : ''
 }
 
 function extractTimeline(text) {
@@ -122,86 +186,141 @@ function extractTimeline(text) {
   return ''
 }
 
-function extractExtras(text) {
-  const patch = {}
-  const amount = extractPricing(text)
-  const timeline = extractTimeline(text)
-
-  if (amount > 0) {
-    patch.pricing = { amount }
-  }
-
-  if (timeline) {
-    patch.timeline = timeline
-  }
-
-  return patch
+function stripListPrefix(line) {
+  return line.replace(/^(?:[-–—*•]|\d+[.)])\s+/, '').trim()
 }
 
-function interpretAnswer(field, text, draft) {
-  const extras = extractExtras(text)
-  const patch = { ...extras }
+function stripLeadingLabel(chunk) {
+  const trimmed = String(chunk ?? '').trim()
+  if (!trimmed) return { field: null, value: '' }
 
-  if (!field) {
-    if (Object.keys(patch).length === 0) {
-      patch.notes = [draft.notes, text.trim()].filter(Boolean).join('\n')
+  const match = trimmed.match(LABEL_AT_START)
+  if (!match) return { field: null, value: trimmed }
+
+  const field = fieldFromLabel(match[1])
+  const value = trimmed.slice(match[0].length).trim()
+  return { field, value: value || trimmed }
+}
+
+/**
+ * Pull labelled pairs out of a paste: “Industry SaaS Company Northwind…”
+ * or newline forms like “Industry: SaaS”.
+ *
+ * @param {string} text
+ * @returns {{ field: string, value: string }[]}
+ */
+export function parseLabeledAnswers(text) {
+  const source = String(text ?? '')
+  if (!source.trim()) return []
+
+  const matches = []
+  const pattern = new RegExp(LABEL_TOKEN.source, LABEL_TOKEN.flags)
+  let match = pattern.exec(source)
+
+  while (match) {
+    const field = fieldFromLabel(match[2])
+    if (field) {
+      matches.push({
+        field,
+        valueStart: match.index + match[0].length,
+        index: match.index,
+      })
     }
-    return patch
+    match = pattern.exec(source)
   }
 
-  if (isSkip(text, field)) {
-    return patch
+  if (matches.length === 0) return []
+
+  const pairs = []
+
+  for (let i = 0; i < matches.length; i += 1) {
+    const end = i + 1 < matches.length ? matches[i + 1].index : source.length
+    const value = source.slice(matches[i].valueStart, end).trim()
+    if (!value) continue
+    pairs.push({ field: matches[i].field, value })
   }
 
-  const value = text.trim()
+  return pairs
+}
 
-  if (field === 'industry') {
-    patch.industry = value
-    return patch
+function looksLikeLabeledBulk(text, pairs) {
+  if (!pairs || pairs.length < 2) return false
+  const trimmed = text.trim()
+  if (LABEL_AT_START.test(trimmed)) return true
+
+  const lines = trimmed.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+  const labeledLines = lines.filter((line) => LABEL_AT_START.test(line))
+  return labeledLines.length >= 2
+}
+
+/**
+ * Split a pasted message into candidate answers for remaining wizard fields.
+ *
+ * Newlines and semicolons win. Sentence splits only apply when every piece
+ * looks like a short discrete answer — a long terms paragraph stays one value.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function splitIntoAnswers(text) {
+  const trimmed = text.trim()
+  if (!trimmed) return []
+
+  const lines = trimmed
+    .split(/\r?\n/)
+    .map((line) => stripListPrefix(line))
+    .filter(Boolean)
+
+  if (lines.length >= 2) return lines
+
+  const semis = trimmed
+    .split(/\s*;\s*/)
+    .map((part) => stripListPrefix(part))
+    .filter(Boolean)
+
+  if (semis.length >= 2) return semis
+
+  const sentences = trimmed
+    .split(/(?<=[.!?])\s+(?=[A-Z])/)
+    .map((part) => part.replace(/[.!?]+$/, '').trim())
+    .filter(Boolean)
+
+  if (
+    sentences.length >= 2 &&
+    sentences.every((part) => part.length <= 80 && part.split(/\s+/).length <= 14)
+  ) {
+    return sentences
   }
 
-  if (field === 'company') {
-    patch.company = value
-    patch.client = value
-    return patch
-  }
+  return [trimmed]
+}
 
-  if (field === 'projectType') {
-    patch.projectType = matchProjectType(value)
-    return patch
-  }
+function assignField(field, chunk, draft) {
+  const value = chunk.trim()
+  if (!value) return {}
 
+  if (field === 'industry') return { industry: value }
+  if (field === 'company') return { company: value, client: value }
+  if (field === 'projectType') return { projectType: matchProjectType(value) }
   if (field === 'deliverables') {
     const items = splitList(value)
-    patch.deliverables = items.length > 0 ? items : [value]
-    return patch
+    return { deliverables: items.length > 0 ? items : [value] }
   }
-
-  if (field === 'timeline') {
-    patch.timeline = extras.timeline || value
-    return patch
-  }
-
   if (field === 'pricing') {
-    const amount = extras.pricing?.amount || extractPricing(value)
-    patch.pricing = {
-      amount,
-      notes: amount ? draft.pricing?.notes || '' : value,
+    const amount = extractPricing(value)
+    const currency = extractCurrency(value)
+    return {
+      pricing: {
+        amount,
+        ...(currency ? { currency } : {}),
+        notes: amount ? draft.pricing?.notes || '' : value,
+      },
     }
-    return patch
   }
-
-  if (field === 'style') {
-    patch.style = value
-    return patch
-  }
-
-  if (field === 'terms') {
-    patch.terms = value
-    return patch
-  }
-
-  return patch
+  if (field === 'timeline') return { timeline: extractTimeline(value) || value }
+  if (field === 'style') return { style: value }
+  if (field === 'terms') return { terms: value }
+  return {}
 }
 
 function isFieldFilled(draft, field) {
@@ -216,8 +335,17 @@ function isFieldFilled(draft, field) {
   return false
 }
 
+function requiredFieldsFilled(draft, skippedFields = []) {
+  const skipped = new Set(skippedFields)
+  return QUESTION_ORDER.filter((field) => !OPTIONAL_FIELDS.has(field)).every(
+    (field) => skipped.has(field) || isFieldFilled(draft, field),
+  )
+}
+
 export function nextPendingField(draft, skippedFields = []) {
   const skipped = new Set(skippedFields)
+
+  if (requiredFieldsFilled(draft, skippedFields)) return null
 
   for (const field of QUESTION_ORDER) {
     if (skipped.has(field)) continue
@@ -225,6 +353,37 @@ export function nextPendingField(draft, skippedFields = []) {
   }
 
   return null
+}
+
+function currentIndex(session) {
+  if (Number.isInteger(session.questionIndex)) {
+    return Math.max(0, session.questionIndex)
+  }
+
+  const fromField = QUESTION_ORDER.indexOf(session.pendingField)
+  return fromField >= 0 ? fromField : QUESTION_ORDER.length
+}
+
+function applyAnswer(draft, skippedFields, field, value) {
+  const chunk = String(value ?? '').trim()
+  if (!field || !chunk) {
+    return { draft, skipped: false, applied: false }
+  }
+
+  if (isSkip(chunk, field)) {
+    if (!skippedFields.includes(field)) skippedFields.push(field)
+    return { draft, skipped: true, applied: true }
+  }
+
+  if (OPTIONAL_FIELDS.has(field) === false && SKIP_PATTERN.test(chunk)) {
+    return { draft, skipped: false, applied: false }
+  }
+
+  return {
+    draft: mergeProposalDraft(draft, assignField(field, chunk, draft)),
+    skipped: false,
+    applied: true,
+  }
 }
 
 function acknowledge(field, draft) {
@@ -252,6 +411,10 @@ function acknowledge(field, draft) {
     return `I'll estimate ${draft.pricing.amount.toLocaleString('en-US')} ${draft.pricing.currency}.`
   }
 
+  if (field === 'pricing' && draft.pricing?.notes) {
+    return `I'll keep “${draft.pricing.notes}” as the budget note.`
+  }
+
   if (field === 'style' && draft.style) {
     return `The proposal will feel ${draft.style}.`
   }
@@ -265,26 +428,67 @@ function acknowledge(field, draft) {
 
 function wrapUp(draft) {
   const name = draft.client || draft.company || 'the client'
-  return `I have enough to draft this for ${name}. Opening the editor with a full proposal you can edit.`
+  return `I have enough to draft this for ${name}. Generate the proposal whenever you're ready.`
 }
 
-function composeReply(draft, field, nextField, skipped) {
-  if (!field) {
-    return isDraftReady(draft)
-      ? wrapUp(draft)
-      : 'Noted. Tell me a bit more about the company, the project, or the scope.'
+function summarizeParsed(draft) {
+  const name = draft.client || draft.company
+  const lead = []
+
+  if (draft.projectType && name) {
+    lead.push(`I'll draft a ${draft.projectType} proposal for ${name}`)
+  } else if (name) {
+    lead.push(`I'll draft this for ${name}`)
+  } else if (draft.projectType) {
+    lead.push(`I'll draft a ${draft.projectType} proposal`)
+  } else {
+    lead.push("I've captured those details")
   }
 
-  if (!skipped && !OPTIONAL_FIELDS.has(field) && !isFieldFilled(draft, field)) {
-    return `I still need that to draft the proposal. ${questionText(field)}`
+  if (draft.industry) {
+    lead.push(`in ${draft.industry}`)
+  }
+
+  const details = []
+  if (draft.deliverables.length > 0) {
+    details.push(draft.deliverables.join(', '))
+  }
+  if (hasPricing(draft)) {
+    details.push(
+      `${draft.pricing.currency} ${draft.pricing.amount.toLocaleString('en-US')}`,
+    )
+  } else if (draft.pricing?.notes) {
+    details.push(draft.pricing.notes)
+  }
+  if (draft.timeline) details.push(draft.timeline)
+  if (draft.style) details.push(`${draft.style} in tone`)
+  if (draft.terms) details.push(draft.terms)
+
+  let text = lead.join(' ')
+  if (details.length > 0) {
+    text += ` — ${details.join(', ')}.`
+  } else {
+    text += '.'
+  }
+
+  return text
+}
+
+function composeReply(draft, filled, nextField, currentField) {
+  if (filled.length === 0) {
+    return `I still need that to draft the proposal. ${questionText(currentField)}`
   }
 
   const parts = []
+  const stored = filled.filter((entry) => !entry.skipped)
+  const skippedOnly = filled.length === 1 && filled[0].skipped
 
-  if (skipped) {
+  if (skippedOnly) {
     parts.push('No problem — we can leave that blank for now.')
-  } else {
-    parts.push(acknowledge(field, draft))
+  } else if (stored.length > 1) {
+    parts.push(summarizeParsed(draft))
+  } else if (stored[0]) {
+    parts.push(acknowledge(stored[0].field, draft))
   }
 
   if (nextField) {
@@ -292,14 +496,36 @@ function composeReply(draft, field, nextField, skipped) {
     return parts.join(' ')
   }
 
-  parts.push(wrapUp(draft))
+  if (stored.length > 1) {
+    parts.push('Generate the proposal whenever you\'re ready.')
+  } else {
+    parts.push(wrapUp(draft))
+  }
+
   return parts.join(' ')
+}
+
+function replaceLastUserWithAnswers(messages, displayValues) {
+  const texts = displayValues.filter(Boolean)
+  if (texts.length === 0) return messages
+
+  let lastUser = -1
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    if (messages[i].role === 'user') {
+      lastUser = i
+      break
+    }
+  }
+
+  const head = lastUser >= 0 ? messages.slice(0, lastUser) : messages
+  return [...head, ...texts.map((text) => user(text))]
 }
 
 export function createWizardSession() {
   return {
     draft: makeProposalDraft(),
-    pendingField: 'industry',
+    questionIndex: 0,
+    pendingField: QUESTION_ORDER[0],
     skippedFields: [],
     messages: [assistant(OPENING)],
   }
@@ -313,7 +539,12 @@ export function isConversationComplete(session) {
  * Apply a user reply to the mocked wizard. Pure — the UI owns delays
  * and can already have appended the user message.
  *
- * @param {{ draft: import('../models/proposalDraft.js').ProposalDraft, pendingField: string | null, skippedFields?: string[], messages: object[] }} session
+ * A single unlabelled chunk updates only the active field.
+ * Labelled bulk input maps each label onto the matching ProposalDraft field
+ * (labels are stripped). Unlabelled multi-line pastes fill remaining fields
+ * in order. Either way, required fields being complete stops further questions.
+ *
+ * @param {{ draft: import('../models/proposalDraft.js').ProposalDraft, pendingField: string | null, questionIndex?: number, skippedFields?: string[], messages: object[] }} session
  * @param {string} userText
  * @param {{ includeUser?: boolean }} [options]
  */
@@ -321,26 +552,95 @@ export function replyToUser(session, userText, options = {}) {
   const text = userText.trim()
   if (!text) return session
 
-  const field = session.pendingField
-  const skipped = Boolean(field) && isSkip(text, field)
-  const skippedFields = [...(session.skippedFields ?? [])]
+  const index = currentIndex(session)
 
-  if (skipped && field && !skippedFields.includes(field)) {
-    skippedFields.push(field)
+  if (index >= QUESTION_ORDER.length && requiredFieldsFilled(session.draft, session.skippedFields)) {
+    const extras =
+      options.includeUser === false
+        ? [assistant("I've updated the draft with that. Generate the proposal whenever you're ready.")]
+        : [
+            user(text),
+            assistant("I've updated the draft with that. Generate the proposal whenever you're ready."),
+          ]
+
+    return {
+      ...session,
+      draft: mergeProposalDraft(session.draft, {
+        notes: [session.draft.notes, text].filter(Boolean).join('\n'),
+      }),
+      pendingField: null,
+      questionIndex: QUESTION_ORDER.length,
+      messages: [...session.messages, ...extras],
+    }
   }
 
-  const patch = interpretAnswer(field, text, session.draft)
-  const draft = mergeProposalDraft(session.draft, patch)
+  const remaining = QUESTION_ORDER.slice(index)
+  const labeled = parseLabeledAnswers(text)
+  const skippedFields = [...(session.skippedFields ?? [])]
+  let draft = session.draft
+  const filled = []
+  const displayValues = []
+
+  if (looksLikeLabeledBulk(text, labeled) || (labeled.length === 1 && LABEL_AT_START.test(text.trim()))) {
+    for (const pair of labeled) {
+      const result = applyAnswer(draft, skippedFields, pair.field, pair.value)
+      draft = result.draft
+      if (!result.applied) continue
+      filled.push({ field: pair.field, skipped: result.skipped })
+      if (!result.skipped) displayValues.push(pair.value)
+    }
+  } else {
+    const chunks = splitIntoAnswers(text).map((chunk) => {
+      const stripped = stripLeadingLabel(chunk)
+      return stripped.value || chunk
+    })
+    const answers =
+      chunks.length > remaining.length
+        ? [
+            ...chunks.slice(0, remaining.length - 1),
+            chunks.slice(remaining.length - 1).join('\n'),
+          ]
+        : chunks
+
+    for (let offset = 0; offset < answers.length; offset += 1) {
+      const field = remaining[offset]
+      if (!field) break
+      const chunk = answers[offset]
+      const result = applyAnswer(draft, skippedFields, field, chunk)
+      draft = result.draft
+      if (!result.applied) {
+        if (offset === 0) break
+        break
+      }
+      filled.push({ field, skipped: result.skipped })
+      if (!result.skipped) displayValues.push(chunk)
+    }
+  }
+
   const nextField = nextPendingField(draft, skippedFields)
-  const reply = composeReply(draft, field, nextField, skipped)
-  const extras =
-    options.includeUser === false ? [assistant(reply)] : [user(text), assistant(reply)]
+  const nextIndex = nextField
+    ? QUESTION_ORDER.indexOf(nextField)
+    : QUESTION_ORDER.length
+  const reply = composeReply(draft, filled, nextField, remaining[0] ?? QUESTION_ORDER[0])
+
+  let messages = session.messages
+  if (options.includeUser === false) {
+    messages = replaceLastUserWithAnswers(messages, displayValues.length > 0 ? displayValues : [text])
+    messages = [...messages, assistant(reply)]
+  } else {
+    messages = [
+      ...messages,
+      ...(displayValues.length > 0 ? displayValues : [text]).map((value) => user(value)),
+      assistant(reply),
+    ]
+  }
 
   return {
     draft,
+    questionIndex: nextIndex,
     pendingField: nextField,
     skippedFields,
-    messages: [...session.messages, ...extras],
+    messages,
   }
 }
 
