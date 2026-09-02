@@ -1,7 +1,7 @@
 import { getWorkspaceModule } from '../../workspace/registry.js'
 import styles from './WorkspacePlaceholder.module.css'
 
-function WorkspacePlaceholder({ moduleId, children }) {
+function WorkspacePlaceholder({ moduleId, children, action }) {
   const module = getWorkspaceModule(moduleId)
 
   if (!module) return null
@@ -11,8 +11,7 @@ function WorkspacePlaceholder({ moduleId, children }) {
       <p className={styles.intro}>{module.summary}</p>
 
       <div className={styles.panel}>
-        <p className={styles.kicker}>Foundation in place · editing later</p>
-        <h2 className={styles.title}>{module.label}</h2>
+        <p className={styles.kicker}>Workspace library</p>
         <p className={styles.description}>{module.description}</p>
 
         {module.capabilities.length > 0 ? (
@@ -24,6 +23,8 @@ function WorkspacePlaceholder({ moduleId, children }) {
         ) : null}
 
         {children}
+
+        {action}
       </div>
     </section>
   )

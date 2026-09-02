@@ -1,11 +1,11 @@
+import { persistableUrl } from '../utils/publicUrl.js'
 import { createRecordId, EMAIL_PATTERN } from './ids.js'
 
 /**
- * Brand Kit model.
+ * Brand Kit — the workspace Company Identity.
  *
- * One kit per workspace. Renderers (preview, client portal, PDF) should
- * resolve identity from here rather than copying logos or colours onto a
- * proposal. CRUD is not wired yet — this is the shape later features fill.
+ * Filled once. Proposals and templates resolve it at render time rather than
+ * cloning logos, colours, legal copy, team or testimonials onto every document.
  */
 
 export const COVER_STYLE = Object.freeze({
@@ -50,12 +50,104 @@ export const PAGE_NUMBER_POSITIONS = Object.freeze(
   Object.values(PAGE_NUMBER_POSITION),
 )
 
+export const SOCIAL_NETWORK = Object.freeze({
+  LINKEDIN: 'linkedin',
+  INSTAGRAM: 'instagram',
+  X: 'x',
+  FACEBOOK: 'facebook',
+  YOUTUBE: 'youtube',
+  BEHANCE: 'behance',
+  DRIBBBLE: 'dribbble',
+  OTHER: 'other',
+})
+
+export const SOCIAL_NETWORKS = Object.freeze(Object.values(SOCIAL_NETWORK))
+
+export const SOCIAL_NETWORK_LABELS = Object.freeze({
+  [SOCIAL_NETWORK.LINKEDIN]: 'LinkedIn',
+  [SOCIAL_NETWORK.INSTAGRAM]: 'Instagram',
+  [SOCIAL_NETWORK.X]: 'X',
+  [SOCIAL_NETWORK.FACEBOOK]: 'Facebook',
+  [SOCIAL_NETWORK.YOUTUBE]: 'YouTube',
+  [SOCIAL_NETWORK.BEHANCE]: 'Behance',
+  [SOCIAL_NETWORK.DRIBBBLE]: 'Dribbble',
+  [SOCIAL_NETWORK.OTHER]: 'Other',
+})
+
+export const TAX_MODE = Object.freeze({
+  NONE: 'none',
+  EXCLUSIVE: 'exclusive',
+  INCLUSIVE: 'inclusive',
+})
+
+export const TAX_MODES = Object.freeze(Object.values(TAX_MODE))
+
+export const BRAND_FONTS = Object.freeze([
+  {
+    id: 'inter',
+    label: 'Inter',
+    stack:
+      "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  },
+  {
+    id: 'dm-sans',
+    label: 'DM Sans',
+    stack: "'DM Sans', Inter, sans-serif",
+  },
+  {
+    id: 'outfit',
+    label: 'Outfit',
+    stack: 'Outfit, Inter, sans-serif',
+  },
+  {
+    id: 'georgia',
+    label: 'Georgia',
+    stack: "Georgia, 'Times New Roman', serif",
+  },
+  {
+    id: 'garamond',
+    label: 'Garamond',
+    stack: "Garamond, 'Palatino Linotype', Palatino, serif",
+  },
+  {
+    id: 'playfair',
+    label: 'Playfair Display',
+    stack: "'Playfair Display', Georgia, serif",
+  },
+  {
+    id: 'merriweather',
+    label: 'Merriweather',
+    stack: 'Merriweather, Georgia, serif',
+  },
+  {
+    id: 'helvetica',
+    label: 'Helvetica',
+    stack: 'Helvetica, Arial, sans-serif',
+  },
+  {
+    id: 'system',
+    label: 'System UI',
+    stack: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+  },
+])
+
+const FONT_BY_ID = new Map(BRAND_FONTS.map((font) => [font.id, font]))
+
+export const HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
+
+/**
+ * @typedef {object} BrandAssetRef
+ * @property {string | null} assetId
+ * @property {string} url
+ */
+
 /**
  * @typedef {object} BrandLogos
- * @property {string | null} primary
- * @property {string | null} light
- * @property {string | null} dark
- * @property {string | null} mark
+ * @property {BrandAssetRef} primary
+ * @property {BrandAssetRef} light
+ * @property {BrandAssetRef} dark
+ * @property {BrandAssetRef} favicon
+ * @property {BrandAssetRef} cover
  */
 
 /**
@@ -69,6 +161,7 @@ export const PAGE_NUMBER_POSITIONS = Object.freeze(
 
 /**
  * @typedef {object} BrandTypography
+ * @property {string} fontFamily
  * @property {string} headingFont
  * @property {string} bodyFont
  * @property {string} scale
@@ -84,12 +177,74 @@ export const PAGE_NUMBER_POSITIONS = Object.freeze(
  */
 
 /**
+ * @typedef {object} BrandSocialLink
+ * @property {string} id
+ * @property {string} network
+ * @property {string} handle
+ */
+
+/**
+ * @typedef {object} BrandSignature
+ * @property {string} name
+ * @property {string} role
+ * @property {BrandAssetRef} image
+ */
+
+/**
+ * @typedef {object} BrandTeamMember
+ * @property {string} id
+ * @property {string} name
+ * @property {string} role
+ * @property {string} bio
+ * @property {BrandAssetRef} portrait
+ */
+
+/**
+ * @typedef {object} BrandTestimonial
+ * @property {string} id
+ * @property {string} quote
+ * @property {string} authorName
+ * @property {string} authorRole
+ * @property {string} company
+ * @property {BrandAssetRef} portrait
+ */
+
+/**
+ * @typedef {object} BrandBank
+ * @property {string} accountName
+ * @property {string} bankName
+ * @property {string} accountNumber
+ * @property {string} sortCode
+ * @property {string} iban
+ * @property {string} swift
+ */
+
+/**
+ * @typedef {object} BrandTax
+ * @property {boolean} registered
+ * @property {string} taxId
+ * @property {string} rate
+ * @property {string} mode
+ */
+
+/**
  * @typedef {object} BrandKit
  * @property {string} id
+ * @property {string} companyName
+ * @property {string} description
  * @property {BrandLogos} logos
  * @property {BrandColors} colors
  * @property {BrandTypography} typography
  * @property {BrandContact} contact
+ * @property {BrandSocialLink[]} socialLinks
+ * @property {BrandSignature} signature
+ * @property {BrandTeamMember[]} teamMembers
+ * @property {BrandTestimonial[]} testimonials
+ * @property {string} terms
+ * @property {string} paymentTerms
+ * @property {BrandBank} bank
+ * @property {string} vatNumber
+ * @property {BrandTax} tax
  * @property {string} coverStyle
  * @property {string} headerStyle
  * @property {string} footerStyle
@@ -105,12 +260,50 @@ export const PAGE_NUMBER_POSITIONS = Object.freeze(
  * @property {string} updatedAt
  */
 
+/**
+ * @param {Partial<BrandAssetRef> | string | null | undefined} input
+ * @returns {BrandAssetRef}
+ */
+export function makeAssetRef(input = null) {
+  if (!input) {
+    return { assetId: null, url: '' }
+  }
+
+  if (typeof input === 'string') {
+    if (input.startsWith('blob:') || input.startsWith('data:')) {
+      return { assetId: null, url: '' }
+    }
+
+    if (/^https?:/i.test(input) || input.startsWith('/uploads/')) {
+      return { assetId: null, url: input }
+    }
+
+    return { assetId: input, url: '' }
+  }
+
+  return {
+    assetId: input.assetId ?? input.id ?? null,
+    url: persistableUrl(input.url ?? ''),
+  }
+}
+
+export function assetRefUrl(ref) {
+  if (!ref) return ''
+  if (typeof ref === 'string') return ref
+  return ref.url?.trim() || ''
+}
+
+export function fontStackFor(fontFamily) {
+  return FONT_BY_ID.get(fontFamily)?.stack ?? BRAND_FONTS[0].stack
+}
+
 function makeLogos(input = {}) {
   return {
-    primary: input.primary ?? null,
-    light: input.light ?? null,
-    dark: input.dark ?? null,
-    mark: input.mark ?? null,
+    primary: makeAssetRef(input.primary ?? input.mark),
+    light: makeAssetRef(input.light),
+    dark: makeAssetRef(input.dark),
+    favicon: makeAssetRef(input.favicon ?? input.mark),
+    cover: makeAssetRef(input.cover),
   }
 }
 
@@ -125,16 +318,20 @@ function makeColors(input = {}) {
 }
 
 function makeTypography(input = {}) {
+  const fontFamily = input.fontFamily || 'inter'
+  const stack = input.headingFont || fontStackFor(fontFamily)
+
   return {
-    headingFont: input.headingFont ?? '',
-    bodyFont: input.bodyFont ?? '',
+    fontFamily,
+    headingFont: input.headingFont || stack,
+    bodyFont: input.bodyFont || stack,
     scale: input.scale ?? 'default',
   }
 }
 
-function makeContact(input = {}) {
+function makeContact(input = {}, companyName = '') {
   return {
-    legalName: input.legalName ?? '',
+    legalName: input.legalName || companyName || '',
     email: input.email ?? '',
     phone: input.phone ?? '',
     website: input.website ?? '',
@@ -143,16 +340,104 @@ function makeContact(input = {}) {
 }
 
 /**
+ * @param {Partial<BrandSocialLink>} [input]
+ * @returns {BrandSocialLink}
+ */
+export function makeSocialLink(input = {}) {
+  const network = SOCIAL_NETWORKS.includes(input.network)
+    ? input.network
+    : SOCIAL_NETWORK.LINKEDIN
+
+  return {
+    id: input.id ?? createRecordId('social'),
+    network,
+    handle: input.handle ?? '',
+  }
+}
+
+function makeSignature(input = {}) {
+  return {
+    name: input.name ?? '',
+    role: input.role ?? '',
+    image: makeAssetRef(input.image),
+  }
+}
+
+/**
+ * @param {Partial<BrandTeamMember>} [input]
+ * @returns {BrandTeamMember}
+ */
+export function makeBrandTeamMember(input = {}) {
+  return {
+    id: input.id ?? createRecordId('member'),
+    name: input.name ?? '',
+    role: input.role ?? '',
+    bio: input.bio ?? '',
+    portrait: makeAssetRef(input.portrait ?? input.portraitAssetId),
+  }
+}
+
+/**
+ * @param {Partial<BrandTestimonial>} [input]
+ * @returns {BrandTestimonial}
+ */
+export function makeBrandTestimonial(input = {}) {
+  return {
+    id: input.id ?? createRecordId('quote'),
+    quote: input.quote ?? '',
+    authorName: input.authorName ?? '',
+    authorRole: input.authorRole ?? '',
+    company: input.company ?? '',
+    portrait: makeAssetRef(input.portrait ?? input.portraitAssetId),
+  }
+}
+
+function makeBank(input = {}) {
+  return {
+    accountName: input.accountName ?? '',
+    bankName: input.bankName ?? '',
+    accountNumber: input.accountNumber ?? '',
+    sortCode: input.sortCode ?? '',
+    iban: input.iban ?? '',
+    swift: input.swift ?? '',
+  }
+}
+
+function makeTax(input = {}) {
+  const mode = TAX_MODES.includes(input.mode) ? input.mode : TAX_MODE.EXCLUSIVE
+
+  return {
+    registered: Boolean(input.registered),
+    taxId: input.taxId ?? '',
+    rate: input.rate == null ? '' : String(input.rate),
+    mode,
+  }
+}
+
+/**
  * @param {Partial<BrandKit>} [input]
  * @returns {BrandKit}
  */
 export function makeBrandKit(input = {}) {
+  const companyName = input.companyName ?? input.contact?.legalName ?? ''
+
   return {
     id: input.id ?? createRecordId('brand'),
+    companyName,
+    description: input.description ?? '',
     logos: makeLogos(input.logos),
     colors: makeColors(input.colors),
     typography: makeTypography(input.typography),
-    contact: makeContact(input.contact),
+    contact: makeContact(input.contact, companyName),
+    socialLinks: (input.socialLinks ?? []).map(makeSocialLink),
+    signature: makeSignature(input.signature),
+    teamMembers: (input.teamMembers ?? []).map(makeBrandTeamMember),
+    testimonials: (input.testimonials ?? []).map(makeBrandTestimonial),
+    terms: input.terms ?? '',
+    paymentTerms: input.paymentTerms ?? '',
+    bank: makeBank(input.bank),
+    vatNumber: input.vatNumber ?? '',
+    tax: makeTax(input.tax),
     coverStyle: input.coverStyle ?? COVER_STYLE.MINIMAL,
     headerStyle: input.headerStyle ?? HEADER_STYLE.STANDARD,
     footerStyle: input.footerStyle ?? FOOTER_STYLE.STANDARD,
@@ -169,6 +454,13 @@ export function makeBrandKit(input = {}) {
   }
 }
 
+function validateHex(field, value, errors) {
+  if (!value) return
+  if (!HEX_COLOR_PATTERN.test(value.trim())) {
+    errors.push({ field, message: 'Use a hex colour such as #14b8a6.' })
+  }
+}
+
 /**
  * @param {Partial<BrandKit>} kit
  * @returns {{ field: string, message: string }[]}
@@ -176,6 +468,12 @@ export function makeBrandKit(input = {}) {
 export function validateBrandKit(kit) {
   const errors = []
   const contact = kit.contact ?? {}
+  const colors = kit.colors ?? {}
+  const tax = kit.tax ?? {}
+
+  if (!kit.companyName || !kit.companyName.trim()) {
+    errors.push({ field: 'companyName', message: 'Company name is required.' })
+  }
 
   if (kit.coverStyle && !COVER_STYLES.includes(kit.coverStyle)) {
     errors.push({ field: 'coverStyle', message: 'Cover style is not recognised.' })
@@ -205,6 +503,62 @@ export function validateBrandKit(kit) {
 
   if (contact.email && !EMAIL_PATTERN.test(contact.email)) {
     errors.push({ field: 'contact.email', message: 'Contact email is not valid.' })
+  }
+
+  validateHex('colors.primary', colors.primary, errors)
+  validateHex('colors.secondary', colors.secondary, errors)
+  validateHex('colors.accent', colors.accent, errors)
+
+  if (kit.typography?.fontFamily && !FONT_BY_ID.has(kit.typography.fontFamily)) {
+    errors.push({ field: 'typography.fontFamily', message: 'Font is not recognised.' })
+  }
+
+  ;(kit.socialLinks ?? []).forEach((link, index) => {
+    if (link.network && !SOCIAL_NETWORKS.includes(link.network)) {
+      errors.push({
+        field: `socialLinks.${index}.network`,
+        message: 'Social network is not recognised.',
+      })
+    }
+  })
+
+  ;(kit.teamMembers ?? []).forEach((member, index) => {
+    if (!member.name?.trim()) {
+      errors.push({
+        field: `teamMembers.${index}.name`,
+        message: 'Team member name is required.',
+      })
+    }
+  })
+
+  ;(kit.testimonials ?? []).forEach((item, index) => {
+    if (!item.quote?.trim()) {
+      errors.push({
+        field: `testimonials.${index}.quote`,
+        message: 'Testimonial quote is required.',
+      })
+    }
+
+    if (!item.authorName?.trim()) {
+      errors.push({
+        field: `testimonials.${index}.authorName`,
+        message: 'Author name is required.',
+      })
+    }
+  })
+
+  if (tax.mode && !TAX_MODES.includes(tax.mode)) {
+    errors.push({ field: 'tax.mode', message: 'Tax mode is not recognised.' })
+  }
+
+  if (tax.rate) {
+    const rate = Number(tax.rate)
+    if (!Number.isFinite(rate) || rate < 0 || rate > 100) {
+      errors.push({
+        field: 'tax.rate',
+        message: 'Tax rate must be between 0 and 100.',
+      })
+    }
   }
 
   return errors

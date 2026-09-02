@@ -114,6 +114,45 @@ export async function deleteTemplate(id) {
   return { id }
 }
 
+/**
+ * Mark a template as the workspace default. Clears `isDefault` on every other
+ * template so only one default exists.
+ *
+ * @param {string} id
+ * @returns {Promise<import('../models/template.js').ProposalTemplate>}
+ * @throws {NotFoundError}
+ */
+export async function setDefaultTemplate(id) {
+  const existing = store.findById(id)
+
+  if (!existing) {
+    throw new NotFoundError(`No template found with id "${id}".`)
+  }
+
+  await delay()
+
+  const now = new Date().toISOString()
+
+  for (const record of store.all()) {
+    const isDefault = record.id === id
+
+    if (record.isDefault === isDefault) continue
+
+    store.replace(
+      record.id,
+      makeTemplate({
+        ...record,
+        isDefault,
+        id: record.id,
+        createdAt: record.createdAt,
+        updatedAt: isDefault ? now : record.updatedAt,
+      }),
+    )
+  }
+
+  return store.findById(id)
+}
+
 export function resetTemplates() {
   store.reset()
 }

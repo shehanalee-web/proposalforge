@@ -34,8 +34,8 @@ function renderChrome(id, props) {
   return Block ? <Block key={id} {...props} /> : null
 }
 
-function ProposalDocument({ proposal, settings }) {
-  const brand = resolveBrand(settings)
+function ProposalDocument({ proposal, settings, kit }) {
+  const brand = resolveBrand(settings, kit)
   const studioName = studioNameFromBrand(brand, settings)
   const layout = getLayout(proposal.layoutId)
   const context = { proposal, settings, brand }

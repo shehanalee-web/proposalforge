@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router'
 import Layout from './components/Layout/Layout.jsx'
 import Dashboard from './pages/Dashboard/Dashboard.jsx'
-import NewProposal from './pages/NewProposal/NewProposal.jsx'
+import CreateProposal from './pages/CreateProposal/CreateProposal.jsx'
 import History from './pages/History/History.jsx'
 import ProposalDetail from './pages/History/ProposalDetail.jsx'
 import ProposalEdit from './pages/History/ProposalEdit.jsx'
@@ -16,6 +16,7 @@ import ContentLibrary from './pages/ContentLibrary/ContentLibrary.jsx'
 import CaseStudies from './pages/CaseStudies/CaseStudies.jsx'
 import Testimonials from './pages/Testimonials/Testimonials.jsx'
 import Team from './pages/Team/Team.jsx'
+import ProposalAi from './pages/ProposalAi/ProposalAi.jsx'
 import {
   HistoryDetailRedirect,
   HistoryEditRedirect,
@@ -26,9 +27,10 @@ function App() {
   return (
     <Routes>
       <Route path="/p/:token" element={<ClientPortal />} />
+      <Route path="/proposal-ai" element={<ProposalAi />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />
-        <Route path="new" element={<NewProposal />} />
+        <Route path="new" element={<CreateProposal />} />
         <Route path="templates" element={<Templates />} />
         <Route path="templates/new" element={<TemplateEditor />} />
         <Route path="templates/:id/edit" element={<TemplateEditor />} />

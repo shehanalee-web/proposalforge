@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { useProposal } from '../../hooks/useProposal.js'
 import { useUpdateProposal } from '../../hooks/useUpdateProposal.js'
 import { getClientPortalUrl } from '../../utils/clientProposal.js'
 import { toDuplicateDraft } from '../../utils/duplicateDraft.js'
+import { useCreateProposalDialog } from '../../hooks/useCreateProposalDialog.js'
 import { PATH } from '../../workspace/paths.js'
 import ProposalDetailView from './ProposalDetailView.jsx'
 import styles from './ProposalDetail.module.css'
@@ -12,7 +13,7 @@ const SKELETON_ROWS = 5
 
 function ProposalDetail() {
   const { id } = useParams()
-  const navigate = useNavigate()
+  const { openCreate } = useCreateProposalDialog()
   const { proposal, loading, error, notFound, refetch } = useProposal(id)
   const { update, submitting: layoutSaving } = useUpdateProposal()
   const [exporting, setExporting] = useState(null)
@@ -22,7 +23,10 @@ function ProposalDetail() {
   function handleDuplicate() {
     if (!proposal) return
 
-    navigate(PATH.NEW_PROPOSAL, { state: { draft: toDuplicateDraft(proposal) } })
+    openCreate({
+      draft: toDuplicateDraft(proposal),
+      source: 'duplicate',
+    })
   }
 
   async function handleLayoutChange(layoutId) {

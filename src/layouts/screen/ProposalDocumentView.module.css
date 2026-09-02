@@ -1,6 +1,8 @@
 .document {
   display: grid;
   gap: var(--space-6);
+  width: min(var(--doc-max-width, 100%), 100%);
+  margin-inline: auto;
   font-family: var(--doc-body-font, inherit);
   color: var(--color-text);
 }

@@ -1,6 +1,7 @@
 import { View, Text } from '@react-pdf/renderer'
 import { formatDate } from '../utils/format.js'
 import { PROPOSAL_STATUS_LABELS } from '../models/proposal.js'
+import { studioNameFromBrand } from '../blocks/brand.js'
 import { formatProposalNumber } from './pdfFormat.js'
 import { styles } from './pdfStyles.js'
 
@@ -14,7 +15,8 @@ function Meta({ label, value }) {
 }
 
 function ProposalHeader({ proposal, settings, brand }) {
-  const studioName = settings.studioName?.trim() || 'ProposalForge'
+  const studioName = studioNameFromBrand(brand, settings)
+  const about = brand?.description?.trim() || settings?.about?.trim()
   const status = PROPOSAL_STATUS_LABELS[proposal.status] ?? proposal.status
   const accent = brand?.colors?.accent
 
@@ -29,8 +31,8 @@ function ProposalHeader({ proposal, settings, brand }) {
             ]}
           />
           <Text style={styles.studioName}>{studioName}</Text>
-          {settings.about ? (
-            <Text style={styles.studioAbout}>{settings.about}</Text>
+          {about ? (
+            <Text style={styles.studioAbout}>{about}</Text>
           ) : null}
         </View>
 

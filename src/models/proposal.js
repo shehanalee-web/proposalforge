@@ -52,6 +52,12 @@ export const PROJECT_TYPES = Object.freeze([
   'Motion Design',
   'Print Design',
   'Consulting',
+  'Architecture',
+  'Motion Graphics',
+  'Creative Agency',
+  'Construction',
+  'Software Development',
+  'Product Catalogue',
 ])
 
 export const DEFAULT_CURRENCY = 'USD'

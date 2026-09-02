@@ -21,6 +21,8 @@ import { resolveLayoutId } from '../layouts/registry.js'
  * @property {string} terms
  * @property {string} notes
  * @property {string} defaultLayoutId         Layout applied to new proposals from this template.
+ * @property {string} proposalType            Catalog id from proposal types, if any.
+ * @property {boolean} isDefault              Preferred template for its proposal type.
  * @property {string} createdAt
  * @property {string} updatedAt
  */
@@ -63,6 +65,8 @@ export function makeTemplate(input = {}) {
     terms: input.terms ?? '',
     notes: input.notes ?? '',
     defaultLayoutId: resolveLayoutId(input.defaultLayoutId ?? DEFAULT_LAYOUT_ID),
+    proposalType: input.proposalType ?? '',
+    isDefault: Boolean(input.isDefault),
     createdAt: input.createdAt ?? timestamp,
     updatedAt: input.updatedAt ?? timestamp,
   }

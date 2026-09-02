@@ -132,7 +132,7 @@ function ProposalDetailView({
         disabled={busy}
       />
 
-      <ProposalContent proposal={proposal} showSignature />
+      <ProposalContent proposal={proposal} includeCover showSignature />
 
       <Link to={PATH.PROPOSALS} className={styles.back}>
         Back to proposals

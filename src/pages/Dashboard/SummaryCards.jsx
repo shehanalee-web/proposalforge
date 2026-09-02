@@ -46,12 +46,12 @@ function buildCards(summary) {
 function SummaryCards({ summary, loading, error, onRetry }) {
   if (error) {
     return (
-      <div className={styles.error}>
+      <div className={`studio-panel ${styles.error}`}>
         <p className={styles.errorTitle}>Could not load summary</p>
         <p className={styles.errorText}>
           {error.message || 'Something went wrong while fetching figures.'}
         </p>
-        <button type="button" className={styles.action} onClick={onRetry}>
+        <button type="button" className={`studio-btn-secondary ${styles.action}`} onClick={onRetry}>
           Try again
         </button>
       </div>
@@ -61,7 +61,7 @@ function SummaryCards({ summary, loading, error, onRetry }) {
   return (
     <ul className={styles.grid}>
       {buildCards(summary).map((card) => (
-        <li key={card.key} className={styles.card}>
+        <li key={card.key} className={`studio-panel ${styles.card}`}>
           <span className={styles.label}>{card.label}</span>
           <span className={styles.value}>
             {loading ? PLACEHOLDER : card.value}

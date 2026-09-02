@@ -1,8 +1,12 @@
 import { formatDate } from '../../utils/format.js'
+import { signatoryFromBrand } from '../../blocks/brand.js'
 import styles from './blocks.module.css'
+import extra from '../../blocks/screen.module.css'
 
-function SignatureBlock({ proposal, settings }) {
-  const studioName = settings?.studioName?.trim() || 'ProposalForge'
+function SignatureBlock({ proposal, settings, brand }) {
+  const studioName = signatoryFromBrand(brand, settings)
+  const role = brand?.signature?.role?.trim() || 'Authorised representative'
+  const signatureImage = brand?.signature?.imageUrl
   const accepted = Boolean(proposal.acceptedAt)
 
   return (
@@ -22,8 +26,11 @@ function SignatureBlock({ proposal, settings }) {
         </div>
         <div className={styles.signCol}>
           <p className={styles.metaLabel}>Studio</p>
+          {signatureImage ? (
+            <img src={signatureImage} alt="" className={extra.signatureMark} />
+          ) : null}
           <p className={styles.signLine}>{studioName}</p>
-          <p className={styles.signHint}>Authorised representative</p>
+          <p className={styles.signHint}>{role}</p>
         </div>
       </div>
     </section>

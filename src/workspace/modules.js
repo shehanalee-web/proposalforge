@@ -37,6 +37,19 @@ export const WORKSPACE_MODULES = Object.freeze([
     capabilities: [],
   },
   {
+    id: WORKSPACE_MODULE.CREATE_PROPOSAL,
+    path: PATH.NEW_PROPOSAL,
+    label: 'Create Proposal',
+    icon: 'new',
+    group: WORKSPACE_GROUP.WORKSPACE,
+    inNav: true,
+    status: 'live',
+    summary: 'Start a new proposal from workspace, brand and type.',
+    description:
+      'A dedicated creation journey. Generate with AI or copy a type’s template into a new document.',
+    capabilities: [],
+  },
+  {
     id: WORKSPACE_MODULE.PROPOSALS,
     path: PATH.PROPOSALS,
     label: 'Proposals',
@@ -54,12 +67,12 @@ export const WORKSPACE_MODULES = Object.freeze([
     path: PATH.TEMPLATES,
     label: 'Templates',
     icon: 'templates',
-    group: WORKSPACE_GROUP.WORKSPACE,
+    group: WORKSPACE_GROUP.LIBRARIES,
     inNav: true,
     status: 'live',
-    summary: 'Reusable starting points for new proposals.',
+    summary: 'Reusable starting points managed as a library.',
     description:
-      'Templates copy into a proposal. Later edits never write back. A template may pick a default layout; it is not a layout.',
+      'Edit, duplicate and organise templates here. Creating a proposal happens from Create Proposal, which copies a type’s template into a new document.',
     capabilities: [],
   },
   {
@@ -69,16 +82,15 @@ export const WORKSPACE_MODULES = Object.freeze([
     icon: 'brand',
     group: WORKSPACE_GROUP.LIBRARIES,
     inNav: true,
-    status: 'placeholder',
-    summary: 'Workspace identity, inherited by every document.',
+    status: 'live',
+    summary: 'Company identity, inherited by every document.',
     description:
-      'Logos, colours, typography, contact details, covers, headers, footers and watermarks. Studio preview, the client portal and PDF export will consume Brand Kit automatically. Settings remains the studio profile until this module owns identity.',
+      'Set logos, colours, type, contact details, legal copy, team and testimonials once. Studio preview, the client portal, templates and PDF export consume Brand Kit automatically.',
     capabilities: [
-      'Primary, light, dark and mark logos',
-      'Colour palette and typography scale',
-      'Cover, header and footer styles',
-      'Watermarks, page numbers, spacing and document chrome',
-      'Company contact details resolved at render time',
+      'Company logos, favicon and cover image',
+      'Colour palette, type and contact details',
+      'Team, testimonials, terms and payment details',
+      'Inherited by proposals and templates at render time',
     ],
   },
   {
@@ -88,7 +100,7 @@ export const WORKSPACE_MODULES = Object.freeze([
     icon: 'services',
     group: WORKSPACE_GROUP.LIBRARIES,
     inNav: true,
-    status: 'placeholder',
+    status: 'live',
     summary: 'Company-defined offerings. Replaces hardcoded project types.',
     description:
       'Each service is something the company sells — architecture scale models, 3D printing, legal work, software, campaigns. Proposals will reference services instead of a fixed project-type list. The Proposal Engine stays universal.',
@@ -106,10 +118,10 @@ export const WORKSPACE_MODULES = Object.freeze([
     icon: 'assets',
     group: WORKSPACE_GROUP.LIBRARIES,
     inNav: true,
-    status: 'placeholder',
+    status: 'live',
     summary: 'Reusable media for proposals, services and brand.',
     description:
-      'Images, renders, videos, documents and certificates live here once. Proposals store asset IDs, not files. Layouts decide how an asset is framed — authors upload, they do not crop for each page.',
+      'Files uploaded from Brand Kit and proposal blocks. Proposals store asset IDs; layouts decide crop and size.',
     capabilities: [
       'Images, renders, videos, documents and certificates',
       'Referenced by Brand Kit, services, components and proposals',
@@ -123,14 +135,13 @@ export const WORKSPACE_MODULES = Object.freeze([
     icon: 'content',
     group: WORKSPACE_GROUP.LIBRARIES,
     inNav: true,
-    status: 'placeholder',
+    status: 'live',
     summary: 'Reusable proposal blocks — the Component Library.',
     description:
       'Executive summaries, galleries, pricing, timelines, FAQs and every other block type. Layouts place these blocks; they do not define their schemas. Custom industry sections are new block types, not new proposal engines.',
     capabilities: [
-      'Registered block types shared by screen, portal and PDF',
-      'Workspace-saved block instances in a later phase',
-      'Used by templates and services as default assemblies',
+      'Registered block types used by the proposal editor, portal and PDF',
+      'Used by templates as default assemblies',
     ],
   },
   {
@@ -140,7 +151,7 @@ export const WORKSPACE_MODULES = Object.freeze([
     icon: 'cases',
     group: WORKSPACE_GROUP.LIBRARIES,
     inNav: true,
-    status: 'placeholder',
+    status: 'live',
     summary: 'Proof of past work, reused across proposals.',
     description:
       'Client stories with narrative, services, and assets. Dropped into proposals as content, not rewritten per document.',
@@ -157,10 +168,10 @@ export const WORKSPACE_MODULES = Object.freeze([
     icon: 'testimonials',
     group: WORKSPACE_GROUP.LIBRARIES,
     inNav: true,
-    status: 'placeholder',
+    status: 'live',
     summary: 'Client quotes owned by the workspace, not the document.',
     description:
-      'Quotes, attribution and company. The Testimonials block in a proposal references these records.',
+      'Quotes from Brand Kit. Attribution and company appear on proposals that include a Testimonials block.',
     capabilities: [
       'Quote, author, role and company',
       'Optional portrait from the Asset Library',
@@ -173,10 +184,10 @@ export const WORKSPACE_MODULES = Object.freeze([
     icon: 'team',
     group: WORKSPACE_GROUP.LIBRARIES,
     inNav: true,
-    status: 'placeholder',
+    status: 'live',
     summary: 'People who appear on proposals.',
     description:
-      'Names, roles, bios and portraits. The Team block reads this library instead of embedding staff copy in every proposal.',
+      'People from Brand Kit. Names, roles, bios and portraits appear on proposals that include a Team block.',
     capabilities: [
       'Name, role and biography',
       'Portrait asset reference',
@@ -192,7 +203,7 @@ export const WORKSPACE_MODULES = Object.freeze([
     status: 'live',
     summary: 'Studio profile and workspace defaults.',
     description:
-      'Existing studio settings. Brand identity will move to Brand Kit; this page remains account and workspace configuration.',
+      'Existing studio settings. Company name, email and about stay in sync with Brand Kit.',
     capabilities: [],
   },
 ])

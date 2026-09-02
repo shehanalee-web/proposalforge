@@ -24,7 +24,9 @@ export const ASSET_KINDS = Object.freeze(Object.values(ASSET_KIND))
  * @property {string} name
  * @property {string} kind
  * @property {string} mimeType
- * @property {string} url
+ * @property {number} sizeBytes
+ * @property {string} url            Permanent public URL (`/uploads/…` or remote).
+ * @property {string} thumbnailUrl   Smaller preview URL; falls back to `url`.
  * @property {string} alt
  * @property {string} caption
  * @property {string} createdAt
@@ -43,7 +45,9 @@ export function makeAsset(input = {}) {
     name: input.name ?? '',
     kind: input.kind ?? ASSET_KIND.IMAGE,
     mimeType: input.mimeType ?? '',
+    sizeBytes: Number(input.sizeBytes ?? 0),
     url: input.url ?? '',
+    thumbnailUrl: input.thumbnailUrl ?? input.url ?? '',
     alt: input.alt ?? '',
     caption: input.caption ?? '',
     createdAt: input.createdAt ?? timestamp,

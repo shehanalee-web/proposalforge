@@ -3,7 +3,7 @@ import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
 import LayoutPicker from '../../layouts/screen/LayoutPicker.jsx'
 import styles from './ProposalForm.module.css'
 
-function Field({ id, label, error, children }) {
+function Field({ id, label, error, hint, children }) {
   const errorId = `${id}-error`
 
   return (
@@ -12,6 +12,11 @@ function Field({ id, label, error, children }) {
         {label}
       </label>
       {children}
+      {hint && !error ? (
+        <p id={`${id}-hint`} className={styles.hint}>
+          {hint}
+        </p>
+      ) : null}
       {error ? (
         <p id={errorId} className={styles.fieldError} role="alert">
           {error}
@@ -27,8 +32,8 @@ function ProposalForm({
   onSubmit,
   submitting,
   fieldErrors = {},
-  submitLabel = 'Create draft',
-  submittingLabel = 'Creating…',
+  submitLabel = 'Save changes',
+  submittingLabel = 'Saving…',
   children,
 }) {
   function handleChange(event) {
@@ -37,6 +42,7 @@ function ProposalForm({
 
   return (
     <form className={styles.form} onSubmit={onSubmit} noValidate>
+      <p className={styles.section}>Details</p>
       <div className={styles.grid}>
         <Field id="title" label="Title" error={fieldErrors.title}>
           <input
@@ -67,7 +73,10 @@ function ProposalForm({
             onChange={handleChange}
             disabled={submitting}
           >
-            {PROJECT_TYPES.map((type) => (
+            {(PROJECT_TYPES.includes(values.projectType)
+              ? PROJECT_TYPES
+              : [values.projectType, ...PROJECT_TYPES]
+            ).map((type) => (
               <option key={type} value={type}>
                 {type}
               </option>
@@ -131,20 +140,23 @@ function ProposalForm({
           />
         </Field>
 
-        <Field id="amount" label="Amount (USD)" error={fieldErrors.amount}>
+        <Field
+          id="amount"
+          label="Amount (USD)"
+          error={fieldErrors.amount}
+          hint="Updated live from the Commercials block."
+        >
           <input
             id="amount"
             name="amount"
-            type="number"
-            min="0"
-            step="1"
-            inputMode="numeric"
+            type="text"
+            inputMode="decimal"
             className={styles.input}
             value={values.amount}
-            onChange={handleChange}
-            disabled={submitting}
+            readOnly
+            disabled
             aria-invalid={Boolean(fieldErrors.amount)}
-            aria-describedby={fieldErrors.amount ? 'amount-error' : undefined}
+            aria-describedby={fieldErrors.amount ? 'amount-error' : 'amount-hint'}
           />
         </Field>
 
@@ -165,13 +177,15 @@ function ProposalForm({
         </Field>
       </div>
 
+      <p className={styles.section}>Layout</p>
       <LayoutPicker
         value={values.layoutId ?? DEFAULT_LAYOUT_ID}
         onChange={(layoutId) => onChange('layoutId', layoutId)}
         disabled={submitting}
       />
 
-      <Field id="summary" label="Summary" error={fieldErrors.summary}>
+      <p className={styles.section}>Content</p>
+      <Field id="summary" label="Executive summary" error={fieldErrors.summary}>
         <textarea
           id="summary"
           name="summary"

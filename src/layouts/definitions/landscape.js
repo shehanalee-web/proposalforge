@@ -56,6 +56,7 @@ export const landscapeLayout = {
     size: 'A4',
     orientation: 'landscape',
     sequence: [
+      { type: 'content', accept: [BLOCK_TYPE.COVER] },
       { type: 'stack', chrome: [PDF_BLOCK.HEADER], blocks: [PDF_BLOCK.HEADER] },
       {
         type: 'row',
