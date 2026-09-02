@@ -12,7 +12,6 @@ function WorkspacePlaceholder({ moduleId, children, action }) {
 
       <div className={styles.panel}>
         <p className={styles.kicker}>Workspace library</p>
-        <h2 className={styles.title}>{module.label}</h2>
         <p className={styles.description}>{module.description}</p>
 
         {module.capabilities.length > 0 ? (

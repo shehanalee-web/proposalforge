@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import Icon from '../../components/Icon/Icon.jsx'
 import { formatCurrency } from '../../utils/format.js'
@@ -28,9 +28,26 @@ function Templates() {
   const [renameTarget, setRenameTarget] = useState(null)
   const [renameValue, setRenameValue] = useState('')
   const [actionError, setActionError] = useState(null)
+  const renameDialogRef = useRef(null)
+  const renameTitleId = useId()
 
   const isInitialLoad = loading && templates.length === 0
   const locked = duplicating || deleting || renaming
+
+  useEffect(() => {
+    const node = renameDialogRef.current
+    if (!node) return
+
+    if (renameTarget && !node.open) {
+      node.showModal()
+    } else if (!renameTarget && node.open) {
+      node.close()
+    }
+  }, [renameTarget])
+
+  function handleRenameNativeClose() {
+    if (renameTarget) setRenameTarget(null)
+  }
 
   async function handleDuplicate(template) {
     setOpenMenuId(null)
@@ -290,47 +307,58 @@ function Templates() {
 
       <div className={styles.panel}>{renderContent()}</div>
 
-      {renameTarget ? (
-        <div className={styles.renameBackdrop}>
-          <form
-            className={styles.renameDialog}
-            onSubmit={confirmRename}
-            aria-labelledby="rename-template-title"
-          >
-            <h2 id="rename-template-title" className={styles.renameTitle}>
+      <dialog
+        ref={renameDialogRef}
+        className={styles.renameDialog}
+        aria-labelledby={renameTitleId}
+        onClose={handleRenameNativeClose}
+        onCancel={handleRenameNativeClose}
+      >
+        <form className={styles.renameForm} onSubmit={confirmRename}>
+          <header className={styles.renameHeader}>
+            <h2 id={renameTitleId} className={styles.renameTitle}>
               Rename template
             </h2>
-            <label className={styles.renameLabel} htmlFor="rename-template">
-              Template name
-            </label>
-            <input
-              id="rename-template"
-              className={styles.renameInput}
-              value={renameValue}
-              onChange={(event) => setRenameValue(event.target.value)}
-              autoFocus
-              required
-            />
-            <div className={styles.renameActions}>
-              <button
-                type="button"
-                className={styles.secondary}
-                onClick={() => setRenameTarget(null)}
-                disabled={renaming}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className={styles.primary}
-                disabled={renaming || !renameValue.trim()}
-              >
-                {renaming ? 'Saving…' : 'Save'}
-              </button>
+            <p className={styles.renameLede}>
+              This name is only used in the template library.
+            </p>
+          </header>
+
+          <div className={styles.renameBody}>
+            <div className={styles.renameField}>
+              <label className={styles.renameLabel} htmlFor="rename-template">
+                Template name
+              </label>
+              <input
+                id="rename-template"
+                className={styles.renameInput}
+                value={renameValue}
+                onChange={(event) => setRenameValue(event.target.value)}
+                autoFocus
+                required
+              />
             </div>
-          </form>
-        </div>
-      ) : null}
+          </div>
+
+          <footer className={styles.renameFooter}>
+            <button
+              type="button"
+              className={styles.renameCancel}
+              onClick={() => setRenameTarget(null)}
+              disabled={renaming}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className={styles.renameSubmit}
+              disabled={renaming || !renameValue.trim()}
+            >
+              {renaming ? 'Saving…' : 'Save'}
+            </button>
+          </footer>
+        </form>
+      </dialog>
     </section>
   )
 }

@@ -10,7 +10,7 @@
 }
 
 .dialog::backdrop {
-  background-color: rgba(0, 0, 0, 0.62);
+  background-color: var(--color-overlay);
 }
 
 .form {

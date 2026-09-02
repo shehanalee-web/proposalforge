@@ -26,12 +26,6 @@
   text-transform: uppercase;
 }
 
-.title {
-  color: var(--color-text);
-  font-size: var(--text-2xl);
-  letter-spacing: -0.03em;
-}
-
 .lede {
   color: var(--color-text-secondary);
   font-size: var(--text-md);

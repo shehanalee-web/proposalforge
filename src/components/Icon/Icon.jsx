@@ -1,5 +1,11 @@
 const ICONS = {
-  logo: <path d="M13.6 2 5 13.2h5.2L9.3 22 19 10.5h-6.1L13.6 2Z" fill="currentColor" stroke="none" />,
+  logo: (
+    <>
+      <path d="M8 4.5h5.25L17.5 8.75V18.5A1.5 1.5 0 0 1 16 20H8a1.5 1.5 0 0 1-1.5-1.5V6A1.5 1.5 0 0 1 8 4.5Z" />
+      <path d="M13.25 4.5V8.5H17.5" />
+      <path d="M10 12.25h4.75M10 15h4.75M10 17.75h3" />
+    </>
+  ),
   dashboard: (
     <>
       <rect x="3.5" y="3.5" width="7" height="7" rx="2" />

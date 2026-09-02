@@ -39,18 +39,19 @@
   gap: var(--space-2);
   padding: var(--space-4);
   border: 1px solid var(--color-border);
+  border-left: 3px solid var(--doc-secondary, var(--color-border));
   border-radius: var(--radius-lg);
   background-color: var(--color-surface);
 }
 
 .file {
-  color: var(--doc-accent, var(--color-accent));
+  color: var(--doc-primary, var(--doc-accent, var(--color-accent)));
   font-size: var(--text-sm);
   font-weight: 500;
 }
 
 .file:hover {
-  color: var(--color-accent-hover);
+  color: var(--doc-secondary, var(--color-accent-hover));
 }
 
 .coverImage {

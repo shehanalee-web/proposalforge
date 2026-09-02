@@ -128,7 +128,6 @@ function CreateProposal() {
       <header className={styles.hero}>
         <div className={styles.heroCopy}>
           <p className={styles.kicker}>New document</p>
-          <h2 className={styles.title}>Create a proposal</h2>
           <p className={styles.lede}>
             Choose the workspace and company identity, then generate a draft
             with AI or pick a proposal type.

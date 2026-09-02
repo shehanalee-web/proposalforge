@@ -9,7 +9,7 @@
 }
 
 .groupTitle {
-  color: var(--color-text);
+  color: var(--doc-primary, var(--color-text));
   font-size: var(--text-sm);
   font-weight: 600;
 }

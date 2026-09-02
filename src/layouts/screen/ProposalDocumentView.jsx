@@ -52,7 +52,10 @@ function ProposalDocumentView({
       className={styles.document}
       data-layout={layout.id}
       data-orientation={layout.orientation}
-      style={brandToCssVars(brand)}
+      style={{
+        ...brandToCssVars(brand),
+        '--doc-max-width': layout.screen.maxWidth,
+      }}
     >
       {placed.map((region) => {
         const instances = region.instances.filter((instance) =>

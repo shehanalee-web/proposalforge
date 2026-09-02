@@ -56,9 +56,9 @@ function Field({ id, label, error, hint, className, children }) {
 
 function Card({ kicker, title, lede, children }) {
   return (
-    <section className={styles.card}>
+    <section className={`studio-panel ${styles.card}`}>
       <header className={styles.cardHeader}>
-        <p className={styles.cardKicker}>{kicker}</p>
+        <p className="studio-kicker">{kicker}</p>
         <h2 className={styles.cardTitle}>{title}</h2>
         {lede ? <p className={styles.cardLede}>{lede}</p> : null}
       </header>

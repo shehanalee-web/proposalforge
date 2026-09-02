@@ -7,7 +7,7 @@
 .blockTitle {
   font-size: var(--text-md);
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--doc-primary, var(--color-text));
   font-family: var(--doc-heading-font, inherit);
 }
 
@@ -33,6 +33,7 @@
   padding: var(--space-8);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
+  border-top: 3px solid var(--doc-primary, var(--color-accent));
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
 }
@@ -60,7 +61,7 @@
   display: grid;
   place-items: center;
   border-radius: var(--radius-md);
-  background-color: var(--doc-accent, var(--color-accent));
+  background-color: var(--doc-primary, var(--color-accent));
   color: var(--color-accent-contrast);
   box-shadow: var(--shadow-accent);
 }
@@ -72,7 +73,7 @@
 }
 
 .kicker {
-  color: var(--color-text-muted);
+  color: var(--doc-primary, var(--color-text-muted));
   font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -92,7 +93,7 @@
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: var(--space-4);
   padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--doc-secondary, var(--color-border));
 }
 
 .coverLandscape .meta {
@@ -133,13 +134,14 @@
   padding: var(--space-5);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
+  border-left: 3px solid var(--doc-secondary, var(--color-border));
   border-radius: var(--radius-lg);
 }
 
 .sectionHeading {
   font-size: var(--text-md);
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--doc-primary, var(--color-text));
 }
 
 /* Pricing --------------------------------------------------------------- */
@@ -152,8 +154,8 @@
 
 .items th {
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--doc-secondary, var(--color-border));
+  color: var(--doc-primary, var(--color-text-muted));
   font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: 0.06em;
@@ -182,7 +184,7 @@
   gap: var(--space-2);
   margin-top: var(--space-2);
   padding-top: var(--space-4);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--doc-secondary, var(--color-border));
 }
 
 .totalRow {
@@ -198,7 +200,7 @@
 }
 
 .grandTotal {
-  color: var(--color-text);
+  color: var(--doc-primary, var(--color-text));
   font-size: var(--text-md);
   font-weight: 600;
 }
@@ -220,7 +222,7 @@
 .galleryFrame {
   aspect-ratio: 4 / 3;
   overflow: hidden;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--doc-secondary, var(--color-border));
   border-radius: var(--radius-lg);
   background-color: var(--color-surface);
 }
@@ -256,7 +258,7 @@
 
 .signLine {
   margin-top: var(--space-8);
-  border-bottom: 1px solid var(--color-border-strong);
+  border-bottom: 1px solid var(--doc-secondary, var(--color-border-strong));
   min-height: 1.5rem;
   color: var(--color-text);
   font-size: var(--text-sm);
@@ -277,10 +279,10 @@
 
 .tag {
   padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid color-mix(in srgb, var(--doc-secondary, var(--color-border-strong)) 55%, transparent);
   border-radius: var(--radius-full);
-  background-color: var(--color-surface-active);
-  color: var(--color-text-secondary);
+  background-color: color-mix(in srgb, var(--doc-secondary, var(--color-surface-active)) 16%, var(--color-surface-active));
+  color: var(--doc-secondary, var(--color-text-secondary));
   font-size: var(--text-xs);
   font-weight: 600;
 }

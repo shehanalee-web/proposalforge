@@ -62,13 +62,13 @@ function Settings() {
 
   if (error) {
     return (
-      <section className={styles.page}>
-        <div className={styles.banner} role="alert">
-          <p className={styles.bannerTitle}>Could not load settings</p>
-          <p className={styles.bannerText}>
+      <section className="studio-page">
+        <div className="studio-banner" role="alert">
+          <p className="studio-banner-title">Could not load settings</p>
+          <p className="studio-banner-text">
             {error.message || 'Something went wrong while fetching settings.'}
           </p>
-          <button type="button" className={styles.retry} onClick={refetch}>
+          <button type="button" className={`studio-btn-secondary ${styles.retry}`} onClick={refetch}>
             Try again
           </button>
         </div>
@@ -78,12 +78,15 @@ function Settings() {
 
   if (loading || !values) {
     return (
-      <section className={styles.page}>
-        <p className={styles.intro}>Loading studio profile…</p>
-        <div className={styles.panel}>
+      <section className="studio-page">
+        <header className="studio-hero">
+          <p className="studio-kicker">Studio profile</p>
+          <p className="studio-intro">Loading studio profile…</p>
+        </header>
+        <div className={`studio-panel ${styles.panel}`}>
           <div className={styles.skeleton} aria-hidden="true">
             {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-              <div key={index} className={styles.skeletonRow} />
+              <div key={index} className={`studio-skeleton ${styles.skeletonRow}`} />
             ))}
           </div>
         </div>
@@ -92,27 +95,30 @@ function Settings() {
   }
 
   return (
-    <section className={styles.page}>
-      <p className={styles.intro}>
-        These details identify your studio on proposals. Company name, email
-        and description stay in sync with Brand Kit.
-      </p>
+    <section className="studio-page">
+      <header className="studio-hero">
+        <p className="studio-kicker">Studio profile</p>
+        <p className="studio-intro">
+          These details identify your studio on proposals. Company name, email
+          and description stay in sync with Brand Kit.
+        </p>
+      </header>
 
       {saved ? (
-        <p className={styles.success} role="status">
+        <p className="studio-success" role="status">
           Settings saved.
         </p>
       ) : null}
 
       {requestError ? (
-        <div className={styles.banner} role="alert">
-          <p className={styles.bannerTitle}>Could not save settings</p>
-          <p className={styles.bannerText}>
+        <div className="studio-banner" role="alert">
+          <p className="studio-banner-title">Could not save settings</p>
+          <p className="studio-banner-text">
             {requestError.message || 'Something went wrong. Please try again.'}
           </p>
           <button
             type="button"
-            className={styles.retry}
+            className={`studio-btn-secondary ${styles.retry}`}
             onClick={handleSubmit}
             disabled={submitting}
           >
@@ -121,7 +127,7 @@ function Settings() {
         </div>
       ) : null}
 
-      <div className={styles.panel}>
+      <div className={`studio-panel ${styles.panel}`}>
         <SettingsForm
           values={values}
           onChange={handleChange}

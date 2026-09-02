@@ -27,10 +27,6 @@
   text-transform: uppercase;
 }
 
-.title {
-  font-size: var(--text-lg);
-}
-
 .description {
   max-width: 62ch;
   margin-top: var(--space-2);

@@ -47,13 +47,13 @@ function BrandKit() {
 
   if (error) {
     return (
-      <section className={styles.page}>
-        <div className={styles.banner} role="alert">
-          <p className={styles.bannerTitle}>Could not load Brand Kit</p>
-          <p className={styles.bannerText}>
+      <section className="studio-page">
+        <div className="studio-banner" role="alert">
+          <p className="studio-banner-title">Could not load Brand Kit</p>
+          <p className="studio-banner-text">
             {error.message || 'Something went wrong while fetching company identity.'}
           </p>
-          <button type="button" className={styles.retry} onClick={refetch}>
+          <button type="button" className={`studio-btn-secondary ${styles.retry}`} onClick={refetch}>
             Try again
           </button>
         </div>
@@ -63,15 +63,14 @@ function BrandKit() {
 
   if (loading || !values) {
     return (
-      <section className={styles.page}>
-        <header className={styles.hero}>
-          <p className={styles.kicker}>Company identity</p>
-          <h2 className={styles.title}>Brand Kit</h2>
-          <p className={styles.lede}>Loading your workspace identity…</p>
+      <section className={`studio-page ${styles.page}`}>
+        <header className="studio-hero">
+          <p className="studio-kicker">Company identity</p>
+          <p className={`studio-intro ${styles.lede}`}>Loading your workspace identity…</p>
         </header>
         <div className={styles.skeleton} aria-hidden="true">
           {Array.from({ length: SKELETON_CARDS }, (_, index) => (
-            <div key={index} className={styles.skeletonCard} />
+            <div key={index} className={`studio-skeleton ${styles.skeletonCard}`} />
           ))}
         </div>
       </section>
@@ -79,31 +78,30 @@ function BrandKit() {
   }
 
   return (
-    <section className={styles.page}>
-      <header className={styles.hero}>
-        <p className={styles.kicker}>Company identity</p>
-        <h2 className={styles.title}>Brand Kit</h2>
-        <p className={styles.lede}>
+    <section className={`studio-page ${styles.page}`}>
+      <header className="studio-hero">
+        <p className="studio-kicker">Company identity</p>
+        <p className={`studio-intro ${styles.lede}`}>
           Set this once. Every proposal and template inherits logos, colours,
           type, contact details, legal copy, team and testimonials automatically.
         </p>
       </header>
 
       {saved ? (
-        <p className={styles.success} role="status">
+        <p className="studio-success" role="status">
           Brand Kit saved. Future proposals and templates will use this identity.
         </p>
       ) : null}
 
       {requestError ? (
-        <div className={styles.banner} role="alert">
-          <p className={styles.bannerTitle}>Could not save Brand Kit</p>
-          <p className={styles.bannerText}>
+        <div className="studio-banner" role="alert">
+          <p className="studio-banner-title">Could not save Brand Kit</p>
+          <p className="studio-banner-text">
             {requestError.message || 'Something went wrong. Please try again.'}
           </p>
           <button
             type="button"
-            className={styles.retry}
+            className={`studio-btn-secondary ${styles.retry}`}
             onClick={handleSubmit}
             disabled={submitting}
           >
@@ -120,14 +118,14 @@ function BrandKit() {
         fieldErrors={fieldErrors}
       />
 
-      <div className={styles.bar}>
+      <div className={`studio-panel ${styles.bar}`}>
         <p className={styles.barCopy}>
           Saving writes identity for the whole workspace — not a single document.
         </p>
         <button
           type="submit"
           form="brand-kit-form"
-          className={styles.save}
+          className={`studio-btn-primary ${styles.save}`}
           disabled={submitting}
         >
           {submitting ? 'Saving…' : 'Save Brand Kit'}

@@ -73,6 +73,9 @@
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
   --shadow-accent: 0 4px 16px rgba(20, 184, 166, 0.22);
 
+  /* Overlays */
+  --color-overlay: rgba(0, 0, 0, 0.62);
+
   /* Layout */
   --sidebar-width: 260px;
   --sidebar-width-collapsed: 72px;
