@@ -15,6 +15,7 @@ export const PATH = Object.freeze({
   NEW_TEMPLATE: '/templates/new',
   BRAND_KIT: '/brand-kit',
   SERVICES: '/services',
+  NEW_SERVICE: '/services/new',
   ASSETS: '/assets',
   CONTENT_LIBRARY: '/content-library',
   CASE_STUDIES: '/case-studies',
@@ -33,4 +34,8 @@ export function proposalEditPath(id) {
 
 export function templateEditPath(id) {
   return `${PATH.TEMPLATES}/${id}/edit`
+}
+
+export function serviceEditPath(id) {
+  return `${PATH.SERVICES}/${id}/edit`
 }

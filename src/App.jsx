@@ -11,6 +11,7 @@ import TemplateEditor from './pages/Templates/TemplateEditor.jsx'
 import ClientPortal from './pages/ClientPortal/ClientPortal.jsx'
 import BrandKit from './pages/BrandKit/BrandKit.jsx'
 import Services from './pages/Services/Services.jsx'
+import ServiceEditor from './pages/Services/ServiceEditor.jsx'
 import Assets from './pages/Assets/Assets.jsx'
 import ContentLibrary from './pages/ContentLibrary/ContentLibrary.jsx'
 import CaseStudies from './pages/CaseStudies/CaseStudies.jsx'
@@ -42,6 +43,8 @@ function App() {
         <Route path="history/:id" element={<HistoryDetailRedirect />} />
         <Route path="brand-kit" element={<BrandKit />} />
         <Route path="services" element={<Services />} />
+        <Route path="services/new" element={<ServiceEditor />} />
+        <Route path="services/:id/edit" element={<ServiceEditor />} />
         <Route path="assets" element={<Assets />} />
         <Route path="content-library" element={<ContentLibrary />} />
         <Route path="case-studies" element={<CaseStudies />} />
