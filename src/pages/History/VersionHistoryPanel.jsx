@@ -5,6 +5,7 @@ import {
   latestVersionNumber,
   snapshotFromProposal,
 } from '../../models/proposalVersion.js'
+import { useExportProposalPdf } from '../../hooks/useExportProposalPdf.js'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
 import VersionBadges from './VersionBadges.jsx'
 import VersionCompare from './VersionCompare.jsx'
@@ -30,6 +31,7 @@ function VersionHistoryPanel({
       ?? null,
   )
   const [comparing, setComparing] = useState(false)
+  const { runExport, exporting, error: exportError } = useExportProposalPdf()
 
   const selected = versions.find((version) => version.versionId === selectedId)
   const isCurrent = selected?.versionNumber === proposal.currentVersion
@@ -40,6 +42,11 @@ function VersionHistoryPanel({
   function handleRestore() {
     if (!selected || isCurrent || restoring) return
     onRestore(selected.versionId)
+  }
+
+  async function handleDownloadPdf() {
+    if (!selected || exporting) return
+    await runExport(proposal, 'download', { version: selected })
   }
 
   return (
@@ -69,6 +76,12 @@ function VersionHistoryPanel({
         {restoreError ? (
           <p className={styles.error} role="alert">
             {restoreError.message || 'Could not restore this version.'}
+          </p>
+        ) : null}
+
+        {exportError ? (
+          <p className={styles.error} role="alert">
+            {exportError.message || 'Could not generate the PDF. Please try again.'}
           </p>
         ) : null}
 
@@ -120,14 +133,25 @@ function VersionHistoryPanel({
               type="button"
               className={styles.primary}
               onClick={handleRestore}
-              disabled={isCurrent || restoring}
+              disabled={isCurrent || restoring || Boolean(exporting)}
             >
               {restoring ? 'Restoring…' : 'Restore version'}
             </button>
             <button
               type="button"
               className={styles.secondary}
+              onClick={handleDownloadPdf}
+              disabled={Boolean(exporting) || restoring}
+            >
+              {exporting === 'download'
+                ? 'Preparing PDF…'
+                : `Download version ${selected.versionNumber} PDF`}
+            </button>
+            <button
+              type="button"
+              className={styles.secondary}
               onClick={() => setComparing((open) => !open)}
+              disabled={Boolean(exporting) || restoring}
             >
               {comparing ? 'Hide comparison' : 'Compare with current'}
             </button>

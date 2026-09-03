@@ -1,3 +1,4 @@
+import { getLayout } from '../../layouts/registry.js'
 import { formatCurrency } from '../../utils/format.js'
 import styles from './VersionCompare.module.css'
 
@@ -29,6 +30,26 @@ function asText(value, key) {
       .map((item) => {
         const description = item.description?.trim() || EMPTY
         return `${description} — ${formatCurrency(item.amount)}`
+      })
+      .join('\n')
+  }
+
+  if (key === 'layout') {
+    return value ? getLayout(value).label : EMPTY
+  }
+
+  if (key === 'blocks') {
+    if (!value.length) return EMPTY
+
+    return value
+      .map((block) => {
+        const state = block.enabled === false ? 'Off' : 'On'
+        const heading =
+          block.data?.heading?.trim() ||
+          block.data?.kicker?.trim() ||
+          block.data?.body?.trim()?.slice(0, 48) ||
+          block.type
+        return `${block.type} (${state}) — ${heading}`
       })
       .join('\n')
   }

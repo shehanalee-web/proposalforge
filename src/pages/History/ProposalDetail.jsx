@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router'
 import { useProposal } from '../../hooks/useProposal.js'
 import { useRestoreProposalVersion } from '../../hooks/useRestoreProposalVersion.js'
 import { useUpdateProposal } from '../../hooks/useUpdateProposal.js'
+import { useExportProposalPdf } from '../../hooks/useExportProposalPdf.js'
 import { getClientPortalUrl } from '../../utils/clientProposal.js'
 import { toDuplicateDraft } from '../../utils/duplicateDraft.js'
 import { useCreateProposalDialog } from '../../hooks/useCreateProposalDialog.js'
@@ -23,8 +24,7 @@ function ProposalDetail() {
     error: restoreError,
   } = useRestoreProposalVersion()
   const { update, submitting: layoutSaving } = useUpdateProposal()
-  const [exporting, setExporting] = useState(null)
-  const [exportError, setExportError] = useState(null)
+  const { runExport, exporting, error: exportError } = useExportProposalPdf()
   const [historyOpen, setHistoryOpen] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
 
@@ -71,27 +71,9 @@ function ProposalDetail() {
     }
   }
 
-  async function runExport(action) {
-    if (!proposal || exporting) return
-
-    setExportError(null)
-    setExporting(action)
-
-    try {
-      const { downloadProposalPdf, printProposalPdf } = await import(
-        '../../pdf/generateProposalPdf.js'
-      )
-
-      if (action === 'download') {
-        await downloadProposalPdf(proposal)
-      } else {
-        await printProposalPdf(proposal)
-      }
-    } catch (caught) {
-      setExportError(caught)
-    } finally {
-      setExporting(null)
-    }
+  async function handleExport(action) {
+    if (!proposal) return
+    await runExport(proposal, action)
   }
 
   if (notFound) {
@@ -144,8 +126,8 @@ function ProposalDetail() {
       <ProposalDetailView
         proposal={proposal}
         onDuplicate={handleDuplicate}
-        onDownloadPdf={() => runExport('download')}
-        onPrint={() => runExport('print')}
+        onDownloadPdf={() => handleExport('download')}
+        onPrint={() => handleExport('print')}
         onOpenHistory={() => setHistoryOpen(true)}
         onCopyLink={handleCopyLink}
         onLayoutChange={handleLayoutChange}

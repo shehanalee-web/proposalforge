@@ -10,6 +10,34 @@
   font-size: var(--text-sm);
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.export {
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  box-shadow: var(--shadow-accent);
+}
+
+.export:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+}
+
+.export:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .panel {
   padding: var(--space-6);
   background-color: var(--color-surface);

@@ -15,6 +15,7 @@ import {
   signatoryFromBrand,
   studioNameFromBrand,
 } from './brand.js'
+import { resolvePdfLogo } from '../pdf/pdfBrand.js'
 import { BLOCK_TYPE } from './ids.js'
 import { isBlockDataEmpty } from './schemas.js'
 import { styles } from '../pdf/pdfStyles.js'
@@ -39,9 +40,11 @@ export function CoverPdf({ instance, proposal, brand, settings }) {
   const kicker = instance.data.kicker?.trim() || proposal.projectType
   const studioName = studioNameFromBrand(brand, settings)
   const coverImage = resolveCoverImage(instance, brand)
+  const logoUrl = resolvePdfLogo(brand, 'light')
 
   return (
     <View style={styles.section}>
+      {logoUrl ? <Image src={logoUrl} style={styles.coverLogo} /> : null}
       <Text style={titleStyle(brand)}>{studioName}</Text>
       {kicker ? <Text style={styles.projectType}>{kicker}</Text> : null}
       <Text style={styles.projectHeading}>{heading}</Text>

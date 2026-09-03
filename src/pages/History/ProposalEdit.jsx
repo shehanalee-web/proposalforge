@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
-import { PROJECT_TYPES } from '../../models/proposal.js'
+import { makeProposal, PROJECT_TYPES } from '../../models/proposal.js'
 import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
 import { useProposal } from '../../hooks/useProposal.js'
 import { useUpdateProposal } from '../../hooks/useUpdateProposal.js'
+import { useExportProposalPdf } from '../../hooks/useExportProposalPdf.js'
 import ProposalForm from '../NewProposal/ProposalForm.jsx'
 import { PATH, proposalPath } from '../../workspace/paths.js'
 import { ensureProposalBlocks } from '../../blocks/hydrate.js'
@@ -54,6 +55,7 @@ function ProposalEdit() {
     error: saveError,
     fieldErrors,
   } = useUpdateProposal()
+  const { runExport, exporting, error: exportError } = useExportProposalPdf()
 
   const [draft, setDraft] = useState(null)
   const [blocks, setBlocks] = useState(null)
@@ -108,6 +110,25 @@ function ProposalEdit() {
     }
   }
 
+  async function handleDownloadPdf() {
+    if (!proposal || !values || exporting) return
+
+    const preview = makeProposal({
+      ...proposal,
+      ...toEditableChanges(values, documentBlocks),
+      id: proposal.id,
+      createdAt: proposal.createdAt,
+      versions: proposal.versions,
+      currentVersion: proposal.currentVersion,
+      shareToken: proposal.shareToken,
+      notes: proposal.notes,
+      status: proposal.status,
+      tags: proposal.tags,
+    })
+
+    await runExport(preview, 'download')
+  }
+
   if (notFound) {
     return (
       <section className={styles.page}>
@@ -153,13 +174,35 @@ function ProposalEdit() {
     )
   }
 
+  const busy = submitting || Boolean(exporting)
+
   return (
     <section className={styles.page}>
-      <p className={styles.intro}>
-        Edit branding details, pricing, layout, validity dates and every content
-        block — including team, images and PDFs. Disabling a block hides it
-        without deleting its content.
-      </p>
+      <div className={styles.toolbar}>
+        <p className={styles.intro}>
+          Edit branding details, pricing, layout, validity dates and every content
+          block — including team, images and PDFs. Disabling a block hides it
+          without deleting its content. Download PDF uses the current editor
+          values, including unsaved changes.
+        </p>
+        <button
+          type="button"
+          className={styles.export}
+          onClick={handleDownloadPdf}
+          disabled={busy}
+        >
+          {exporting === 'download' ? 'Preparing PDF…' : 'Download PDF'}
+        </button>
+      </div>
+
+      {exportError ? (
+        <div className={styles.banner} role="alert">
+          <p className={styles.bannerTitle}>Could not generate the PDF</p>
+          <p className={styles.bannerText}>
+            {exportError.message || 'Something went wrong. Please try again.'}
+          </p>
+        </div>
+      ) : null}
 
       {requestError ? (
         <div className={styles.banner} role="alert">

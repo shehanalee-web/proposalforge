@@ -34,6 +34,9 @@ export const DEFAULT_UPDATED_BY = 'Studio'
  * @property {string} terms
  * @property {string} notes
  * @property {ProposalSnapshotMetadata} metadata
+ * @property {string} layoutId
+ * @property {import('../blocks/instance.js').BlockInstance[]} blocks
+ * @property {object[]} images
  */
 
 /**
@@ -88,6 +91,9 @@ export function snapshotFromProposal(proposal) {
       validUntil: proposal.validUntil ?? null,
       status: proposal.status ?? 'draft',
     },
+    layoutId: proposal.layoutId ?? '',
+    blocks: proposal.blocks ?? [],
+    images: proposal.images ?? [],
   })
 }
 
@@ -100,8 +106,7 @@ export function snapshotFromProposal(proposal) {
  */
 export function proposalFieldsFromSnapshot(snapshot) {
   const metadata = snapshot.metadata ?? {}
-
-  return {
+  const fields = {
     title: snapshot.title ?? '',
     summary: snapshot.description ?? '',
     sections: cloneDeep(snapshot.sections ?? []),
@@ -118,6 +123,20 @@ export function proposalFieldsFromSnapshot(snapshot) {
     validUntil: metadata.validUntil ?? null,
     status: metadata.status ?? 'draft',
   }
+
+  if (snapshot.layoutId) {
+    fields.layoutId = snapshot.layoutId
+  }
+
+  if (Array.isArray(snapshot.blocks) && snapshot.blocks.length > 0) {
+    fields.blocks = cloneDeep(snapshot.blocks)
+  }
+
+  if (Array.isArray(snapshot.images)) {
+    fields.images = cloneDeep(snapshot.images)
+  }
+
+  return fields
 }
 
 /**
@@ -144,6 +163,14 @@ function lastVersion(versions) {
   return versions.reduce((latest, version) =>
     version.versionNumber > latest.versionNumber ? version : latest,
   )
+}
+
+function comparableBlocks(blocks) {
+  return (blocks ?? []).map((block) => ({
+    type: block.type ?? '',
+    enabled: Boolean(block.enabled),
+    data: block.data ?? {},
+  }))
 }
 
 function comparableSnapshot(snapshot) {
@@ -173,6 +200,8 @@ function comparableSnapshot(snapshot) {
       validUntil: snapshot.metadata?.validUntil ?? null,
       status: snapshot.metadata?.status ?? 'draft',
     },
+    layoutId: snapshot.layoutId ?? '',
+    blocks: comparableBlocks(snapshot.blocks),
   }
 }
 
@@ -338,6 +367,20 @@ export function diffSnapshots(current, selected) {
       current: left.notes,
       selected: right.notes,
       changed: changed('notes'),
+    },
+    {
+      key: 'layout',
+      label: 'Layout',
+      current: left.layoutId,
+      selected: right.layoutId,
+      changed: changed('layoutId'),
+    },
+    {
+      key: 'blocks',
+      label: 'Content blocks',
+      current: left.blocks,
+      selected: right.blocks,
+      changed: changed('blocks'),
     },
   ]
 }

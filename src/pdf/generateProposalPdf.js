@@ -5,10 +5,15 @@ import { fetchSettings } from '../services/settingsService.js'
 import { embedBrandKitImages, embedProposalImages } from './embedPdfImages.js'
 import ProposalDocument from './ProposalDocument.jsx'
 import { toPdfFilename } from './pdfFormat.js'
+import { prepareProposalForPdf } from './prepareProposalPdf.js'
 
 /**
  * Compose a PDF after uploaded images have been fetched from their public
  * URLs and encoded as data URIs. Attachment links keep those public URLs.
+ *
+ * @param {import('../models/proposal.js').Proposal} proposal
+ * @param {import('../models/settings.js').Settings} settings
+ * @param {import('../models/brandKit.js').BrandKit | null} kit
  */
 export async function renderProposalPdfBlob(proposal, settings, kit) {
   const [embeddedProposal, embeddedKit] = await Promise.all([
@@ -23,15 +28,28 @@ export async function renderProposalPdfBlob(proposal, settings, kit) {
   return pdf(document).toBlob()
 }
 
-export async function loadProposalPdfContext(proposal) {
+/**
+ * @param {import('../models/proposal.js').Proposal} proposal
+ * @param {{
+ *   audience?: string,
+ *   version?: import('../models/proposalVersion.js').ProposalVersion | null,
+ * }} [options]
+ */
+export async function loadProposalPdfContext(proposal, options = {}) {
+  const prepared = prepareProposalForPdf(proposal, options)
   const [settings, kit] = await Promise.all([fetchSettings(), fetchBrandKit()])
-  const blob = await renderProposalPdfBlob(proposal, settings, kit)
+  const blob = await renderProposalPdfBlob(prepared, settings, kit)
 
-  return { blob, filename: toPdfFilename(proposal) }
+  return {
+    blob,
+    filename: toPdfFilename(prepared, {
+      versionNumber: prepared.currentVersion,
+    }),
+  }
 }
 
-export async function downloadProposalPdf(proposal) {
-  const { blob, filename } = await loadProposalPdfContext(proposal)
+export async function downloadProposalPdf(proposal, options = {}) {
+  const { blob, filename } = await loadProposalPdfContext(proposal, options)
   const url = URL.createObjectURL(blob)
 
   try {
@@ -47,8 +65,8 @@ export async function downloadProposalPdf(proposal) {
   }
 }
 
-export async function printProposalPdf(proposal) {
-  const { blob } = await loadProposalPdfContext(proposal)
+export async function printProposalPdf(proposal, options = {}) {
+  const { blob } = await loadProposalPdfContext(proposal, options)
   const url = URL.createObjectURL(blob)
 
   const iframe = document.createElement('iframe')
