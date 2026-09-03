@@ -5,6 +5,7 @@ import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
 import { useProposal } from '../../hooks/useProposal.js'
 import { useUpdateProposal } from '../../hooks/useUpdateProposal.js'
 import { useExportProposalPdf } from '../../hooks/useExportProposalPdf.js'
+import { useServices } from '../../hooks/useServices.js'
 import ProposalForm from '../NewProposal/ProposalForm.jsx'
 import { PATH, proposalPath } from '../../workspace/paths.js'
 import { ensureProposalBlocks } from '../../blocks/hydrate.js'
@@ -23,6 +24,7 @@ function valuesFromProposal(proposal) {
     clientEmail: proposal.clientEmail ?? '',
     company: proposal.company ?? '',
     projectType: proposal.projectType ?? PROJECT_TYPES[0],
+    serviceId: proposal.serviceIds?.[0] ?? '',
     amount: Number.isFinite(proposal.amount) ? String(proposal.amount) : '',
     summary: proposal.summary ?? '',
     validUntil: proposal.validUntil ?? '',
@@ -37,6 +39,7 @@ function toEditableChanges(values, blocks) {
     clientEmail: values.clientEmail,
     company: values.company,
     projectType: values.projectType,
+    serviceIds: values.serviceId ? [values.serviceId] : [],
     amount: values.amount === '' ? 0 : Number(values.amount),
     summary: values.summary,
     validUntil: values.validUntil || null,
@@ -56,6 +59,7 @@ function ProposalEdit() {
     fieldErrors,
   } = useUpdateProposal()
   const { runExport, exporting, error: exportError } = useExportProposalPdf()
+  const { services, loading: servicesLoading } = useServices()
 
   const [draft, setDraft] = useState(null)
   const [blocks, setBlocks] = useState(null)
@@ -67,6 +71,16 @@ function ProposalEdit() {
 
   function handleChange(name, value) {
     if (!values) return
+
+    if (name === 'serviceId') {
+      const service = services.find((entry) => entry.id === value)
+      setDraft({
+        ...values,
+        serviceId: value,
+        projectType: service?.name || values.projectType,
+      })
+      return
+    }
 
     setDraft({ ...values, [name]: value })
 
@@ -161,7 +175,7 @@ function ProposalEdit() {
     )
   }
 
-  if (loading || !values) {
+  if (loading || !values || servicesLoading) {
     return (
       <section className={styles.page}>
         <p className={styles.intro}>Loading proposal…</p>
@@ -228,6 +242,7 @@ function ProposalEdit() {
           onSubmit={handleSubmit}
           submitting={submitting}
           fieldErrors={fieldErrors}
+          services={services}
           submitLabel="Save changes"
           submittingLabel="Saving…"
         >

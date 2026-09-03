@@ -34,8 +34,25 @@ function ProposalForm({
   fieldErrors = {},
   submitLabel = 'Save changes',
   submittingLabel = 'Saving…',
+  services = null,
   children,
 }) {
+  const useLibrary = Array.isArray(services)
+  const matchedServiceId = useLibrary
+    ? services.find((service) => service.id === values.serviceId)?.id ||
+      services.find((service) => service.name === values.projectType)?.id ||
+      ''
+    : ''
+  const unmatchedType =
+    useLibrary &&
+    values.projectType &&
+    !services.some(
+      (service) =>
+        service.id === matchedServiceId || service.name === values.projectType,
+    )
+      ? values.projectType
+      : null
+
   function handleChange(event) {
     onChange(event.target.name, event.target.value)
   }
@@ -62,26 +79,46 @@ function ProposalForm({
 
         <Field
           id="projectType"
-          label="Project type"
-          error={fieldErrors.projectType}
+          label={useLibrary ? 'Service' : 'Project type'}
+          error={fieldErrors.projectType || fieldErrors.serviceId}
         >
-          <select
-            id="projectType"
-            name="projectType"
-            className={styles.input}
-            value={values.projectType}
-            onChange={handleChange}
-            disabled={submitting}
-          >
-            {(PROJECT_TYPES.includes(values.projectType)
-              ? PROJECT_TYPES
-              : [values.projectType, ...PROJECT_TYPES]
-            ).map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
+          {useLibrary ? (
+            <select
+              id="projectType"
+              name="serviceId"
+              className={styles.input}
+              value={matchedServiceId}
+              onChange={(event) => onChange('serviceId', event.target.value)}
+              disabled={submitting}
+            >
+              {unmatchedType ? (
+                <option value="">{unmatchedType}</option>
+              ) : null}
+              {services.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {service.name}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <select
+              id="projectType"
+              name="projectType"
+              className={styles.input}
+              value={values.projectType}
+              onChange={handleChange}
+              disabled={submitting}
+            >
+              {(PROJECT_TYPES.includes(values.projectType)
+                ? PROJECT_TYPES
+                : [values.projectType, ...PROJECT_TYPES]
+              ).map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          )}
         </Field>
 
         <Field

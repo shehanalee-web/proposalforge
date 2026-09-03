@@ -81,7 +81,7 @@ function Dashboard() {
         <div>
           <h2 className={styles.calloutTitle}>Start a new proposal</h2>
           <p className={styles.calloutText}>
-            Generate a draft with AI, or start from a template.
+            Generate a draft with AI, or start from a service.
           </p>
         </div>
 

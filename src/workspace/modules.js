@@ -44,9 +44,9 @@ export const WORKSPACE_MODULES = Object.freeze([
     group: WORKSPACE_GROUP.WORKSPACE,
     inNav: true,
     status: 'live',
-    summary: 'Start a new proposal from workspace, brand and type.',
+    summary: 'Start a new proposal from workspace, brand and service.',
     description:
-      'A dedicated creation journey. Generate with AI or copy a type’s template into a new document.',
+      'A dedicated creation journey. Generate with AI or copy a service’s template into a new document.',
     capabilities: [],
   },
   {
@@ -72,7 +72,7 @@ export const WORKSPACE_MODULES = Object.freeze([
     status: 'live',
     summary: 'Reusable starting points managed as a library.',
     description:
-      'Edit, duplicate and organise templates here. Creating a proposal happens from Create Proposal, which copies a type’s template into a new document.',
+      'Edit, duplicate and organise templates here. Creating a proposal happens from Create Proposal, which copies a service’s template into a new document.',
     capabilities: [],
   },
   {
@@ -103,7 +103,7 @@ export const WORKSPACE_MODULES = Object.freeze([
     status: 'live',
     summary: 'Company-defined offerings. Replaces hardcoded project types.',
     description:
-      'Each service is something the company sells — architecture scale models, 3D printing, legal work, software, campaigns. Proposals will reference services instead of a fixed project-type list. The Proposal Engine stays universal.',
+      'Each service is something the company sells — architecture scale models, 3D printing, legal work, software, campaigns. Create Proposal offers these instead of a fixed project-type list. The Proposal Engine stays universal.',
     capabilities: [
       'Name, description and default scope language',
       'Pricing models (fixed, unit, hourly, milestone, retainer)',

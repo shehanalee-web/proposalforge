@@ -3,9 +3,9 @@ import { createRecordId } from './ids.js'
 /**
  * Service Library model.
  *
- * Company-defined offerings. Replaces hardcoded project types on proposals
- * in a later phase. Proposals will reference service ids; they will not
- * embed a parallel industry-specific schema.
+ * Company-defined offerings. Create Proposal copies a service template into
+ * a new document. Proposals store `serviceIds` plus a `projectType` name
+ * snapshot; they do not embed a parallel industry-specific schema.
  */
 
 export const PRICING_MODEL = Object.freeze({
@@ -107,4 +107,30 @@ export function findTemplateForService(templates, service) {
   }
 
   return templates.find((template) => template.proposalType === service.id)
+}
+
+/**
+ * Match free text (wizard answers or a stored `projectType`) onto a library
+ * offering when the names align.
+ *
+ * @param {Service[]} services
+ * @param {string} [name]
+ * @returns {Service | undefined}
+ */
+export function findServiceForName(services, name) {
+  const text = String(name ?? '').trim().toLowerCase()
+  if (!text || !Array.isArray(services) || services.length === 0) {
+    return undefined
+  }
+
+  const exact = services.find(
+    (service) => service.name.toLowerCase() === text,
+  )
+  if (exact) return exact
+
+  return services.find(
+    (service) =>
+      text.includes(service.name.toLowerCase()) ||
+      service.name.toLowerCase().includes(text),
+  )
 }
