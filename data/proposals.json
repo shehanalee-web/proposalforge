@@ -1,0 +1,2084 @@
+[
+  {
+    "id": "prop-1002",
+    "title": "Custom Steel Staircase Fabrication",
+    "clientName": "Marcus Reyes",
+    "clientEmail": "m.reyes@harborlinedev.com",
+    "company": "Harborline Developments",
+    "projectType": "Fabrication",
+    "status": "accepted",
+    "amount": 0,
+    "currency": "USD",
+    "summary": "Design, fabrication and installation of a blackened steel feature staircase with oak treads for a lobby renovation.",
+    "sections": [
+      {
+        "id": "blk-a554c962-7148-4dfb-8343-874eb942a322",
+        "heading": "Materials",
+        "body": "Hot-rolled steel stringers with a blackened patina finish, solid white oak treads, and a mild steel handrail."
+      },
+      {
+        "id": "blk-62b7324d-e89d-47cd-bef1-68f816541007",
+        "heading": "Fabrication and Installation",
+        "body": "Shop fabrication over four weeks, followed by a two-day on-site installation coordinated with the general contractor."
+      }
+    ],
+    "items": [
+      {
+        "id": "cline-9f013a57-f07d-4a6b-9e15-fa405e4b9ce1",
+        "description": "",
+        "amount": 0
+      }
+    ],
+    "terms": "",
+    "notes": "",
+    "tags": [
+      "structural",
+      "install-required"
+    ],
+    "images": [],
+    "validUntil": "2026-07-31",
+    "shareToken": "share-1002",
+    "lastViewedAt": "2026-07-18T16:05:00.000Z",
+    "acceptedAt": "2026-07-19T08:20:00.000Z",
+    "clientFeedback": "",
+    "layoutId": "portrait",
+    "blocks": [
+      {
+        "id": "blk-eda6e1c7-7c05-415e-a666-82b60b40910a",
+        "type": "cover",
+        "enabled": true,
+        "data": {
+          "kicker": "",
+          "heading": "",
+          "subheading": "",
+          "imageUrl": "",
+          "imageAssetId": ""
+        }
+      },
+      {
+        "id": "blk-f6107a99-eabd-419a-8573-49c5b14a6554",
+        "type": "executive-summary",
+        "enabled": true,
+        "data": {
+          "body": "Design, fabrication and installation of a blackened steel feature staircase with oak treads for a lobby renovation."
+        }
+      },
+      {
+        "id": "blk-a554c962-7148-4dfb-8343-874eb942a322",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Materials",
+          "body": "Hot-rolled steel stringers with a blackened patina finish, solid white oak treads, and a mild steel handrail."
+        }
+      },
+      {
+        "id": "blk-62b7324d-e89d-47cd-bef1-68f816541007",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Fabrication and Installation",
+          "body": "Shop fabrication over four weeks, followed by a two-day on-site installation coordinated with the general contractor."
+        }
+      },
+      {
+        "id": "blk-8300c8ac-8d5f-4b93-8d63-0e06ac531bfa",
+        "type": "gallery",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-7782f1df-86e5-4bce-9461-f526365ae3e6",
+        "type": "pricing",
+        "enabled": true,
+        "data": {
+          "notes": "",
+          "modules": [
+            {
+              "id": "cmod-3987215d-b417-4e1e-8cc8-58dc4e5accab",
+              "type": "table",
+              "title": "Investment",
+              "items": [
+                {
+                  "id": "cline-9f013a57-f07d-4a6b-9e15-fa405e4b9ce1",
+                  "description": "",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 0
+                }
+              ]
+            }
+          ],
+          "items": [
+            {
+              "id": "cline-9f013a57-f07d-4a6b-9e15-fa405e4b9ce1",
+              "description": "",
+              "amount": 0
+            }
+          ]
+        }
+      },
+      {
+        "id": "blk-b3c28070-c92d-4573-b3fd-f297bac6c46b",
+        "type": "timeline",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-785764e2-c0d2-47d3-80d6-f077de1c881d",
+        "type": "deliverables",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-c5f95260-185c-449e-b7e0-31e9dc6c895c",
+        "type": "specifications",
+        "enabled": false,
+        "data": {
+          "rows": []
+        }
+      },
+      {
+        "id": "blk-59a67f08-9af3-4fac-b11a-0d3240eb4ea8",
+        "type": "team",
+        "enabled": true,
+        "data": {
+          "members": []
+        }
+      },
+      {
+        "id": "blk-c8f03fbe-fb86-4d6e-810f-b6939e9f17f9",
+        "type": "testimonials",
+        "enabled": true,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-1a06bd34-0885-455d-91a5-a8ca3b9b27c7",
+        "type": "faq",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-8baf735d-7eba-4f36-b55c-0f00ce6bcb7f",
+        "type": "terms",
+        "enabled": true,
+        "data": {
+          "body": ""
+        }
+      },
+      {
+        "id": "blk-bf55c0b2-a439-4583-9e5b-e2c65a7de148",
+        "type": "signature",
+        "enabled": true,
+        "data": {
+          "clientLabel": "Client",
+          "studioLabel": "Studio"
+        }
+      },
+      {
+        "id": "blk-0c94abf5-a639-4376-98db-64d9bf19f9ae",
+        "type": "attachments",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      }
+    ],
+    "currentVersion": 0,
+    "versions": [],
+    "createdAt": "2026-07-02T11:00:00.000Z",
+    "updatedAt": "2026-07-19T08:20:00.000Z"
+  },
+  {
+    "id": "prop-1003",
+    "title": "E-commerce Site Rebuild",
+    "clientName": "Priya Raman",
+    "clientEmail": "priya@voltcycles.co",
+    "company": "Volt Cycles",
+    "projectType": "Web Development",
+    "status": "draft",
+    "amount": 0,
+    "currency": "USD",
+    "summary": "Replatform the existing storefront, rebuild the product configurator and improve checkout conversion.",
+    "sections": [
+      {
+        "id": "blk-b6a601e7-32fe-4454-b615-1a4880383dff",
+        "heading": "",
+        "body": ""
+      }
+    ],
+    "items": [
+      {
+        "id": "cline-46851c5b-1a30-47ec-b491-916e0a446c3f",
+        "description": "",
+        "amount": 0
+      }
+    ],
+    "terms": "",
+    "notes": "",
+    "tags": [
+      "ecommerce"
+    ],
+    "images": [],
+    "validUntil": null,
+    "shareToken": "share-1003",
+    "lastViewedAt": null,
+    "acceptedAt": null,
+    "clientFeedback": "",
+    "layoutId": "portrait",
+    "blocks": [
+      {
+        "id": "blk-96f593b7-37b1-477e-b0f9-b6f9a9001290",
+        "type": "cover",
+        "enabled": true,
+        "data": {
+          "kicker": "",
+          "heading": "",
+          "subheading": "",
+          "imageUrl": "",
+          "imageAssetId": ""
+        }
+      },
+      {
+        "id": "blk-0f1f0201-6d97-4b56-b156-6892f611fa95",
+        "type": "executive-summary",
+        "enabled": true,
+        "data": {
+          "body": "Replatform the existing storefront, rebuild the product configurator and improve checkout conversion."
+        }
+      },
+      {
+        "id": "blk-b6a601e7-32fe-4454-b615-1a4880383dff",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "",
+          "body": ""
+        }
+      },
+      {
+        "id": "blk-f7f96928-031c-4566-8f29-e0df4ad55b21",
+        "type": "gallery",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-175c1ddd-61ae-443e-aa04-b0d5c3b8a6de",
+        "type": "pricing",
+        "enabled": true,
+        "data": {
+          "notes": "",
+          "modules": [
+            {
+              "id": "cmod-29482395-c2bd-4955-b9fa-57467e8ff269",
+              "type": "table",
+              "title": "Investment",
+              "items": [
+                {
+                  "id": "cline-46851c5b-1a30-47ec-b491-916e0a446c3f",
+                  "description": "",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 0
+                }
+              ]
+            }
+          ],
+          "items": [
+            {
+              "id": "cline-46851c5b-1a30-47ec-b491-916e0a446c3f",
+              "description": "",
+              "amount": 0
+            }
+          ]
+        }
+      },
+      {
+        "id": "blk-85fc8e74-4816-463f-bc5c-2584a98e14ac",
+        "type": "timeline",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-9c7ea2ef-a88d-4bef-a9b6-35dd6734cca5",
+        "type": "deliverables",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-e1dd127b-898f-482d-b03b-0aef8cd67e87",
+        "type": "specifications",
+        "enabled": false,
+        "data": {
+          "rows": []
+        }
+      },
+      {
+        "id": "blk-876e142a-34b0-4efb-a8d3-206f5dcea167",
+        "type": "team",
+        "enabled": true,
+        "data": {
+          "members": []
+        }
+      },
+      {
+        "id": "blk-fb7fb59b-f939-4468-a4dd-28ed5fc8cc9d",
+        "type": "testimonials",
+        "enabled": true,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-ecdc062d-cc66-4bea-b1a7-b1fcdaa651cf",
+        "type": "faq",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-88fc3777-5c08-4926-ab78-908afc3a42bc",
+        "type": "terms",
+        "enabled": true,
+        "data": {
+          "body": ""
+        }
+      },
+      {
+        "id": "blk-e5595c28-7286-463d-8814-808e6541b121",
+        "type": "signature",
+        "enabled": true,
+        "data": {
+          "clientLabel": "Client",
+          "studioLabel": "Studio"
+        }
+      },
+      {
+        "id": "blk-8363e075-b1c2-47f3-a2ba-fb6a35549ce4",
+        "type": "attachments",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      }
+    ],
+    "currentVersion": 0,
+    "versions": [],
+    "createdAt": "2026-08-21T13:05:00.000Z",
+    "updatedAt": "2026-08-23T10:12:00.000Z"
+  },
+  {
+    "id": "prop-1004",
+    "title": "Retail Pop-Up Build-Out",
+    "clientName": "Elena Voss",
+    "clientEmail": "elena.voss@lumencosmetics.com",
+    "company": "Lumen Cosmetics",
+    "projectType": "Fabrication",
+    "status": "revision_requested",
+    "amount": 0,
+    "currency": "USD",
+    "summary": "Turnkey fabrication of a travelling retail pop-up: modular display walls, illuminated signage and a demo counter.",
+    "sections": [
+      {
+        "id": "blk-0755773e-9de2-48ab-85dc-560612b8f1df",
+        "heading": "Deliverables",
+        "body": "Six modular wall units, one demo counter, backlit channel-letter signage, crating and freight to three cities."
+      }
+    ],
+    "items": [
+      {
+        "id": "cline-fb272df3-82d9-4773-8743-84c80d311f7d",
+        "description": "",
+        "amount": 0
+      }
+    ],
+    "terms": "",
+    "notes": "",
+    "tags": [
+      "retail",
+      "multi-city"
+    ],
+    "images": [],
+    "validUntil": "2026-09-05",
+    "shareToken": "share-1004",
+    "lastViewedAt": "2026-08-19T11:10:00.000Z",
+    "acceptedAt": null,
+    "clientFeedback": "Please quote a second finish option for the demo counter and confirm freight to the Dallas date.",
+    "layoutId": "portrait",
+    "blocks": [
+      {
+        "id": "blk-383b6fd5-bd82-4e72-b5e5-24d35d05c9e7",
+        "type": "cover",
+        "enabled": true,
+        "data": {
+          "kicker": "",
+          "heading": "",
+          "subheading": "",
+          "imageUrl": "",
+          "imageAssetId": ""
+        }
+      },
+      {
+        "id": "blk-3f042619-9ab6-4b1d-81a2-5c06e048fe17",
+        "type": "executive-summary",
+        "enabled": true,
+        "data": {
+          "body": "Turnkey fabrication of a travelling retail pop-up: modular display walls, illuminated signage and a demo counter."
+        }
+      },
+      {
+        "id": "blk-0755773e-9de2-48ab-85dc-560612b8f1df",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Deliverables",
+          "body": "Six modular wall units, one demo counter, backlit channel-letter signage, crating and freight to three cities."
+        }
+      },
+      {
+        "id": "blk-d0a33bd3-55f9-45c7-aa6a-01df5a0d6d78",
+        "type": "gallery",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-b412e4d6-a3b3-4c26-a6be-88a9d44ba135",
+        "type": "pricing",
+        "enabled": true,
+        "data": {
+          "notes": "",
+          "modules": [
+            {
+              "id": "cmod-8eb7c31b-8876-429c-a187-285a4f8bd658",
+              "type": "table",
+              "title": "Investment",
+              "items": [
+                {
+                  "id": "cline-fb272df3-82d9-4773-8743-84c80d311f7d",
+                  "description": "",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 0
+                }
+              ]
+            }
+          ],
+          "items": [
+            {
+              "id": "cline-fb272df3-82d9-4773-8743-84c80d311f7d",
+              "description": "",
+              "amount": 0
+            }
+          ]
+        }
+      },
+      {
+        "id": "blk-366c0edf-0ecc-45ac-9570-879be45bacfc",
+        "type": "timeline",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-cb767ae4-6da9-428f-b684-5f5e00e9a834",
+        "type": "deliverables",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-98c8791a-38c6-43de-a04b-19661026d693",
+        "type": "specifications",
+        "enabled": false,
+        "data": {
+          "rows": []
+        }
+      },
+      {
+        "id": "blk-c06b1f32-1261-4bc9-bca1-dd5cb9a985ce",
+        "type": "team",
+        "enabled": true,
+        "data": {
+          "members": []
+        }
+      },
+      {
+        "id": "blk-85776654-9865-41c2-8956-3690992f66d3",
+        "type": "testimonials",
+        "enabled": true,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-36d70055-2eff-48b9-b9b2-257ba2203d2c",
+        "type": "faq",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-1afac32d-e4de-4949-a508-161ae57de74b",
+        "type": "terms",
+        "enabled": true,
+        "data": {
+          "body": ""
+        }
+      },
+      {
+        "id": "blk-48e4eb50-02ab-4473-ab51-7609570982d9",
+        "type": "signature",
+        "enabled": true,
+        "data": {
+          "clientLabel": "Client",
+          "studioLabel": "Studio"
+        }
+      },
+      {
+        "id": "blk-6b464eeb-4799-4475-805c-a4d0a398e0c6",
+        "type": "attachments",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      }
+    ],
+    "currentVersion": 0,
+    "versions": [],
+    "createdAt": "2026-08-05T15:30:00.000Z",
+    "updatedAt": "2026-08-19T11:22:00.000Z"
+  },
+  {
+    "id": "prop-1005",
+    "title": "Product Launch Campaign",
+    "clientName": "Tobias Lund",
+    "clientEmail": "tobias@atlasfoods.com",
+    "company": "Atlas Foods",
+    "projectType": "Marketing",
+    "status": "declined",
+    "amount": 0,
+    "currency": "USD",
+    "summary": "Integrated launch campaign covering paid social, influencer seeding and in-store point-of-sale collateral.",
+    "sections": [
+      {
+        "id": "blk-ef6ae0ba-7185-435e-ac04-663dfb48b40c",
+        "heading": "",
+        "body": ""
+      }
+    ],
+    "items": [
+      {
+        "id": "cline-760e429f-a98e-49ce-892e-43f681598769",
+        "description": "",
+        "amount": 0
+      }
+    ],
+    "terms": "",
+    "notes": "",
+    "tags": [
+      "campaign"
+    ],
+    "images": [],
+    "validUntil": "2026-06-20",
+    "shareToken": "share-1005",
+    "lastViewedAt": "2026-06-12T09:40:00.000Z",
+    "acceptedAt": null,
+    "clientFeedback": "",
+    "layoutId": "portrait",
+    "blocks": [
+      {
+        "id": "blk-08934e51-aef9-41f5-9180-aacc3fed81d4",
+        "type": "cover",
+        "enabled": true,
+        "data": {
+          "kicker": "",
+          "heading": "",
+          "subheading": "",
+          "imageUrl": "",
+          "imageAssetId": ""
+        }
+      },
+      {
+        "id": "blk-50878873-9d28-453e-ae7a-9b3a55c430a1",
+        "type": "executive-summary",
+        "enabled": true,
+        "data": {
+          "body": "Integrated launch campaign covering paid social, influencer seeding and in-store point-of-sale collateral."
+        }
+      },
+      {
+        "id": "blk-ef6ae0ba-7185-435e-ac04-663dfb48b40c",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "",
+          "body": ""
+        }
+      },
+      {
+        "id": "blk-0820c340-9c4a-46e2-80f8-101e419e9eef",
+        "type": "gallery",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-ee10d7ef-e45d-479b-b110-a9d842957979",
+        "type": "pricing",
+        "enabled": true,
+        "data": {
+          "notes": "",
+          "modules": [
+            {
+              "id": "cmod-0ab625a7-ae85-4885-8036-06fa72b24ebe",
+              "type": "table",
+              "title": "Investment",
+              "items": [
+                {
+                  "id": "cline-760e429f-a98e-49ce-892e-43f681598769",
+                  "description": "",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 0
+                }
+              ]
+            }
+          ],
+          "items": [
+            {
+              "id": "cline-760e429f-a98e-49ce-892e-43f681598769",
+              "description": "",
+              "amount": 0
+            }
+          ]
+        }
+      },
+      {
+        "id": "blk-9afa60e5-4d3b-415c-afc1-dd5efb374b88",
+        "type": "timeline",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-4aa1bac1-57ee-4f21-9c9a-05932b652eed",
+        "type": "deliverables",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-a6894362-db72-4623-b0ac-8fc38cc7c57e",
+        "type": "specifications",
+        "enabled": false,
+        "data": {
+          "rows": []
+        }
+      },
+      {
+        "id": "blk-acd54b41-60b3-43bc-bf25-ad850bf477d8",
+        "type": "team",
+        "enabled": true,
+        "data": {
+          "members": []
+        }
+      },
+      {
+        "id": "blk-24917ecc-ec34-465f-bda9-67ebb21c8850",
+        "type": "testimonials",
+        "enabled": true,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-757386d9-4193-44ad-bc84-83342d1615d2",
+        "type": "faq",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-7c4650fd-b5db-4030-8fad-98f7736142a2",
+        "type": "terms",
+        "enabled": true,
+        "data": {
+          "body": ""
+        }
+      },
+      {
+        "id": "blk-c146d5af-78f5-428d-b94b-ae8d371223e0",
+        "type": "signature",
+        "enabled": true,
+        "data": {
+          "clientLabel": "Client",
+          "studioLabel": "Studio"
+        }
+      },
+      {
+        "id": "blk-624eade7-2b1d-4c7c-8c0e-8b0acf83ed34",
+        "type": "attachments",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      }
+    ],
+    "currentVersion": 0,
+    "versions": [],
+    "createdAt": "2026-05-28T10:00:00.000Z",
+    "updatedAt": "2026-06-24T14:35:00.000Z"
+  },
+  {
+    "id": "prop-1006",
+    "title": "Museum Exhibit Millwork",
+    "clientName": "Harriet Osei",
+    "clientEmail": "h.osei@civicartstrust.org",
+    "company": "Civic Arts Trust",
+    "projectType": "Fabrication",
+    "status": "accepted",
+    "amount": 0,
+    "currency": "USD",
+    "summary": "Custom millwork and vitrine fabrication for a permanent gallery installation, including conservation-grade finishes.",
+    "sections": [
+      {
+        "id": "blk-c8d6875d-4448-4c90-a922-3a0f07e0bcca",
+        "heading": "Conservation Requirements",
+        "body": "All materials tested for off-gassing, sealed with conservation-approved finishes and documented for the registrar."
+      },
+      {
+        "id": "blk-088322e8-0c93-4a50-98f9-c90406f01965",
+        "heading": "Payment Schedule",
+        "body": "Thirty percent deposit, forty percent at fabrication midpoint, thirty percent on final acceptance."
+      }
+    ],
+    "items": [
+      {
+        "id": "cline-6873360d-fa28-4e0f-a98c-42f7c95ff463",
+        "description": "",
+        "amount": 0
+      }
+    ],
+    "terms": "",
+    "notes": "",
+    "tags": [
+      "museum",
+      "conservation",
+      "long-lead"
+    ],
+    "images": [],
+    "validUntil": "2026-05-15",
+    "shareToken": "share-1006",
+    "lastViewedAt": "2026-04-28T15:12:00.000Z",
+    "acceptedAt": "2026-05-02T12:00:00.000Z",
+    "clientFeedback": "",
+    "layoutId": "portrait",
+    "blocks": [
+      {
+        "id": "blk-a6f5a05e-c358-44be-a237-1c08358be72b",
+        "type": "cover",
+        "enabled": true,
+        "data": {
+          "kicker": "",
+          "heading": "",
+          "subheading": "",
+          "imageUrl": "",
+          "imageAssetId": ""
+        }
+      },
+      {
+        "id": "blk-9aa92191-1891-4851-9bd0-425b002d61b8",
+        "type": "executive-summary",
+        "enabled": true,
+        "data": {
+          "body": "Custom millwork and vitrine fabrication for a permanent gallery installation, including conservation-grade finishes."
+        }
+      },
+      {
+        "id": "blk-c8d6875d-4448-4c90-a922-3a0f07e0bcca",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Conservation Requirements",
+          "body": "All materials tested for off-gassing, sealed with conservation-approved finishes and documented for the registrar."
+        }
+      },
+      {
+        "id": "blk-088322e8-0c93-4a50-98f9-c90406f01965",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Payment Schedule",
+          "body": "Thirty percent deposit, forty percent at fabrication midpoint, thirty percent on final acceptance."
+        }
+      },
+      {
+        "id": "blk-613b1f45-6c06-4ab1-8537-9022cfce28ee",
+        "type": "gallery",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-237b347f-219f-4c00-bb0e-f4194483530e",
+        "type": "pricing",
+        "enabled": true,
+        "data": {
+          "notes": "",
+          "modules": [
+            {
+              "id": "cmod-4d4b56fc-ef84-44fe-9498-b88262d5b33c",
+              "type": "table",
+              "title": "Investment",
+              "items": [
+                {
+                  "id": "cline-6873360d-fa28-4e0f-a98c-42f7c95ff463",
+                  "description": "",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 0
+                }
+              ]
+            }
+          ],
+          "items": [
+            {
+              "id": "cline-6873360d-fa28-4e0f-a98c-42f7c95ff463",
+              "description": "",
+              "amount": 0
+            }
+          ]
+        }
+      },
+      {
+        "id": "blk-24fcb6fe-0a06-4fb2-8ba5-5a0d63e3f4dc",
+        "type": "timeline",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-95c841c3-1174-4d59-b475-b26a14b30763",
+        "type": "deliverables",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-1d204737-8686-426b-8f7a-801cbc52cd45",
+        "type": "specifications",
+        "enabled": false,
+        "data": {
+          "rows": []
+        }
+      },
+      {
+        "id": "blk-bd2b5cd8-a0c7-4291-b12b-dd8ccc77ee60",
+        "type": "team",
+        "enabled": true,
+        "data": {
+          "members": []
+        }
+      },
+      {
+        "id": "blk-39aa9080-77b8-4f9d-9452-33289704a3b6",
+        "type": "testimonials",
+        "enabled": true,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-95ba61fb-dbce-49ae-af91-7bc87ead0aa0",
+        "type": "faq",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-62433d49-89c5-4801-89c7-c01f8150c577",
+        "type": "terms",
+        "enabled": true,
+        "data": {
+          "body": ""
+        }
+      },
+      {
+        "id": "blk-e61a2ab8-9fea-4566-9e8e-a53ce25d56bf",
+        "type": "signature",
+        "enabled": true,
+        "data": {
+          "clientLabel": "Client",
+          "studioLabel": "Studio"
+        }
+      },
+      {
+        "id": "blk-18155d48-af4e-4f82-8496-dbe7d36ed9e7",
+        "type": "attachments",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      }
+    ],
+    "currentVersion": 0,
+    "versions": [],
+    "createdAt": "2026-04-08T08:45:00.000Z",
+    "updatedAt": "2026-05-02T12:00:00.000Z"
+  },
+  {
+    "id": "prop-1007",
+    "title": "Motion Graphics Package",
+    "clientName": "Jordan Blake",
+    "clientEmail": "jordan@beaconsports.tv",
+    "company": "Beacon Sports",
+    "projectType": "Motion Design",
+    "status": "draft",
+    "amount": 0,
+    "currency": "USD",
+    "summary": "Broadcast package including opening titles, lower thirds, transition stings and a reusable After Effects template set.",
+    "sections": [
+      {
+        "id": "blk-763dcbbc-ba0b-4779-a8c1-02b0345c6c28",
+        "heading": "",
+        "body": ""
+      }
+    ],
+    "items": [
+      {
+        "id": "cline-d845e500-16e7-45d2-adc1-eb610641538e",
+        "description": "",
+        "amount": 0
+      }
+    ],
+    "terms": "",
+    "notes": "",
+    "tags": [
+      "broadcast",
+      "templates"
+    ],
+    "images": [],
+    "validUntil": null,
+    "shareToken": "share-1007",
+    "lastViewedAt": null,
+    "acceptedAt": null,
+    "clientFeedback": "",
+    "layoutId": "portrait",
+    "blocks": [
+      {
+        "id": "blk-f809deea-5c7d-4450-a4c2-f2d6b3751985",
+        "type": "cover",
+        "enabled": true,
+        "data": {
+          "kicker": "",
+          "heading": "",
+          "subheading": "",
+          "imageUrl": "",
+          "imageAssetId": ""
+        }
+      },
+      {
+        "id": "blk-c075723c-fb6f-4a98-b02d-8c5d0d4c0342",
+        "type": "executive-summary",
+        "enabled": true,
+        "data": {
+          "body": "Broadcast package including opening titles, lower thirds, transition stings and a reusable After Effects template set."
+        }
+      },
+      {
+        "id": "blk-763dcbbc-ba0b-4779-a8c1-02b0345c6c28",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "",
+          "body": ""
+        }
+      },
+      {
+        "id": "blk-f59a6f97-5fae-4c4a-b691-573f93bd6fba",
+        "type": "gallery",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-3b14c091-9f50-4aab-a4ea-018e979b7abd",
+        "type": "pricing",
+        "enabled": true,
+        "data": {
+          "notes": "",
+          "modules": [
+            {
+              "id": "cmod-2f75bc70-27c6-4673-9c19-0974ae90aa4d",
+              "type": "table",
+              "title": "Investment",
+              "items": [
+                {
+                  "id": "cline-d845e500-16e7-45d2-adc1-eb610641538e",
+                  "description": "",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 0
+                }
+              ]
+            }
+          ],
+          "items": [
+            {
+              "id": "cline-d845e500-16e7-45d2-adc1-eb610641538e",
+              "description": "",
+              "amount": 0
+            }
+          ]
+        }
+      },
+      {
+        "id": "blk-086fd8c4-911b-436b-b7ac-a12c39fce881",
+        "type": "timeline",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-8170c022-23ee-40d3-9026-eefc4e73b041",
+        "type": "deliverables",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-01aeff40-c781-41e7-9e0f-59c3f4f61e42",
+        "type": "specifications",
+        "enabled": false,
+        "data": {
+          "rows": []
+        }
+      },
+      {
+        "id": "blk-d9345449-a5b4-4f27-a541-e95c000c0454",
+        "type": "team",
+        "enabled": true,
+        "data": {
+          "members": []
+        }
+      },
+      {
+        "id": "blk-c2ee4fec-3648-46fa-9bf2-9d0b966f963a",
+        "type": "testimonials",
+        "enabled": true,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-a0768150-e21f-4513-8080-d1c6b4e8bd08",
+        "type": "faq",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-8c7dd2e7-c341-4ba4-9e89-a0c91050c74e",
+        "type": "terms",
+        "enabled": true,
+        "data": {
+          "body": ""
+        }
+      },
+      {
+        "id": "blk-624e7bf1-14a5-4d7b-b5b1-394a573a4940",
+        "type": "signature",
+        "enabled": true,
+        "data": {
+          "clientLabel": "Client",
+          "studioLabel": "Studio"
+        }
+      },
+      {
+        "id": "blk-e7302195-f6b3-4e8e-81c0-13566c729b5c",
+        "type": "attachments",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      }
+    ],
+    "currentVersion": 0,
+    "versions": [],
+    "createdAt": "2026-08-24T17:20:00.000Z",
+    "updatedAt": "2026-08-24T17:20:00.000Z"
+  },
+  {
+    "id": "prop-1008",
+    "title": "Annual Report Design",
+    "clientName": "Sofia Alvarez",
+    "clientEmail": "salvarez@meridiancapital.com",
+    "company": "Meridian Capital",
+    "projectType": "Print Design",
+    "status": "sent",
+    "amount": 0,
+    "currency": "USD",
+    "summary": "Editorial design and production of a 64-page annual report, including infographics and print management.",
+    "sections": [
+      {
+        "id": "blk-35eb80c6-eabb-4198-a180-26aaaae41569",
+        "heading": "Production",
+        "body": "Print-ready artwork supplied to the client printer, with a press check attended in person."
+      }
+    ],
+    "items": [
+      {
+        "id": "cline-fa37cb80-866e-47b1-93d3-8b02d31d3077",
+        "description": "",
+        "amount": 0
+      }
+    ],
+    "terms": "",
+    "notes": "",
+    "tags": [
+      "editorial",
+      "annual"
+    ],
+    "images": [],
+    "validUntil": "2026-09-01",
+    "shareToken": "share-1008",
+    "lastViewedAt": null,
+    "acceptedAt": null,
+    "clientFeedback": "",
+    "layoutId": "portrait",
+    "blocks": [
+      {
+        "id": "blk-07d9980d-11f0-40d1-b589-d0b72e076128",
+        "type": "cover",
+        "enabled": true,
+        "data": {
+          "kicker": "",
+          "heading": "",
+          "subheading": "",
+          "imageUrl": "",
+          "imageAssetId": ""
+        }
+      },
+      {
+        "id": "blk-0f8f1d1b-a855-4a6c-8e26-268ced6e5388",
+        "type": "executive-summary",
+        "enabled": true,
+        "data": {
+          "body": "Editorial design and production of a 64-page annual report, including infographics and print management."
+        }
+      },
+      {
+        "id": "blk-35eb80c6-eabb-4198-a180-26aaaae41569",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Production",
+          "body": "Print-ready artwork supplied to the client printer, with a press check attended in person."
+        }
+      },
+      {
+        "id": "blk-a155afbc-67e6-4117-844c-8efafb0f8d2b",
+        "type": "gallery",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-0398eeda-47d3-49ca-8a4f-bdd48d968780",
+        "type": "pricing",
+        "enabled": true,
+        "data": {
+          "notes": "",
+          "modules": [
+            {
+              "id": "cmod-f6c306c5-e02e-4693-92a0-b404b38ba6b9",
+              "type": "table",
+              "title": "Investment",
+              "items": [
+                {
+                  "id": "cline-fa37cb80-866e-47b1-93d3-8b02d31d3077",
+                  "description": "",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 0
+                }
+              ]
+            }
+          ],
+          "items": [
+            {
+              "id": "cline-fa37cb80-866e-47b1-93d3-8b02d31d3077",
+              "description": "",
+              "amount": 0
+            }
+          ]
+        }
+      },
+      {
+        "id": "blk-df3be01d-076a-43a2-92f3-1ed35e0e9ca0",
+        "type": "timeline",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-fb5aafaf-d4c3-49de-bd0f-026c58b123ca",
+        "type": "deliverables",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-9a08f576-3606-4a07-94db-fdf5ae55087d",
+        "type": "specifications",
+        "enabled": false,
+        "data": {
+          "rows": []
+        }
+      },
+      {
+        "id": "blk-c940bfee-5d53-466f-b80e-d866fc18a623",
+        "type": "team",
+        "enabled": true,
+        "data": {
+          "members": []
+        }
+      },
+      {
+        "id": "blk-944a178f-1284-4b3a-a3e3-9b8dcd4fbe51",
+        "type": "testimonials",
+        "enabled": true,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-efb49a76-53b4-4240-9b58-3ead81e37267",
+        "type": "faq",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-ed8d307a-d08e-4bfc-8ba8-afed0805a827",
+        "type": "terms",
+        "enabled": true,
+        "data": {
+          "body": ""
+        }
+      },
+      {
+        "id": "blk-7667e11c-4e7d-49b9-a4b3-0c1d6ccf6214",
+        "type": "signature",
+        "enabled": true,
+        "data": {
+          "clientLabel": "Client",
+          "studioLabel": "Studio"
+        }
+      },
+      {
+        "id": "blk-76ea661f-6017-4a5b-8b1f-427a9634e22f",
+        "type": "attachments",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      }
+    ],
+    "currentVersion": 0,
+    "versions": [],
+    "createdAt": "2026-08-01T09:00:00.000Z",
+    "updatedAt": "2026-08-12T11:15:00.000Z"
+  },
+  {
+    "id": "prop-1001",
+    "title": "Brand Identity Refresh",
+    "clientName": "Dana Whitfield",
+    "clientEmail": "dana@northwindstudio.com",
+    "company": "Northwind Studio",
+    "projectType": "Branding",
+    "status": "sent",
+    "amount": 18500,
+    "currency": "USD",
+    "summary": "Full visual identity refresh covering logo system, typography, colour and a compact brand guideline document.",
+    "sections": [
+      {
+        "id": "blk-720776ff-06b5-45e5-851b-91afbb264fb5",
+        "heading": "Scope of Work",
+        "body": "Discovery workshop, three identity directions, two rounds of refinement, and final asset delivery in print and digital formats."
+      },
+      {
+        "id": "blk-03ec0f99-556b-46ce-8299-3987b8532c35",
+        "heading": "Timeline",
+        "body": "Six weeks from kickoff, with review checkpoints at the end of weeks two and four."
+      },
+      {
+        "id": "blk-624f437a-0523-4c4a-b870-65bfc3fec52d",
+        "heading": "Investment",
+        "body": "Fixed fee of $18,500, invoiced in three equal milestones."
+      }
+    ],
+    "items": [
+      {
+        "id": "item-1001-1",
+        "description": "Identity system",
+        "amount": 12000
+      },
+      {
+        "id": "item-1001-2",
+        "description": "Brand guidelines",
+        "amount": 6500
+      }
+    ],
+    "terms": "Work begins on receipt of a 40% deposit. Remaining balance is due on delivery of final files. This proposal is valid until the date shown.",
+    "notes": "",
+    "tags": [
+      "identity",
+      "retainer-candidate"
+    ],
+    "images": [
+      {
+        "id": "img-1e6fb56f-5945-41e2-b94c-296cd382d879",
+        "url": "/uploads/asset-8211156c-46fb-437f-9385-d131b1ecc362/gallery.png",
+        "assetId": "asset-8211156c-46fb-437f-9385-d131b1ecc362",
+        "caption": "Mood board"
+      }
+    ],
+    "validUntil": "2026-09-10",
+    "shareToken": "share-1001",
+    "lastViewedAt": "2026-08-20T14:30:00.000Z",
+    "acceptedAt": null,
+    "clientFeedback": "",
+    "layoutId": "landscape",
+    "blocks": [
+      {
+        "id": "blk-d40f37bf-95b5-475b-8181-b4e3c603a472",
+        "type": "cover",
+        "enabled": true,
+        "data": {
+          "kicker": "",
+          "heading": "",
+          "subheading": "",
+          "imageUrl": "/uploads/asset-03d43f04-ca84-4c8f-a634-d7a4bcda007f/cover.png",
+          "imageAssetId": "asset-03d43f04-ca84-4c8f-a634-d7a4bcda007f"
+        }
+      },
+      {
+        "id": "blk-354dc511-8150-4225-a063-e6d572fec8d0",
+        "type": "executive-summary",
+        "enabled": true,
+        "data": {
+          "body": "Full visual identity refresh covering logo system, typography, colour and a compact brand guideline document."
+        }
+      },
+      {
+        "id": "blk-720776ff-06b5-45e5-851b-91afbb264fb5",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Scope of Work",
+          "body": "Discovery workshop, three identity directions, two rounds of refinement, and final asset delivery in print and digital formats."
+        }
+      },
+      {
+        "id": "blk-03ec0f99-556b-46ce-8299-3987b8532c35",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Timeline",
+          "body": "Six weeks from kickoff, with review checkpoints at the end of weeks two and four."
+        }
+      },
+      {
+        "id": "blk-624f437a-0523-4c4a-b870-65bfc3fec52d",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Investment",
+          "body": "Fixed fee of $18,500, invoiced in three equal milestones."
+        }
+      },
+      {
+        "id": "blk-162ea6c7-ea0d-470f-ac05-12bbdaf877d6",
+        "type": "gallery",
+        "enabled": true,
+        "data": {
+          "items": [
+            {
+              "id": "img-1e6fb56f-5945-41e2-b94c-296cd382d879",
+              "url": "/uploads/asset-8211156c-46fb-437f-9385-d131b1ecc362/gallery.png",
+              "assetId": "asset-8211156c-46fb-437f-9385-d131b1ecc362",
+              "caption": "Mood board"
+            }
+          ]
+        }
+      },
+      {
+        "id": "blk-e4896b66-31a4-48c8-b5d6-924ab3431775",
+        "type": "pricing",
+        "enabled": true,
+        "data": {
+          "notes": "",
+          "modules": [
+            {
+              "id": "cmod-843e20a9-aed3-47cb-bb64-23a90972036a",
+              "type": "table",
+              "title": "Investment",
+              "items": [
+                {
+                  "id": "item-1001-1",
+                  "description": "Identity system",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 12000
+                },
+                {
+                  "id": "item-1001-2",
+                  "description": "Brand guidelines",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 6500
+                }
+              ]
+            }
+          ],
+          "items": [
+            {
+              "id": "item-1001-1",
+              "description": "Identity system",
+              "amount": 12000
+            },
+            {
+              "id": "item-1001-2",
+              "description": "Brand guidelines",
+              "amount": 6500
+            }
+          ]
+        }
+      },
+      {
+        "id": "blk-1536fe8f-85ff-42f0-b337-d8f8446e29cb",
+        "type": "timeline",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-18415669-bd52-4b75-b726-175ecddd17c4",
+        "type": "deliverables",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-9b41ca83-eecd-416c-8802-1a345b1658f5",
+        "type": "specifications",
+        "enabled": false,
+        "data": {
+          "rows": []
+        }
+      },
+      {
+        "id": "blk-4ce955af-db36-48f2-b740-b236e604b996",
+        "type": "team",
+        "enabled": true,
+        "data": {
+          "members": []
+        }
+      },
+      {
+        "id": "blk-7e440a2d-f163-4b30-aa37-b36994d54dfc",
+        "type": "testimonials",
+        "enabled": true,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-1f7556aa-8eb6-4e13-8a6d-d629b0d17cc8",
+        "type": "faq",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-83f82066-584d-47af-90d0-eab9cca90039",
+        "type": "terms",
+        "enabled": true,
+        "data": {
+          "body": "Work begins on receipt of a 40% deposit. Remaining balance is due on delivery of final files. This proposal is valid until the date shown."
+        }
+      },
+      {
+        "id": "blk-bd43b8ea-ce66-4e38-96d5-bf2d18b4e94d",
+        "type": "signature",
+        "enabled": true,
+        "data": {
+          "clientLabel": "Client",
+          "studioLabel": "Studio"
+        }
+      },
+      {
+        "id": "blk-5b52c82f-7075-4cdd-8c98-26ad541ca442",
+        "type": "attachments",
+        "enabled": true,
+        "data": {
+          "items": [
+            {
+              "id": "att-77cdf61d-2ae9-47fc-92b7-0eb86d43f4b2",
+              "assetId": "asset-10a73da2-4df6-4c85-857b-0792af56049f",
+              "name": "Rate card.pdf",
+              "mimeType": "application/pdf",
+              "sizeBytes": 193,
+              "url": "/uploads/asset-10a73da2-4df6-4c85-857b-0792af56049f/rate-card.pdf"
+            }
+          ]
+        }
+      }
+    ],
+    "currentVersion": 0,
+    "versions": [],
+    "createdAt": "2026-08-10T09:15:00.000Z",
+    "updatedAt": "2026-08-14T16:42:00.000Z"
+  },
+  {
+    "id": "prop-a6f67b70-1c08-4f99-b986-efb4954e977e",
+    "title": "Copy of Brand Identity Refresh",
+    "clientName": "Dana Whitfield",
+    "clientEmail": "dana@northwindstudio.com",
+    "company": "Northwind Studio",
+    "projectType": "Branding",
+    "status": "draft",
+    "amount": 18500,
+    "currency": "USD",
+    "summary": "Full visual identity refresh covering logo system, typography, colour and a compact brand guideline document.",
+    "sections": [
+      {
+        "id": "blk-720776ff-06b5-45e5-851b-91afbb264fb5",
+        "heading": "Scope of Work",
+        "body": "Discovery workshop, three identity directions, two rounds of refinement, and final asset delivery in print and digital formats."
+      },
+      {
+        "id": "blk-03ec0f99-556b-46ce-8299-3987b8532c35",
+        "heading": "Timeline",
+        "body": "Six weeks from kickoff, with review checkpoints at the end of weeks two and four."
+      },
+      {
+        "id": "blk-624f437a-0523-4c4a-b870-65bfc3fec52d",
+        "heading": "Investment",
+        "body": "Fixed fee of $18,500, invoiced in three equal milestones."
+      }
+    ],
+    "items": [
+      {
+        "id": "item-1001-1",
+        "description": "Identity system",
+        "amount": 12000
+      },
+      {
+        "id": "item-1001-2",
+        "description": "Brand guidelines",
+        "amount": 6500
+      }
+    ],
+    "terms": "Work begins on receipt of a 40% deposit. Remaining balance is due on delivery of final files. This proposal is valid until the date shown.",
+    "notes": "",
+    "tags": [
+      "identity",
+      "retainer-candidate"
+    ],
+    "images": [
+      {
+        "id": "img-1e6fb56f-5945-41e2-b94c-296cd382d879",
+        "url": "/uploads/asset-8211156c-46fb-437f-9385-d131b1ecc362/gallery.png",
+        "assetId": "asset-8211156c-46fb-437f-9385-d131b1ecc362",
+        "caption": "Mood board"
+      }
+    ],
+    "validUntil": "2026-09-10",
+    "shareToken": "share-7b7fc81c-1c7c-4ec1-994b-4519fb5cf56a",
+    "lastViewedAt": "2026-08-20T14:30:00.000Z",
+    "acceptedAt": null,
+    "clientFeedback": "",
+    "layoutId": "landscape",
+    "blocks": [
+      {
+        "id": "blk-d40f37bf-95b5-475b-8181-b4e3c603a472",
+        "type": "cover",
+        "enabled": true,
+        "data": {
+          "kicker": "",
+          "heading": "",
+          "subheading": "",
+          "imageUrl": "/uploads/asset-03d43f04-ca84-4c8f-a634-d7a4bcda007f/cover.png",
+          "imageAssetId": "asset-03d43f04-ca84-4c8f-a634-d7a4bcda007f"
+        }
+      },
+      {
+        "id": "blk-354dc511-8150-4225-a063-e6d572fec8d0",
+        "type": "executive-summary",
+        "enabled": true,
+        "data": {
+          "body": "Full visual identity refresh covering logo system, typography, colour and a compact brand guideline document."
+        }
+      },
+      {
+        "id": "blk-720776ff-06b5-45e5-851b-91afbb264fb5",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Scope of Work",
+          "body": "Discovery workshop, three identity directions, two rounds of refinement, and final asset delivery in print and digital formats."
+        }
+      },
+      {
+        "id": "blk-03ec0f99-556b-46ce-8299-3987b8532c35",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Timeline",
+          "body": "Six weeks from kickoff, with review checkpoints at the end of weeks two and four."
+        }
+      },
+      {
+        "id": "blk-624f437a-0523-4c4a-b870-65bfc3fec52d",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Investment",
+          "body": "Fixed fee of $18,500, invoiced in three equal milestones."
+        }
+      },
+      {
+        "id": "blk-162ea6c7-ea0d-470f-ac05-12bbdaf877d6",
+        "type": "gallery",
+        "enabled": true,
+        "data": {
+          "items": [
+            {
+              "id": "img-1e6fb56f-5945-41e2-b94c-296cd382d879",
+              "url": "/uploads/asset-8211156c-46fb-437f-9385-d131b1ecc362/gallery.png",
+              "assetId": "asset-8211156c-46fb-437f-9385-d131b1ecc362",
+              "caption": "Mood board"
+            }
+          ]
+        }
+      },
+      {
+        "id": "blk-e4896b66-31a4-48c8-b5d6-924ab3431775",
+        "type": "pricing",
+        "enabled": true,
+        "data": {
+          "notes": "",
+          "modules": [
+            {
+              "id": "cmod-843e20a9-aed3-47cb-bb64-23a90972036a",
+              "type": "table",
+              "title": "Investment",
+              "items": [
+                {
+                  "id": "item-1001-1",
+                  "description": "Identity system",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 12000
+                },
+                {
+                  "id": "item-1001-2",
+                  "description": "Brand guidelines",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 6500
+                }
+              ]
+            }
+          ],
+          "items": [
+            {
+              "id": "item-1001-1",
+              "description": "Identity system",
+              "amount": 12000
+            },
+            {
+              "id": "item-1001-2",
+              "description": "Brand guidelines",
+              "amount": 6500
+            }
+          ]
+        }
+      },
+      {
+        "id": "blk-1536fe8f-85ff-42f0-b337-d8f8446e29cb",
+        "type": "timeline",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-18415669-bd52-4b75-b726-175ecddd17c4",
+        "type": "deliverables",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-9b41ca83-eecd-416c-8802-1a345b1658f5",
+        "type": "specifications",
+        "enabled": false,
+        "data": {
+          "rows": []
+        }
+      },
+      {
+        "id": "blk-4ce955af-db36-48f2-b740-b236e604b996",
+        "type": "team",
+        "enabled": true,
+        "data": {
+          "members": []
+        }
+      },
+      {
+        "id": "blk-7e440a2d-f163-4b30-aa37-b36994d54dfc",
+        "type": "testimonials",
+        "enabled": true,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-1f7556aa-8eb6-4e13-8a6d-d629b0d17cc8",
+        "type": "faq",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-83f82066-584d-47af-90d0-eab9cca90039",
+        "type": "terms",
+        "enabled": true,
+        "data": {
+          "body": "Work begins on receipt of a 40% deposit. Remaining balance is due on delivery of final files. This proposal is valid until the date shown."
+        }
+      },
+      {
+        "id": "blk-bd43b8ea-ce66-4e38-96d5-bf2d18b4e94d",
+        "type": "signature",
+        "enabled": true,
+        "data": {
+          "clientLabel": "Client",
+          "studioLabel": "Studio"
+        }
+      },
+      {
+        "id": "blk-5b52c82f-7075-4cdd-8c98-26ad541ca442",
+        "type": "attachments",
+        "enabled": true,
+        "data": {
+          "items": [
+            {
+              "id": "att-77cdf61d-2ae9-47fc-92b7-0eb86d43f4b2",
+              "assetId": "asset-10a73da2-4df6-4c85-857b-0792af56049f",
+              "name": "Rate card.pdf",
+              "mimeType": "application/pdf",
+              "sizeBytes": 193,
+              "url": "/uploads/asset-10a73da2-4df6-4c85-857b-0792af56049f/rate-card.pdf"
+            }
+          ]
+        }
+      }
+    ],
+    "currentVersion": 0,
+    "versions": [],
+    "createdAt": "2026-08-10T09:15:00.000Z",
+    "updatedAt": "2026-08-14T16:42:00.000Z"
+  },
+  {
+    "id": "prop-c38de790-8848-440a-9e0c-2590848035b8",
+    "title": "Brand Identity Package",
+    "clientName": "New client",
+    "clientEmail": "",
+    "company": "",
+    "projectType": "Creative Agency",
+    "status": "draft",
+    "amount": 18500,
+    "currency": "USD",
+    "summary": "A complete visual identity engagement: discovery, directions, refinement and a compact guideline document.",
+    "sections": [
+      {
+        "id": "blk-0fb98fbf-0314-4dab-9408-92e47a7cef4a",
+        "heading": "Scope of work",
+        "body": "Discovery workshop, three identity directions, two rounds of refinement, and final asset delivery in print and digital formats."
+      },
+      {
+        "id": "blk-99502ab2-cf30-4276-a375-50111ee8a06c",
+        "heading": "Timeline",
+        "body": "Six weeks from kickoff, with review checkpoints at the end of weeks two and four."
+      },
+      {
+        "id": "blk-3a5275cb-980f-4bfc-a3f2-72932fa1d736",
+        "heading": "Deliverables",
+        "body": "Primary mark, wordmark, colour system, type pairing, and a 12-page brand guideline PDF."
+      }
+    ],
+    "items": [
+      {
+        "id": "item-c1c55fe6-a0d7-440a-a977-b15426380466",
+        "description": "Discovery and strategy",
+        "amount": 4500
+      },
+      {
+        "id": "item-e85ea904-c152-4d18-a416-2fab0afd739d",
+        "description": "Identity design and refinement",
+        "amount": 9800
+      },
+      {
+        "id": "item-82e20d9a-debb-4c8b-9383-818d015bde49",
+        "description": "Brand guideline document",
+        "amount": 4200
+      }
+    ],
+    "terms": "This proposal is valid for 30 days from the issue date.\n\nA 40% deposit is due on acceptance, with the balance invoiced on delivery. Invoices are payable within 14 days.\n\nEach deliverable includes two rounds of consolidated feedback. Additional rounds are billed separately.",
+    "notes": "Ask the client for existing brand assets and competitor examples before the discovery workshop.",
+    "tags": [],
+    "images": [],
+    "validUntil": "",
+    "shareToken": "share-171f9ad8-863f-4535-a957-65fdc350dc8a",
+    "lastViewedAt": "2026-09-02T18:03:43.578Z",
+    "acceptedAt": null,
+    "clientFeedback": "",
+    "layoutId": "landscape",
+    "blocks": [
+      {
+        "id": "blk-26268845-b156-44a7-82f5-7090f6cdb869",
+        "type": "cover",
+        "enabled": true,
+        "data": {
+          "kicker": "",
+          "heading": "",
+          "subheading": "",
+          "imageUrl": "",
+          "imageAssetId": ""
+        }
+      },
+      {
+        "id": "blk-84062a65-adad-4ada-9c41-642373424029",
+        "type": "executive-summary",
+        "enabled": true,
+        "data": {
+          "body": "A complete visual identity engagement: discovery, directions, refinement and a compact guideline document."
+        }
+      },
+      {
+        "id": "blk-0fb98fbf-0314-4dab-9408-92e47a7cef4a",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Scope of work",
+          "body": "Discovery workshop, three identity directions, two rounds of refinement, and final asset delivery in print and digital formats."
+        }
+      },
+      {
+        "id": "blk-99502ab2-cf30-4276-a375-50111ee8a06c",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Timeline",
+          "body": "Six weeks from kickoff, with review checkpoints at the end of weeks two and four."
+        }
+      },
+      {
+        "id": "blk-3a5275cb-980f-4bfc-a3f2-72932fa1d736",
+        "type": "rich-text",
+        "enabled": true,
+        "data": {
+          "heading": "Deliverables",
+          "body": "Primary mark, wordmark, colour system, type pairing, and a 12-page brand guideline PDF."
+        }
+      },
+      {
+        "id": "blk-d5a9eff2-ae67-485e-8ee4-7beb35a50cf0",
+        "type": "gallery",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-a03feaac-c950-46d0-a9bf-4406fd27ebb0",
+        "type": "pricing",
+        "enabled": true,
+        "data": {
+          "notes": "",
+          "modules": [
+            {
+              "id": "cmod-9fb3691b-6dfe-4317-a29c-28d4f7c9b929",
+              "type": "table",
+              "title": "Investment",
+              "items": [
+                {
+                  "id": "item-c1c55fe6-a0d7-440a-a977-b15426380466",
+                  "description": "Discovery and strategy",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 4500
+                },
+                {
+                  "id": "item-e85ea904-c152-4d18-a416-2fab0afd739d",
+                  "description": "Identity design and refinement",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 9800
+                },
+                {
+                  "id": "item-82e20d9a-debb-4c8b-9383-818d015bde49",
+                  "description": "Brand guideline document",
+                  "quantity": 1,
+                  "unit": "",
+                  "unitPrice": 4200
+                }
+              ]
+            }
+          ],
+          "items": [
+            {
+              "id": "item-c1c55fe6-a0d7-440a-a977-b15426380466",
+              "description": "Discovery and strategy",
+              "amount": 4500
+            },
+            {
+              "id": "item-e85ea904-c152-4d18-a416-2fab0afd739d",
+              "description": "Identity design and refinement",
+              "amount": 9800
+            },
+            {
+              "id": "item-82e20d9a-debb-4c8b-9383-818d015bde49",
+              "description": "Brand guideline document",
+              "amount": 4200
+            }
+          ]
+        }
+      },
+      {
+        "id": "blk-e63f7ac2-37ac-4c60-b9c8-c2cba482bea3",
+        "type": "timeline",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-96add1b9-2b81-4876-a564-d8a9988eb1e4",
+        "type": "deliverables",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-81d69225-ad99-4edf-b515-a30688de480f",
+        "type": "specifications",
+        "enabled": false,
+        "data": {
+          "rows": []
+        }
+      },
+      {
+        "id": "blk-da86f4a1-fea0-44c9-b13b-a71e1c4d406a",
+        "type": "team",
+        "enabled": true,
+        "data": {
+          "members": []
+        }
+      },
+      {
+        "id": "blk-d52182fe-96a2-4b1b-8af7-585585b37ac2",
+        "type": "testimonials",
+        "enabled": true,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-6a7344a6-5e53-4a25-87c9-ce1ecd72d4e9",
+        "type": "faq",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      },
+      {
+        "id": "blk-c9db37fe-1b36-4830-a460-51767621c5cb",
+        "type": "terms",
+        "enabled": true,
+        "data": {
+          "body": "This proposal is valid for 30 days from the issue date.\n\nA 40% deposit is due on acceptance, with the balance invoiced on delivery. Invoices are payable within 14 days.\n\nEach deliverable includes two rounds of consolidated feedback. Additional rounds are billed separately."
+        }
+      },
+      {
+        "id": "blk-bd1c1647-d1fe-4331-a413-06b87672bb66",
+        "type": "signature",
+        "enabled": true,
+        "data": {
+          "clientLabel": "Client",
+          "studioLabel": "Studio"
+        }
+      },
+      {
+        "id": "blk-0910aa41-e519-4d4c-ab3c-397bca19c043",
+        "type": "attachments",
+        "enabled": false,
+        "data": {
+          "items": []
+        }
+      }
+    ],
+    "currentVersion": 0,
+    "versions": [],
+    "createdAt": "2026-09-02T06:47:36.763Z",
+    "updatedAt": "2026-09-02T06:47:36.763Z"
+  }
+]
