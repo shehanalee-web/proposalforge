@@ -5,7 +5,11 @@ function StatusBadge({ status }) {
   const label = PROPOSAL_STATUS_LABELS[status] ?? status
   const variant = styles[status] ?? ''
 
-  return <span className={`${styles.badge} ${variant}`}>{label}</span>
+  return (
+    <span className={`${styles.badge} ${variant}`} data-card-interactive>
+      {label}
+    </span>
+  )
 }
 
 export default StatusBadge

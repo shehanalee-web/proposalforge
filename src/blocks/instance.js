@@ -90,3 +90,32 @@ export function updateBlocksByType(blocks, type, data) {
 export function addBlock(blocks, type = BLOCK_TYPE.CUSTOM) {
   return [...(blocks ?? []), makeBlock({ type, enabled: true })]
 }
+
+export function duplicateBlock(blocks, id) {
+  const list = blocks ?? []
+  const index = list.findIndex((block) => block.id === id)
+  if (index < 0) return list
+
+  const source = list[index]
+  const copy = makeBlock({
+    type: source.type,
+    enabled: source.enabled,
+    data: JSON.parse(JSON.stringify(source.data)),
+  })
+
+  const next = [...list]
+  next.splice(index + 1, 0, copy)
+  return next
+}
+
+export function removeBlock(blocks, id) {
+  return (blocks ?? []).filter((block) => block.id !== id)
+}
+
+export function reorderBlocks(blocks, fromIndex, toIndex) {
+  if (fromIndex === toIndex) return blocks
+  const list = [...(blocks ?? [])]
+  const [item] = list.splice(fromIndex, 1)
+  list.splice(toIndex, 0, item)
+  return list
+}

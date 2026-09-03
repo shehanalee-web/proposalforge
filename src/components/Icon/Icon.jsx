@@ -159,6 +159,239 @@ const ICONS = {
       <rect x="13" y="13.5" width="7" height="7" rx="1.25" />
     </>
   ),
+  search: (
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="M15.5 15.5 20 20" />
+    </>
+  ),
+  close: <path d="M6 6 18 18M18 6 6 18" />,
+  chevronDown: <path d="M5 9l7 6 7-6" />,
+  /* Block-type icons */
+  blockCover: (
+    <>
+      <rect x="3.5" y="4" width="17" height="16" rx="2" />
+      <path d="M7.5 15h9M7.5 18h5" />
+      <path d="M3.5 11h17" />
+    </>
+  ),
+  blockText: (
+    <>
+      <path d="M4 7h16M4 12h12M4 17h14" />
+    </>
+  ),
+  blockGallery: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3 16 5-5 4 4 3-3 6 5" />
+      <circle cx="15.5" cy="9.5" r="1.5" />
+    </>
+  ),
+  blockPricing: (
+    <>
+      <path d="M12 4v16M8 8h8M8 12h8M8 16h5" />
+      <circle cx="12" cy="4" r="1" fill="currentColor" stroke="none" />
+    </>
+  ),
+  blockTimeline: (
+    <>
+      <path d="M12 4v16" />
+      <circle cx="12" cy="7" r="2" />
+      <circle cx="12" cy="12" r="2" />
+      <circle cx="12" cy="17" r="2" />
+      <path d="M14 7h5M5 12h7M14 17h4" />
+    </>
+  ),
+  blockDeliverables: (
+    <>
+      <path d="M9 6h10M9 10h8M9 14h10M9 18h6" />
+      <circle cx="5.5" cy="6" r="1" fill="currentColor" stroke="none" />
+      <circle cx="5.5" cy="10" r="1" fill="currentColor" stroke="none" />
+      <circle cx="5.5" cy="14" r="1" fill="currentColor" stroke="none" />
+      <circle cx="5.5" cy="18" r="1" fill="currentColor" stroke="none" />
+    </>
+  ),
+  blockSpecs: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M4 9h16M4 14h16M12 9v11" />
+    </>
+  ),
+  blockTeam: (
+    <>
+      <circle cx="9" cy="8" r="2.75" />
+      <circle cx="16" cy="9" r="2.25" />
+      <path d="M3.5 18.5c.4-3 2.6-4.75 5.5-4.75s5.1 1.75 5.5 4.75" />
+      <path d="M14 13.9c1.7-.35 3.6.4 4.6 2.6" />
+    </>
+  ),
+  blockTestimonials: (
+    <>
+      <path d="M5 6.5h6.5v6.5H8.5L5 16.5V6.5Z" />
+      <path d="M13 10.5H19.5v6.5H16.5L13 20.5V10.5Z" />
+    </>
+  ),
+  blockFaq: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2.5 2-2.5 4" />
+      <circle cx="12" cy="17.5" r=".75" fill="currentColor" stroke="none" />
+    </>
+  ),
+  blockTerms: (
+    <>
+      <path d="M7 3.5h7.5L19.5 9v11.5A1.5 1.5 0 0 1 18 22H7a1.5 1.5 0 0 1-1.5-1.5V5A1.5 1.5 0 0 1 7 3.5Z" />
+      <path d="M14.5 3.5V9H19.5M8.5 13h7M8.5 17h5" />
+    </>
+  ),
+  blockSignature: (
+    <>
+      <path d="M4 18h16" />
+      <path d="M6 14c1.5-3 3-6 4.5-6s2 3 3.5 3 2.5-2 4-2" />
+    </>
+  ),
+  blockAttachments: (
+    <>
+      <path d="M14 3v7.5a2.5 2.5 0 0 1-5 0V5a4 4 0 0 1 8 0v6.5a5.5 5.5 0 0 1-11 0V7" />
+    </>
+  ),
+  blockCustom: (
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="2" />
+      <path d="M12 8v8M8 12h8" />
+    </>
+  ),
+  /* Utility icons */
+  duplicate: (
+    <>
+      <rect x="8" y="8" width="11" height="11" rx="1.75" />
+      <path d="M16 6.5V5.75A1.75 1.75 0 0 0 14.25 4H5.75A1.75 1.75 0 0 0 4 5.75v8.5A1.75 1.75 0 0 0 5.75 16H7.5" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M5 7h14M9 7V5.5h6V7M7 7l.75 12.5a1.5 1.5 0 0 0 1.5 1.5h5.5a1.5 1.5 0 0 0 1.5-1.5L17 7" />
+    </>
+  ),
+  eye: (
+    <>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  eyeOff: (
+    <>
+      <path d="M4.5 4.5 19.5 19.5" />
+      <path d="M17.9 14.2A9.7 9.7 0 0 0 21.5 12S18 5.5 12 5.5a8.4 8.4 0 0 0-3.1.6" />
+      <path d="M6.7 8.3A9.7 9.7 0 0 0 2.5 12S6 18.5 12 18.5a8.5 8.5 0 0 0 2.5-.4" />
+    </>
+  ),
+  plus: <path d="M12 5v14M5 12h14" />,
+  undo: <path d="M8 8H4.5V4.5M4.7 8A8 8 0 1 1 4 12" />,
+  redo: <path d="M16 8h3.5V4.5M19.3 8A8 8 0 1 0 20 12" />,
+  arrowUp: <path d="M12 19V5M6 11l6-6 6 6" />,
+  arrowDown: <path d="M12 5v14M6 13l6 6 6-6" />,
+  chevronUp: <path d="M5 15l7-6 7 6" />,
+  chevronLeft: <path d="M15 5l-6 7 6 7" />,
+  chevronRight: <path d="M9 5l6 7-6 7" />,
+  download: (
+    <>
+      <path d="M12 4v11" />
+      <path d="m7.5 11.5 4.5 4.5 4.5-4.5" />
+      <path d="M5 19.5h14" />
+    </>
+  ),
+  print: (
+    <>
+      <path d="M7 8V4.5h10V8" />
+      <path d="M7 15.5H5.5A1.5 1.5 0 0 1 4 14v-4.5A1.5 1.5 0 0 1 5.5 8h13A1.5 1.5 0 0 1 20 9.5V14a1.5 1.5 0 0 1-1.5 1.5H17" />
+      <rect x="7" y="13.5" width="10" height="6.5" rx="1" />
+    </>
+  ),
+  share: (
+    <>
+      <circle cx="18" cy="5.5" r="2.25" />
+      <circle cx="6" cy="12" r="2.25" />
+      <circle cx="18" cy="18.5" r="2.25" />
+      <path d="M8.1 10.9 15.9 6.6M8.1 13.1 15.9 17.4" />
+    </>
+  ),
+  bookmark: (
+    <>
+      <path d="M7 4.5h10A1.5 1.5 0 0 1 18.5 6v14L12 16.5 5.5 20V6A1.5 1.5 0 0 1 7 4.5Z" />
+    </>
+  ),
+  maximize: (
+    <>
+      <path d="M9 5H5v4M15 5h4v4M5 15v4h4M19 15v4h-4" />
+    </>
+  ),
+  minimize: (
+    <>
+      <path d="M9 5H5v4M15 5h4v4M5 15v4h4M19 15v4h-4" />
+      <rect x="8" y="8" width="8" height="8" rx="1" />
+    </>
+  ),
+  zoomIn: (
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="M10.5 7.5v6M7.5 10.5h6M15.5 15.5 20 20" />
+    </>
+  ),
+  zoomOut: (
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="M7.5 10.5h6M15.5 15.5 20 20" />
+    </>
+  ),
+  menu: (
+    <>
+      <path d="M5 7h14M5 12h14M5 17h14" />
+    </>
+  ),
+  message: (
+    <>
+      <path d="M5 5.5h14A1.5 1.5 0 0 1 20.5 7v8A1.5 1.5 0 0 1 19 16.5H9.5L5 20V7A1.5 1.5 0 0 1 5 5.5Z" />
+    </>
+  ),
+  xCircle: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="m9 9 6 6M15 9l-6 6" />
+    </>
+  ),
+  fileImage: (
+    <>
+      <path d="M7 3.5h7.5L19.5 9v11.5A1.5 1.5 0 0 1 18 22H7a1.5 1.5 0 0 1-1.5-1.5V5A1.5 1.5 0 0 1 7 3.5Z" />
+      <path d="M14.5 3.5V9H19.5" />
+      <path d="m7 17.5 3-3 2 2 2.5-2.5 3.5 3.5" />
+    </>
+  ),
+  filePdf: (
+    <>
+      <path d="M7 3.5h7.5L19.5 9v11.5A1.5 1.5 0 0 1 18 22H7a1.5 1.5 0 0 1-1.5-1.5V5A1.5 1.5 0 0 1 7 3.5Z" />
+      <path d="M14.5 3.5V9H19.5M8.5 14h3.5a1.5 1.5 0 0 1 0 3H8.5v3" />
+    </>
+  ),
+  fileVideo: (
+    <>
+      <path d="M7 3.5h7.5L19.5 9v11.5A1.5 1.5 0 0 1 18 22H7a1.5 1.5 0 0 1-1.5-1.5V5A1.5 1.5 0 0 1 7 3.5Z" />
+      <path d="M14.5 3.5V9H19.5" />
+      <path d="m9.5 13.5 6 3.25-6 3.25v-6.5Z" />
+    </>
+  ),
+  fileZip: (
+    <>
+      <path d="M7 3.5h7.5L19.5 9v11.5A1.5 1.5 0 0 1 18 22H7a1.5 1.5 0 0 1-1.5-1.5V5A1.5 1.5 0 0 1 7 3.5Z" />
+      <path d="M14.5 3.5V9H19.5M10 7v2M10 11v2M10 15v2" />
+    </>
+  ),
+  fileCad: (
+    <>
+      <path d="M7 3.5h7.5L19.5 9v11.5A1.5 1.5 0 0 1 18 22H7a1.5 1.5 0 0 1-1.5-1.5V5A1.5 1.5 0 0 1 7 3.5Z" />
+      <path d="M14.5 3.5V9H19.5M8.5 16l3.5-6 3.5 6H8.5Z" />
+    </>
+  ),
 }
 
 function Icon({ name, size = 18, className }) {

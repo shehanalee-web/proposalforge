@@ -1,6 +1,8 @@
 import { PROJECT_TYPES } from '../../models/proposal.js'
 import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
 import LayoutPicker from '../../layouts/screen/LayoutPicker.jsx'
+import EditorSection from '../../components/Editor/EditorSection.jsx'
+import StickySaveBar from '../../components/Editor/StickySaveBar.jsx'
 import styles from './ProposalForm.module.css'
 
 function Field({ id, label, error, hint, children }) {
@@ -34,6 +36,8 @@ function ProposalForm({
   fieldErrors = {},
   submitLabel = 'Save changes',
   submittingLabel = 'Saving…',
+  saveStatus = 'idle',
+  saveLabel = 'All changes saved',
   services = null,
   children,
 }) {
@@ -59,9 +63,9 @@ function ProposalForm({
 
   return (
     <form className={styles.form} onSubmit={onSubmit} noValidate>
-      <p className={styles.section}>Details</p>
-      <div className={styles.grid}>
-        <Field id="title" label="Title" error={fieldErrors.title}>
+      <EditorSection title="Details" defaultOpen>
+        <div className={styles.grid}>
+          <Field id="title" label="Title" error={fieldErrors.title}>
           <input
             id="title"
             name="title"
@@ -212,35 +216,44 @@ function ProposalForm({
             disabled={submitting}
           />
         </Field>
-      </div>
+        </div>
+      </EditorSection>
 
-      <p className={styles.section}>Layout</p>
-      <LayoutPicker
-        value={values.layoutId ?? DEFAULT_LAYOUT_ID}
-        onChange={(layoutId) => onChange('layoutId', layoutId)}
-        disabled={submitting}
-      />
-
-      <p className={styles.section}>Content</p>
-      <Field id="summary" label="Executive summary" error={fieldErrors.summary}>
-        <textarea
-          id="summary"
-          name="summary"
-          rows={4}
-          className={`${styles.input} ${styles.textarea}`}
-          value={values.summary}
-          onChange={handleChange}
+      <EditorSection
+        title="Layout"
+        description="Changes the page shape only. Content stays the same."
+        defaultOpen={false}
+      >
+        <LayoutPicker
+          value={values.layoutId ?? DEFAULT_LAYOUT_ID}
+          onChange={(layoutId) => onChange('layoutId', layoutId)}
           disabled={submitting}
         />
-      </Field>
+      </EditorSection>
 
-      {children}
+      <EditorSection title="Content" defaultOpen>
+        <Field id="summary" label="Executive summary" error={fieldErrors.summary}>
+          <textarea
+            id="summary"
+            name="summary"
+            rows={4}
+            className={`${styles.input} ${styles.textarea}`}
+            value={values.summary}
+            onChange={handleChange}
+            disabled={submitting}
+          />
+        </Field>
 
-      <div className={styles.actions}>
-        <button type="submit" className={styles.submit} disabled={submitting}>
-          {submitting ? submittingLabel : submitLabel}
-        </button>
-      </div>
+        {children}
+      </EditorSection>
+
+      <StickySaveBar
+        submitting={submitting}
+        submitLabel={submitLabel}
+        submittingLabel={submittingLabel}
+        saveStatus={saveStatus}
+        saveLabel={saveLabel}
+      />
     </form>
   )
 }

@@ -2,6 +2,10 @@ import { Link } from 'react-router'
 import { formatCurrency, formatDateTime } from '../../utils/format.js'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
 import { getDisplayStatus } from '../../models/proposal.js'
+import {
+  handleCardClick,
+  handleCardLinkKeyDown,
+} from '../../utils/cardNavigation.js'
 import { proposalPath } from '../../workspace/paths.js'
 import styles from './ProposalList.module.css'
 
@@ -24,15 +28,17 @@ function ProposalList({ proposals }) {
         </thead>
         <tbody>
           {proposals.map((proposal) => (
-            <tr key={proposal.id}>
+            <tr key={proposal.id} className={styles.row} onClick={handleCardClick}>
               <td data-label="Proposal">
+                <Link
+                  to={proposalPath(proposal.id)}
+                  className={styles.cardLink}
+                  data-card-link
+                  aria-label={proposal.title}
+                  onKeyDown={handleCardLinkKeyDown}
+                />
                 <span className={styles.stack}>
-                  <Link
-                    to={proposalPath(proposal.id)}
-                    className={styles.primary}
-                  >
-                    {proposal.title}
-                  </Link>
+                  <span className={styles.primary}>{proposal.title}</span>
                   <span className={styles.secondary}>
                     {proposal.projectType}
                   </span>

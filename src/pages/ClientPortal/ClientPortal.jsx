@@ -1,59 +1,30 @@
 import { useState } from 'react'
 import { useParams } from 'react-router'
-import ProposalContent from '../../components/ProposalContent/ProposalContent.jsx'
 import { useAcceptProposal } from '../../hooks/useAcceptProposal.js'
 import { useClientProposal } from '../../hooks/useClientProposal.js'
-import { useRequestProposalChanges } from '../../hooks/useRequestProposalChanges.js'
 import { useExportProposalPdf, PDF_AUDIENCE } from '../../hooks/useExportProposalPdf.js'
 import { canClientRespond, PROPOSAL_STATUS } from '../../models/proposal.js'
 import { getActiveProposal } from '../../utils/clientProposal.js'
-import { getLayout } from '../../layouts/registry.js'
 import { formatDateTime } from '../../utils/format.js'
+import ProposalViewer from '../../viewer/ProposalViewer.jsx'
 import styles from './ClientPortal.module.css'
 
 function ClientPortal() {
   const { token } = useParams()
   const { proposal, loading, error, notFound, refetch } = useClientProposal(token)
   const { accept, submitting: accepting, error: acceptError } = useAcceptProposal()
-  const {
-    requestChanges,
-    submitting: requesting,
-    error: changeError,
-    fieldErrors,
-    reset: resetChangeForm,
-  } = useRequestProposalChanges()
-
-  const [comment, setComment] = useState('')
-  const [showChangeForm, setShowChangeForm] = useState(false)
-  const [justAccepted, setJustAccepted] = useState(false)
   const { runExport, exporting, error: exportError } = useExportProposalPdf()
+  const [justAccepted, setJustAccepted] = useState(false)
 
   const document = proposal ? getActiveProposal(proposal) : null
-  const layout = getLayout(document?.layoutId)
-  const busy = accepting || requesting || Boolean(exporting)
+  const busy = accepting || Boolean(exporting)
   const canRespond = proposal ? canClientRespond(proposal) : false
 
   async function handleAccept() {
     if (!token || busy) return
-
     const next = await accept(token)
-
     if (next) {
       setJustAccepted(true)
-      setShowChangeForm(false)
-      await refetch()
-    }
-  }
-
-  async function handleRequestChanges(event) {
-    event.preventDefault()
-    if (!token || busy) return
-
-    const next = await requestChanges(token, comment)
-
-    if (next) {
-      setShowChangeForm(false)
-      setComment('')
       await refetch()
     }
   }
@@ -114,141 +85,55 @@ function ClientPortal() {
 
   const accepted = proposal.status === PROPOSAL_STATUS.ACCEPTED
   const revisionRequested = proposal.status === PROPOSAL_STATUS.REVISION_REQUESTED
+  const notices = []
+
+  if (justAccepted || accepted) {
+    notices.push({
+      id: 'accepted',
+      tone: 'banner',
+      title: 'Proposal accepted',
+      body: proposal.acceptedAt
+        ? `Thank you. This proposal was accepted on ${formatDateTime(proposal.acceptedAt)}.`
+        : 'Thank you. This proposal was accepted.',
+    })
+  }
+
+  if (revisionRequested && proposal.clientFeedback) {
+    notices.push({
+      id: 'revision',
+      tone: 'warning',
+      title: 'Revision requested',
+      body: proposal.clientFeedback,
+    })
+  }
+
+  if (acceptError) {
+    notices.push({
+      id: 'accept-error',
+      tone: 'dangerBanner',
+      title: acceptError.message,
+    })
+  }
+
+  if (exportError) {
+    notices.push({
+      id: 'export-error',
+      tone: 'dangerBanner',
+      title: exportError.message || 'Could not generate the PDF. Please try again.',
+    })
+  }
 
   return (
-    <div className={styles.shell}>
-      <main
-        className={styles.main}
-        style={{ width: `min(${layout.screen.maxWidth}, 100%)` }}
-      >
-        <article className={styles.document}>
-          {justAccepted || accepted ? (
-            <section className={styles.confirmation} aria-live="polite">
-              <p className={styles.confirmationTitle}>Proposal accepted</p>
-              <p className={styles.confirmationText}>
-                Thank you. This proposal was accepted
-                {proposal.acceptedAt
-                  ? ` on ${formatDateTime(proposal.acceptedAt)}`
-                  : ''}
-                .
-              </p>
-            </section>
-          ) : null}
-
-          {revisionRequested && proposal.clientFeedback ? (
-            <section className={styles.feedback} aria-live="polite">
-              <p className={styles.confirmationTitle}>Revision requested</p>
-              <p className={styles.confirmationText}>{proposal.clientFeedback}</p>
-            </section>
-          ) : null}
-
-          {acceptError ? (
-            <p className={styles.alert} role="alert">
-              {acceptError.message}
-            </p>
-          ) : null}
-
-          {exportError ? (
-            <p className={styles.alert} role="alert">
-              {exportError.message ||
-                'Could not generate the PDF. Please try again.'}
-            </p>
-          ) : null}
-
-          <ProposalContent
-            proposal={document}
-            includeCover
-            showNotes={false}
-            showTags={false}
-            showSignature
-            status={proposal.status}
-          />
-
-          <section className={styles.actions}>
-            {canRespond ? (
-              <>
-                <button
-                  type="button"
-                  className={styles.primary}
-                  onClick={handleAccept}
-                  disabled={busy}
-                >
-                  {accepting ? 'Accepting…' : 'Accept proposal'}
-                </button>
-                <button
-                  type="button"
-                  className={styles.secondary}
-                  onClick={() => {
-                    setShowChangeForm((open) => !open)
-                    resetChangeForm()
-                  }}
-                  disabled={busy}
-                >
-                  Request changes
-                </button>
-              </>
-            ) : null}
-
-            <button
-              type="button"
-              className={styles.secondary}
-              onClick={() => handleExport('download')}
-              disabled={busy}
-            >
-              {exporting === 'download' ? 'Preparing PDF…' : 'Download PDF'}
-            </button>
-            <button
-              type="button"
-              className={styles.ghost}
-              onClick={() => handleExport('print')}
-              disabled={busy}
-            >
-              {exporting === 'print' ? 'Preparing print…' : 'Print'}
-            </button>
-          </section>
-
-          {canRespond && showChangeForm ? (
-            <form className={styles.changeForm} onSubmit={handleRequestChanges}>
-              <label className={styles.changeLabel} htmlFor="client-feedback">
-                What would you like changed?
-              </label>
-              <textarea
-                id="client-feedback"
-                className={styles.comment}
-                value={comment}
-                onChange={(event) => setComment(event.target.value)}
-                rows={5}
-                required
-                disabled={busy}
-              />
-              {fieldErrors.clientFeedback ? (
-                <p className={styles.alert} role="alert">
-                  {fieldErrors.clientFeedback}
-                </p>
-              ) : null}
-              {changeError && !fieldErrors.clientFeedback ? (
-                <p className={styles.alert} role="alert">
-                  {changeError.message}
-                </p>
-              ) : null}
-              <div className={styles.changeActions}>
-                <button type="submit" className={styles.primary} disabled={busy}>
-                  {requesting ? 'Sending…' : 'Send request'}
-                </button>
-                <button
-                  type="button"
-                  className={styles.ghost}
-                  onClick={() => setShowChangeForm(false)}
-                  disabled={busy}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          ) : null}
-        </article>
-      </main>
-    </div>
+    <ProposalViewer
+      proposal={document}
+      status={proposal.status}
+      notices={notices}
+      busy={busy}
+      canRespond={canRespond}
+      onAccept={handleAccept}
+      onDownload={() => handleExport('download')}
+      onPrint={() => handleExport('print')}
+    />
   )
 }
 

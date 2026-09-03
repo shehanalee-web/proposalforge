@@ -1,6 +1,10 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import Icon from '../../components/Icon/Icon.jsx'
+import SearchBar from '../../components/ServiceBrowser/SearchBar.jsx'
+import IndustryFilter from '../../components/ServiceBrowser/IndustryFilter.jsx'
+import EmptyState from '../../components/ServiceBrowser/EmptyState.jsx'
+import ServiceCount from '../../components/ServiceBrowser/ServiceCount.jsx'
 import { BRAND_FONTS } from '../../models/brandKit.js'
 import { findTemplateForService } from '../../models/service.js'
 import { MOCK_WORKSPACES } from '../../data/mockWorkspaces.js'
@@ -9,6 +13,7 @@ import { useCreateProposal } from '../../hooks/useCreateProposal.js'
 import { useServices } from '../../hooks/useServices.js'
 import { useTemplates } from '../../hooks/useTemplates.js'
 import { proposalFromTemplate } from '../../utils/proposalFromTemplate.js'
+import { filterServices } from '../../utils/serviceDiscovery.js'
 import { PATH, proposalEditPath } from '../../workspace/paths.js'
 import styles from './CreateProposal.module.css'
 
@@ -85,6 +90,49 @@ function CreateProposal() {
   const [step, setStep] = useState(1)
   const [workspaceId, setWorkspaceId] = useState(null)
   const [creatingServiceId, setCreatingServiceId] = useState(null)
+  const [serviceQuery, setServiceQuery] = useState('')
+  const [serviceIndustry, setServiceIndustry] = useState('')
+  /* Index of the keyboard-focused service card (-1 = none). */
+  const [focusedCard, setFocusedCard] = useState(-1)
+  const cardGridRef = useRef(null)
+
+  const visibleServices = useMemo(
+    () =>
+      filterServices(services, {
+        search: serviceQuery,
+        industry: serviceIndustry,
+      }),
+    [services, serviceQuery, serviceIndustry],
+  )
+
+  /* Reset focused card whenever the visible set changes. */
+  const prevVisibleLen = useRef(visibleServices.length)
+  if (prevVisibleLen.current !== visibleServices.length) {
+    prevVisibleLen.current = visibleServices.length
+    setFocusedCard(-1)
+  }
+
+  const clearFilters = useCallback(() => {
+    setServiceQuery('')
+    setServiceIndustry('')
+  }, [])
+
+  function handleCardGridKeyDown(event) {
+    const count = visibleServices.length
+    if (count === 0) return
+
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault()
+      const next = focusedCard < count - 1 ? focusedCard + 1 : 0
+      setFocusedCard(next)
+      cardGridRef.current?.querySelectorAll('[data-service-card]')[next]?.focus()
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      const prev = focusedCard > 0 ? focusedCard - 1 : count - 1
+      setFocusedCard(prev)
+      cardGridRef.current?.querySelectorAll('[data-service-card]')[prev]?.focus()
+    }
+  }
 
   const workspace = MOCK_WORKSPACES[0]
   const workspaceName = kit?.companyName?.trim() || workspace.name
@@ -291,52 +339,97 @@ function CreateProposal() {
             </Link>
           </div>
         ) : (
-          <div className={styles.typeGrid}>
-            <button
-              type="button"
-              className={`${styles.choice} ${styles.choiceWide} ${styles.aiChoice}`}
-              onClick={() => navigate(PATH.PROPOSAL_AI)}
-            >
-              <span className={styles.choiceMark} aria-hidden="true">
-                <Icon name="spark" size={22} />
-              </span>
-              <span className={styles.choiceBody}>
-                <span className={styles.choiceKicker}>AI wizard</span>
-                <span className={styles.choiceTitle}>Generate with AI</span>
-                <span className={styles.choiceText}>
-                  Answer a few questions. We’ll draft the proposal, then open
-                  the editor with it filled in.
+          <div className={styles.serviceStep}>
+            <div className={styles.typeGrid}>
+              <button
+                type="button"
+                className={`${styles.choice} ${styles.choiceWide} ${styles.aiChoice}`}
+                onClick={() => navigate(PATH.PROPOSAL_AI)}
+              >
+                <span className={styles.choiceMark} aria-hidden="true">
+                  <Icon name="spark" size={22} />
                 </span>
-              </span>
-              <span className={styles.choiceHint}>Start chat</span>
-            </button>
-            {services.map((service) => {
-              const creating = creatingServiceId === service.id
-              const busy = submitting && creating
+                <span className={styles.choiceBody}>
+                  <span className={styles.choiceKicker}>AI wizard</span>
+                  <span className={styles.choiceTitle}>Generate with AI</span>
+                  <span className={styles.choiceText}>
+                    Answer a few questions. We’ll draft the proposal, then open
+                    the editor with it filled in.
+                  </span>
+                </span>
+                <span className={styles.choiceHint}>Start chat</span>
+              </button>
+            </div>
 
-              return (
-                <button
-                  key={service.id}
-                  type="button"
-                  className={styles.typeCard}
-                  style={
-                    service.accent ? { '--type-accent': service.accent } : undefined
-                  }
-                  onClick={() => selectService(service)}
-                  disabled={submitting}
-                  aria-busy={busy || undefined}
+            <div className={styles.browser}>
+              {/* Section header */}
+              <div className={styles.browserHeader}>
+                <div className={styles.browserHeading}>
+                  <p className={styles.browserTitle}>Browse Services</p>
+                  <p className={styles.browserDesc}>
+                    Choose a proposal template or search by industry.
+                  </p>
+                </div>
+                <ServiceCount count={visibleServices.length} />
+              </div>
+
+              {/* Toolbar: search + industry */}
+              <div className={styles.browserToolbar} role="search">
+                <SearchBar
+                  value={serviceQuery}
+                  onChange={setServiceQuery}
+                />
+                <IndustryFilter
+                  value={serviceIndustry}
+                  onChange={setServiceIndustry}
+                />
+              </div>
+
+              {/* Results */}
+              {visibleServices.length === 0 ? (
+                <EmptyState onClear={clearFilters} />
+              ) : (
+                <div
+                  className={styles.typeGrid}
+                  ref={cardGridRef}
+                  onKeyDown={handleCardGridKeyDown}
                 >
-                  <span className={styles.typeIcon} aria-hidden="true">
-                    <Icon name={service.icon || 'services'} size={22} />
-                  </span>
-                  <span className={styles.typeTitle}>{service.name}</span>
-                  <span className={styles.typeText}>{service.description}</span>
-                  <span className={styles.typeHint}>
-                    {busy ? 'Creating…' : 'Create proposal'}
-                  </span>
-                </button>
-              )
-            })}
+                  {visibleServices.map((service, index) => {
+                    const creating = creatingServiceId === service.id
+                    const busy = submitting && creating
+
+                    return (
+                      <button
+                        key={service.id}
+                        type="button"
+                        data-service-card
+                        className={styles.typeCard}
+                        style={
+                          service.accent
+                            ? { '--type-accent': service.accent }
+                            : undefined
+                        }
+                        onClick={() => selectService(service)}
+                        onFocus={() => setFocusedCard(index)}
+                        disabled={submitting}
+                        aria-busy={busy || undefined}
+                      >
+                        <span className={styles.typeIcon} aria-hidden="true">
+                          <Icon name={service.icon || 'services'} size={22} />
+                        </span>
+                        <span className={styles.typeTitle}>{service.name}</span>
+                        <span className={styles.typeText}>
+                          {service.description}
+                        </span>
+                        <span className={styles.typeHint}>
+                          {busy ? 'Creating…' : 'Create proposal'}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )
       ) : null}

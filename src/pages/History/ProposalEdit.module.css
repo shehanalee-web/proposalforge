@@ -1,7 +1,48 @@
 .page {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-5);
   align-content: start;
+  transition: padding-right 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.pageSidebarOpen {
+  padding-right: min(var(--ai-sidebar-width, 340px), 42vw);
+}
+
+.pagePreview {
+  padding-right: 0;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-5);
+  transition: grid-template-columns 220ms ease;
+}
+
+.pagePreview .workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.kicker {
+  color: var(--color-accent);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.title {
+  color: var(--color-text);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.toolbarCopy {
+  display: grid;
+  gap: var(--space-1);
 }
 
 .intro {
@@ -42,8 +83,8 @@
   padding: var(--space-6);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
 }
 
 .banner {
@@ -136,8 +177,18 @@
   background-color: var(--color-surface-raised);
 }
 
+@media (max-width: 1100px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 640px) {
   .panel {
     padding: var(--space-5) var(--space-4);
+  }
+
+  .pageSidebarOpen {
+    padding-right: 0;
   }
 }

@@ -1,0 +1,405 @@
+/* ═══════════════════════════════════════════════════════════════
+   BlockEditor — Notion / Linear interaction polish
+   ═══════════════════════════════════════════════════════════════ */
+
+.editor {
+  display: grid;
+  gap: var(--space-5);
+}
+
+/* ── Toolbar ── */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.toolbarCopy {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.toolbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.heading {
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.kbd {
+  display: inline-block;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+  font-size: 0.625rem;
+  font-family: var(--font-mono);
+  line-height: 1.4;
+  vertical-align: middle;
+}
+
+.ghost {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.ghost:hover:not(:disabled) {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+}
+
+/* ── Block list ── */
+
+.list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+/* ── Card ── */
+
+.card {
+  position: relative;
+  list-style: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-raised);
+  animation: enter 220ms cubic-bezier(0.32, 0.72, 0, 1);
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease,
+    opacity 200ms ease,
+    transform 220ms cubic-bezier(0.32, 0.72, 0, 1),
+    background-color 200ms ease,
+    margin 200ms ease;
+}
+
+.card:hover :global([data-block-grip]),
+.card:focus-within :global([data-block-grip]),
+.cardActive :global([data-block-grip]) {
+  opacity: 1;
+}
+
+.card:hover :global([role='toolbar']),
+.card:focus-within :global([role='toolbar']),
+.cardActive :global([role='toolbar']) {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.card:hover {
+  border-color: var(--color-border);
+  background-color: color-mix(in srgb, var(--color-surface-raised) 92%, white);
+}
+
+.cardActive,
+.card:focus-within {
+  border-color: color-mix(in srgb, var(--color-accent) 35%, var(--color-border));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 18%, transparent),
+    0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.cardDisabled {
+  opacity: 0.62;
+}
+
+.cardDragging {
+  opacity: 0.42;
+  transform: scale(0.985);
+  margin-block: var(--space-3);
+  box-shadow: var(--shadow-md);
+}
+
+.dropBefore::before,
+.dropAfter::after {
+  content: '';
+  position: absolute;
+  left: var(--space-4);
+  right: var(--space-4);
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--color-accent) 45%, transparent);
+  pointer-events: none;
+}
+
+.dropBefore::before {
+  top: -1px;
+}
+
+.dropAfter::after {
+  bottom: -1px;
+}
+
+/* ── Card header ── */
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-1);
+  min-height: 2.5rem;
+}
+
+/* ── Drag grip ── */
+
+.grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  cursor: grab;
+  opacity: 0;
+  transition:
+    opacity 180ms ease,
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.card:hover .grip,
+.card:focus-within .grip,
+.cardActive .grip {
+  opacity: 1;
+}
+
+.grip:hover {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text-secondary);
+}
+
+.grip:active {
+  cursor: grabbing;
+}
+
+/* ── Title bar ── */
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.cardTitle:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.blockIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.blockLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hiddenBadge {
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-hover);
+  color: var(--color-text-muted);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  margin-left: auto;
+  transition: transform 200ms ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ── Action buttons (hover reveal) ── */
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  opacity: 0;
+  transform: translateX(4px);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.card:hover .actions,
+.card:focus-within .actions,
+.cardActive .actions {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.action:hover:not(:disabled) {
+  background-color: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.actionDanger:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.12);
+  color: var(--color-danger);
+}
+
+/* ── Expand / collapse body ── */
+
+.cardBodyWrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cardBodyOpen {
+  grid-template-rows: 1fr;
+}
+
+.cardBody {
+  overflow: hidden;
+  min-height: 0;
+  padding: 0 var(--space-4) var(--space-4);
+  border-top: 1px solid transparent;
+  transition: border-color 200ms ease;
+}
+
+.cardBodyOpen .cardBody {
+  border-top-color: var(--color-border);
+  padding-top: var(--space-4);
+}
+
+.fields {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+/* ── Empty state ── */
+
+.empty {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-12) var(--space-6);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.emptyTitle {
+  color: var(--color-text);
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.emptyText {
+  max-width: 32ch;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 640px) {
+  .cardHeader {
+    flex-wrap: wrap;
+  }
+
+  .actions {
+    opacity: 1;
+    transform: none;
+    margin-left: auto;
+  }
+
+  .grip {
+    opacity: 1;
+  }
+
+  .cardBody {
+    padding-inline: var(--space-3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .cardBodyWrap,
+  .actions,
+  .grip,
+  .chevron {
+    transition: none;
+    animation: none;
+  }
+}
+
+@keyframes enter {
+  from { opacity: 0; transform: translateY(8px) scale(0.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

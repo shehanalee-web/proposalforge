@@ -1,0 +1,35 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.bar {
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--color-surface-hover);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 2px;
+  background-color: var(--color-accent);
+  transition: width 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.itemPass {
+  color: var(--color-success);
+}
