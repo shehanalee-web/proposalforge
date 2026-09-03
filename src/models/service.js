@@ -19,6 +19,15 @@ export const PRICING_MODEL = Object.freeze({
 
 export const PRICING_MODELS = Object.freeze(Object.values(PRICING_MODEL))
 
+export const PRICING_MODEL_LABELS = Object.freeze({
+  [PRICING_MODEL.FIXED]: 'Fixed fee',
+  [PRICING_MODEL.UNIT]: 'Unit',
+  [PRICING_MODEL.HOURLY]: 'Hourly',
+  [PRICING_MODEL.MILESTONE]: 'Milestone',
+  [PRICING_MODEL.RETAINER]: 'Retainer',
+  [PRICING_MODEL.CUSTOM]: 'Custom',
+})
+
 /**
  * @typedef {object} Service
  * @property {string} id
@@ -30,6 +39,9 @@ export const PRICING_MODELS = Object.freeze(Object.values(PRICING_MODEL))
  * @property {string} typicalDuration
  * @property {string[]} assetIds
  * @property {string[]} contentBlockIds
+ * @property {string} templateId
+ * @property {string} icon
+ * @property {string} accent
  * @property {string} createdAt
  * @property {string} updatedAt
  */
@@ -51,6 +63,9 @@ export function makeService(input = {}) {
     typicalDuration: input.typicalDuration ?? '',
     assetIds: [...(input.assetIds ?? [])],
     contentBlockIds: [...(input.contentBlockIds ?? [])],
+    templateId: input.templateId ?? '',
+    icon: input.icon ?? 'services',
+    accent: input.accent ?? '',
     createdAt: input.createdAt ?? timestamp,
     updatedAt: input.updatedAt ?? timestamp,
   }
@@ -75,4 +90,21 @@ export function validateService(service) {
   }
 
   return errors
+}
+
+/**
+ * Resolve the template copied when a proposal is created from this service.
+ *
+ * @param {import('./template.js').ProposalTemplate[]} templates
+ * @param {Service} service
+ */
+export function findTemplateForService(templates, service) {
+  if (!service) return undefined
+
+  if (service.templateId) {
+    const named = templates.find((template) => template.id === service.templateId)
+    if (named) return named
+  }
+
+  return templates.find((template) => template.proposalType === service.id)
 }
