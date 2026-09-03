@@ -1,5 +1,5 @@
 import {
-  PROPOSAL_STATUSES,
+  LIST_STATUS_FILTERS,
   PROPOSAL_STATUS_LABELS,
 } from '../../models/proposal.js'
 import styles from './HistoryToolbar.module.css'
@@ -7,7 +7,7 @@ import styles from './HistoryToolbar.module.css'
 const ALL_FILTER = ''
 
 function HistoryToolbar({ search, onSearchChange, status, onStatusChange }) {
-  const filters = [ALL_FILTER, ...PROPOSAL_STATUSES]
+  const filters = [ALL_FILTER, ...LIST_STATUS_FILTERS]
 
   return (
     <div className={styles.toolbar}>

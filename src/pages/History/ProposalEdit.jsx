@@ -1,9 +1,16 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { PROJECT_TYPES } from '../../models/proposal.js'
+import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
 import { useProposal } from '../../hooks/useProposal.js'
 import { useUpdateProposal } from '../../hooks/useUpdateProposal.js'
 import ProposalForm from '../NewProposal/ProposalForm.jsx'
+import { PATH, proposalPath } from '../../workspace/paths.js'
+import { ensureProposalBlocks } from '../../blocks/hydrate.js'
+import { computeCommercials } from '../../utils/commercialTotals.js'
+import { BLOCK_TYPE } from '../../blocks/ids.js'
+import { updateBlocksByType } from '../../blocks/instance.js'
+import BlockComposer from '../../blocks/BlockComposer.jsx'
 import styles from './ProposalEdit.module.css'
 
 const SKELETON_ROWS = 4
@@ -18,17 +25,11 @@ function valuesFromProposal(proposal) {
     amount: Number.isFinite(proposal.amount) ? String(proposal.amount) : '',
     summary: proposal.summary ?? '',
     validUntil: proposal.validUntil ?? '',
+    layoutId: proposal.layoutId ?? DEFAULT_LAYOUT_ID,
   }
 }
 
-/**
- * Fields the edit form is allowed to send. Everything else on the stored
- * record — status, currency, sections, items, terms, notes, tags, and any
- * future document body — is omitted so `updateProposal` keeps the existing
- * values. That also means editing a proposal created from a template cannot
- * mutate the template.
- */
-function toEditableChanges(values) {
+function toEditableChanges(values, blocks) {
   return {
     title: values.title,
     clientName: values.clientName,
@@ -38,6 +39,8 @@ function toEditableChanges(values) {
     amount: values.amount === '' ? 0 : Number(values.amount),
     summary: values.summary,
     validUntil: values.validUntil || null,
+    layoutId: values.layoutId ?? DEFAULT_LAYOUT_ID,
+    blocks,
   }
 }
 
@@ -53,7 +56,9 @@ function ProposalEdit() {
   } = useUpdateProposal()
 
   const [draft, setDraft] = useState(null)
+  const [blocks, setBlocks] = useState(null)
   const values = draft ?? (proposal ? valuesFromProposal(proposal) : null)
+  const documentBlocks = blocks ?? (proposal ? ensureProposalBlocks(proposal) : [])
 
   const requestError =
     saveError && Object.keys(fieldErrors).length === 0 ? saveError : null
@@ -62,6 +67,33 @@ function ProposalEdit() {
     if (!values) return
 
     setDraft({ ...values, [name]: value })
+
+    if (name === 'summary') {
+      setBlocks((current) =>
+        updateBlocksByType(
+          current ?? documentBlocks,
+          BLOCK_TYPE.EXECUTIVE_SUMMARY,
+          { body: value },
+        ),
+      )
+    }
+  }
+
+  function handleBlocksChange(next) {
+    setBlocks(next)
+
+    const pricing = next.find((block) => block.type === BLOCK_TYPE.PRICING)
+    if (!pricing) return
+
+    const nextAmount = String(
+      computeCommercials(pricing.data.modules ?? []).grandTotal,
+    )
+
+    setDraft((current) => {
+      const base = current ?? (proposal ? valuesFromProposal(proposal) : null)
+      if (!base || base.amount === nextAmount) return current
+      return { ...base, amount: nextAmount }
+    })
   }
 
   async function handleSubmit(event) {
@@ -69,10 +101,10 @@ function ProposalEdit() {
 
     if (!id || !values) return
 
-    const updated = await update(id, toEditableChanges(values))
+    const updated = await update(id, toEditableChanges(values, documentBlocks))
 
     if (updated) {
-      navigate(`/history/${updated.id}`)
+      navigate(proposalPath(updated.id))
     }
   }
 
@@ -84,8 +116,8 @@ function ProposalEdit() {
           <p className={styles.stateText}>
             This proposal does not exist, or it was lost when the app reloaded.
           </p>
-          <Link to="/history" className={styles.action}>
-            Back to history
+          <Link to={PATH.PROPOSALS} className={styles.action}>
+            Back to proposals
           </Link>
         </div>
       </section>
@@ -124,8 +156,9 @@ function ProposalEdit() {
   return (
     <section className={styles.page}>
       <p className={styles.intro}>
-        Update the essentials. Status, sections, line items, terms and tags are
-        not on this form and will be left unchanged.
+        Edit branding details, pricing, layout, validity dates and every content
+        block — including team, images and PDFs. Disabling a block hides it
+        without deleting its content.
       </p>
 
       {requestError ? (
@@ -154,7 +187,14 @@ function ProposalEdit() {
           fieldErrors={fieldErrors}
           submitLabel="Save changes"
           submittingLabel="Saving…"
-        />
+        >
+          <BlockComposer
+            blocks={documentBlocks}
+            onChange={handleBlocksChange}
+            disabled={submitting}
+            currency={proposal.currency}
+          />
+        </ProposalForm>
       </div>
     </section>
   )

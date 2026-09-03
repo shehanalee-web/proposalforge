@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { useTemplate } from '../../hooks/useTemplate.js'
 import { useCreateTemplate } from '../../hooks/useCreateTemplate.js'
 import { useUpdateTemplate } from '../../hooks/useUpdateTemplate.js'
+import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
 import TemplateForm from './TemplateForm.jsx'
 import styles from './TemplateEditor.module.css'
 
@@ -15,6 +16,7 @@ const EMPTY_FORM = {
   items: [],
   terms: '',
   notes: '',
+  defaultLayoutId: DEFAULT_LAYOUT_ID,
 }
 
 function valuesFromTemplate(template) {
@@ -33,6 +35,7 @@ function valuesFromTemplate(template) {
     })),
     terms: template.terms ?? '',
     notes: template.notes ?? '',
+    defaultLayoutId: template.defaultLayoutId ?? DEFAULT_LAYOUT_ID,
   }
 }
 
@@ -60,6 +63,7 @@ function toPayload(values) {
     items,
     terms: values.terms,
     notes: values.notes,
+    defaultLayoutId: values.defaultLayoutId ?? DEFAULT_LAYOUT_ID,
   }
 }
 

@@ -1,4 +1,5 @@
 import { PROPOSAL_STATUS } from '../models/proposal.js'
+import { LAYOUT_ID } from '../layouts/ids.js'
 
 /**
  * Seed data for development.
@@ -40,6 +41,15 @@ export const MOCK_PROPOSALS = [
     ],
     tags: ['identity', 'retainer-candidate'],
     validUntil: '2026-09-10',
+    shareToken: 'share-1001',
+    lastViewedAt: '2026-08-20T14:30:00.000Z',
+    layoutId: LAYOUT_ID.LANDSCAPE,
+    items: [
+      { id: 'item-1001-1', description: 'Identity system', amount: 12000 },
+      { id: 'item-1001-2', description: 'Brand guidelines', amount: 6500 },
+    ],
+    terms:
+      'Work begins on receipt of a 40% deposit. Remaining balance is due on delivery of final files. This proposal is valid until the date shown.',
     createdAt: '2026-08-10T09:15:00.000Z',
     updatedAt: '2026-08-14T16:42:00.000Z',
   },
@@ -68,6 +78,9 @@ export const MOCK_PROPOSALS = [
     ],
     tags: ['structural', 'install-required'],
     validUntil: '2026-07-31',
+    shareToken: 'share-1002',
+    acceptedAt: '2026-07-19T08:20:00.000Z',
+    lastViewedAt: '2026-07-18T16:05:00.000Z',
     createdAt: '2026-07-02T11:00:00.000Z',
     updatedAt: '2026-07-19T08:20:00.000Z',
   },
@@ -85,6 +98,7 @@ export const MOCK_PROPOSALS = [
     sections: [],
     tags: ['ecommerce'],
     validUntil: null,
+    shareToken: 'share-1003',
     createdAt: '2026-08-21T13:05:00.000Z',
     updatedAt: '2026-08-23T10:12:00.000Z',
   },
@@ -95,7 +109,7 @@ export const MOCK_PROPOSALS = [
     clientEmail: 'elena.voss@lumencosmetics.com',
     company: 'Lumen Cosmetics',
     projectType: 'Fabrication',
-    status: PROPOSAL_STATUS.SENT,
+    status: PROPOSAL_STATUS.REVISION_REQUESTED,
     amount: 61500,
     summary:
       'Turnkey fabrication of a travelling retail pop-up: modular display walls, illuminated signage and a demo counter.',
@@ -108,8 +122,12 @@ export const MOCK_PROPOSALS = [
     ],
     tags: ['retail', 'multi-city'],
     validUntil: '2026-09-05',
+    shareToken: 'share-1004',
+    lastViewedAt: '2026-08-19T11:10:00.000Z',
+    clientFeedback:
+      'Please quote a second finish option for the demo counter and confirm freight to the Dallas date.',
     createdAt: '2026-08-05T15:30:00.000Z',
-    updatedAt: '2026-08-18T09:48:00.000Z',
+    updatedAt: '2026-08-19T11:22:00.000Z',
   },
   {
     id: 'prop-1005',
@@ -125,6 +143,8 @@ export const MOCK_PROPOSALS = [
     sections: [],
     tags: ['campaign'],
     validUntil: '2026-06-20',
+    shareToken: 'share-1005',
+    lastViewedAt: '2026-06-12T09:40:00.000Z',
     createdAt: '2026-05-28T10:00:00.000Z',
     updatedAt: '2026-06-24T14:35:00.000Z',
   },
@@ -153,6 +173,9 @@ export const MOCK_PROPOSALS = [
     ],
     tags: ['museum', 'conservation', 'long-lead'],
     validUntil: '2026-05-15',
+    shareToken: 'share-1006',
+    lastViewedAt: '2026-04-28T15:12:00.000Z',
+    acceptedAt: '2026-05-02T12:00:00.000Z',
     createdAt: '2026-04-08T08:45:00.000Z',
     updatedAt: '2026-05-02T12:00:00.000Z',
   },
@@ -170,6 +193,7 @@ export const MOCK_PROPOSALS = [
     sections: [],
     tags: ['broadcast', 'templates'],
     validUntil: null,
+    shareToken: 'share-1007',
     createdAt: '2026-08-24T17:20:00.000Z',
     updatedAt: '2026-08-24T17:20:00.000Z',
   },
@@ -193,6 +217,7 @@ export const MOCK_PROPOSALS = [
     ],
     tags: ['editorial', 'annual'],
     validUntil: '2026-09-01',
+    shareToken: 'share-1008',
     createdAt: '2026-08-01T09:00:00.000Z',
     updatedAt: '2026-08-12T11:15:00.000Z',
   },

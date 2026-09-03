@@ -1,17 +1,31 @@
 import { createElement } from 'react'
 import { pdf } from '@react-pdf/renderer'
+import { fetchBrandKit } from '../services/brandKitService.js'
 import { fetchSettings } from '../services/settingsService.js'
+import { embedBrandKitImages, embedProposalImages } from './embedPdfImages.js'
 import ProposalDocument from './ProposalDocument.jsx'
 import { toPdfFilename } from './pdfFormat.js'
 
-export async function renderProposalPdfBlob(proposal, settings) {
-  const document = createElement(ProposalDocument, { proposal, settings })
+/**
+ * Compose a PDF after uploaded images have been fetched from their public
+ * URLs and encoded as data URIs. Attachment links keep those public URLs.
+ */
+export async function renderProposalPdfBlob(proposal, settings, kit) {
+  const [embeddedProposal, embeddedKit] = await Promise.all([
+    embedProposalImages(proposal),
+    embedBrandKitImages(kit),
+  ])
+  const document = createElement(ProposalDocument, {
+    proposal: embeddedProposal,
+    settings,
+    kit: embeddedKit,
+  })
   return pdf(document).toBlob()
 }
 
 export async function loadProposalPdfContext(proposal) {
-  const settings = await fetchSettings()
-  const blob = await renderProposalPdfBlob(proposal, settings)
+  const [settings, kit] = await Promise.all([fetchSettings(), fetchBrandKit()])
+  const blob = await renderProposalPdfBlob(proposal, settings, kit)
 
   return { blob, filename: toPdfFilename(proposal) }
 }

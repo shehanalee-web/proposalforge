@@ -1,21 +1,24 @@
-import { makeLineItem, makeSection, PROJECT_TYPES } from '../models/proposal.js'
+import { makeLineItem, makeSection } from '../models/proposal.js'
+import { getProposalType } from '../models/proposalType.js'
 
 /**
- * Deep-copy a template into New Proposal form state.
+ * Deep-copy a template into new-proposal payload shape.
  *
  * Section and line-item ids are regenerated so the proposal never shares
- * identity with the template. Client fields stay empty — they belong on the
- * proposal, not the reusable template.
+ * identity with the template. Client fields stay empty unless the caller
+ * supplies them — they belong on the proposal, not the reusable template.
  *
  * @param {import('../models/template.js').ProposalTemplate} template
  */
 export function proposalFromTemplate(template) {
+  const type = getProposalType(template.proposalType)
+
   return {
     title: template.title ?? '',
     clientName: '',
     clientEmail: '',
     company: '',
-    projectType: PROJECT_TYPES[0],
+    projectType: type?.projectType,
     amount: template.amount ? String(template.amount) : '',
     summary: template.description ?? '',
     validUntil: '',
@@ -28,5 +31,6 @@ export function proposalFromTemplate(template) {
     terms: template.terms ?? '',
     notes: template.notes ?? '',
     tags: [],
+    layoutId: template.defaultLayoutId,
   }
 }

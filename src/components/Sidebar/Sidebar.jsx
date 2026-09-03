@@ -1,9 +1,17 @@
-import { NavLink } from 'react-router'
+import { NavLink, useLocation } from 'react-router'
 import Icon from '../Icon/Icon.jsx'
-import { NAV_ITEMS } from '../../navigation.js'
+import { listNavGroups } from '../../workspace/registry.js'
+import { WORKSPACE_MODULE } from '../../workspace/ids.js'
+import { PATH } from '../../workspace/paths.js'
+import { useCreateProposalDialog } from '../../hooks/useCreateProposalDialog.js'
 import styles from './Sidebar.module.css'
 
 function Sidebar() {
+  const groups = listNavGroups()
+  const { pathname } = useLocation()
+  const { openStart } = useCreateProposalDialog()
+  const createActive = pathname === PATH.NEW_PROPOSAL
+
   return (
     <aside className={styles.sidebar}>
       <div className={styles.brand}>
@@ -13,24 +21,49 @@ function Sidebar() {
         <span className={styles.wordmark}>ProposalForge</span>
       </div>
 
-      <nav aria-label="Main navigation">
-        <ul className={styles.nav}>
-          {NAV_ITEMS.map((item) => (
-            <li key={item.to}>
-              <NavLink
-                to={item.to}
-                end={item.to === '/'}
-                aria-label={item.label}
-                className={({ isActive }) =>
-                  isActive ? `${styles.link} ${styles.linkActive}` : styles.link
-                }
-              >
-                <Icon name={item.icon} className={styles.icon} />
-                <span className={styles.label}>{item.label}</span>
-              </NavLink>
-            </li>
-          ))}
-        </ul>
+      <nav className={styles.navWrap} aria-label="Main navigation">
+        {groups.map((group) => (
+          <div key={group.id} className={styles.group}>
+            <p className={styles.groupLabel}>{group.label}</p>
+            <ul className={styles.nav}>
+              {group.modules.map((item) => (
+                <li key={item.id}>
+                  {item.id === WORKSPACE_MODULE.CREATE_PROPOSAL ? (
+                    <button
+                      type="button"
+                      aria-label={item.label}
+                      className={[
+                        styles.link,
+                        styles.linkCreate,
+                        createActive ? styles.linkActive : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                      onClick={openStart}
+                    >
+                      <Icon name={item.icon} className={styles.icon} />
+                      <span className={styles.label}>{item.label}</span>
+                    </button>
+                  ) : (
+                    <NavLink
+                      to={item.path}
+                      end={item.path === '/'}
+                      aria-label={item.label}
+                      className={({ isActive }) => {
+                        const classes = [styles.link]
+                        if (isActive) classes.push(styles.linkActive)
+                        return classes.join(' ')
+                      }}
+                    >
+                      <Icon name={item.icon} className={styles.icon} />
+                      <span className={styles.label}>{item.label}</span>
+                    </NavLink>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </nav>
     </aside>
   )

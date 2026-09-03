@@ -1,0 +1,92 @@
+import { createRecordId } from '../models/ids.js'
+import { CONTENT_BLOCK_TYPE_LABELS } from '../models/contentBlock.js'
+import { BLOCK_TYPE, BUILTIN_BLOCK_TYPES } from './ids.js'
+import { makeBlockData } from './schemas.js'
+
+/**
+ * A proposal block instance.
+ *
+ * Order is the array order on the proposal. Drag-and-drop can reorder this
+ * list later without a schema change. `enabled: false` hides the block in
+ * every renderer and never drops `data`.
+ *
+ * @typedef {object} BlockInstance
+ * @property {string} id
+ * @property {string} type
+ * @property {boolean} enabled
+ * @property {object} data
+ */
+
+export function getBlockLabel(type) {
+  return CONTENT_BLOCK_TYPE_LABELS[type] ?? 'Block'
+}
+
+/**
+ * @param {Partial<BlockInstance>} [input]
+ * @returns {BlockInstance}
+ */
+export function makeBlock(input = {}) {
+  const type = BUILTIN_BLOCK_TYPES.includes(input.type)
+    ? input.type
+    : BLOCK_TYPE.CUSTOM
+
+  return {
+    id: input.id ?? createRecordId('blk'),
+    type,
+    enabled: input.enabled !== false,
+    data: makeBlockData(type, input.data ?? {}),
+  }
+}
+
+export function listEnabledBlocks(blocks) {
+  return (blocks ?? []).filter((block) => block.enabled)
+}
+
+export function moveBlock(blocks, id, offset) {
+  const list = [...(blocks ?? [])]
+  const index = list.findIndex((block) => block.id === id)
+
+  if (index < 0) return list
+
+  const next = index + offset
+
+  if (next < 0 || next >= list.length) return list
+
+  const copy = list[index]
+  list[index] = list[next]
+  list[next] = copy
+
+  return list
+}
+
+export function setBlockEnabled(blocks, id, enabled) {
+  return (blocks ?? []).map((block) =>
+    block.id === id ? { ...block, enabled: Boolean(enabled) } : block,
+  )
+}
+
+export function updateBlockData(blocks, id, data) {
+  return (blocks ?? []).map((block) => {
+    if (block.id !== id) return block
+
+    return {
+      ...block,
+      data: makeBlockData(block.type, { ...block.data, ...data }),
+    }
+  })
+}
+
+export function updateBlocksByType(blocks, type, data) {
+  return (blocks ?? []).map((block) => {
+    if (block.type !== type) return block
+
+    return {
+      ...block,
+      data: makeBlockData(block.type, { ...block.data, ...data }),
+    }
+  })
+}
+
+export function addBlock(blocks, type = BLOCK_TYPE.CUSTOM) {
+  return [...(blocks ?? []), makeBlock({ type, enabled: true })]
+}

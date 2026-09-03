@@ -22,5 +22,8 @@ export function toDuplicateTemplate(template) {
     ),
     terms: template.terms ?? '',
     notes: template.notes ?? '',
+    defaultLayoutId: template.defaultLayoutId,
+    proposalType: template.proposalType ?? '',
+    isDefault: false,
   }
 }

@@ -1,6 +1,8 @@
 import { makeLineItem, makeSection, DEFAULT_CURRENCY } from '../../models/proposal.js'
 import { formatCurrency } from '../../utils/format.js'
 import { sumItemAmounts } from '../../models/template.js'
+import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
+import LayoutPicker from '../../layouts/screen/LayoutPicker.jsx'
 import styles from './TemplateForm.module.css'
 
 function Field({ id, label, error, children }) {
@@ -117,6 +119,13 @@ function TemplateForm({
           disabled={submitting}
         />
       </Field>
+
+      <LayoutPicker
+        value={values.defaultLayoutId ?? DEFAULT_LAYOUT_ID}
+        onChange={(layoutId) => onChange('defaultLayoutId', layoutId)}
+        disabled={submitting}
+        label="Default layout"
+      />
 
       <fieldset className={styles.group}>
         <legend className={styles.legend}>Sections</legend>

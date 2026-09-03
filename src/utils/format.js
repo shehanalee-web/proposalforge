@@ -59,3 +59,20 @@ export function formatTime(iso) {
     hour12: true,
   }).format(date)
 }
+
+/**
+ * Format an ISO timestamp as a short date and time.
+ *
+ * @param {string | null | undefined} iso
+ * @returns {string}
+ */
+export function formatDateTime(iso) {
+  if (!iso) return EM_DASH
+
+  const date = formatDate(iso)
+  const time = formatTime(iso)
+
+  if (date === EM_DASH) return EM_DASH
+
+  return `${date} · ${time}`
+}

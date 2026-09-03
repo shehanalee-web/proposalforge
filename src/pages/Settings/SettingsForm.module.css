@@ -71,25 +71,6 @@
   justify-content: flex-end;
 }
 
-.submit {
-  padding: var(--space-2) var(--space-5);
-  border-radius: var(--radius-md);
-  background-color: var(--color-accent);
-  color: var(--color-accent-contrast);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  box-shadow: var(--shadow-accent);
-}
-
-.submit:hover:not(:disabled) {
-  background-color: var(--color-accent-hover);
-}
-
-.submit:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 @media (max-width: 720px) {
   .grid {
     grid-template-columns: 1fr;

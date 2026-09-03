@@ -1,0 +1,115 @@
+.fieldset {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.legend {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+}
+
+.card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface);
+  cursor: pointer;
+}
+
+.card:hover {
+  border-color: var(--color-border-strong);
+  background-color: var(--color-surface-hover);
+}
+
+.cardSelected,
+.cardSelected:hover {
+  border-color: var(--color-accent-border);
+  background-color: var(--color-accent-soft);
+}
+
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.card:focus-within {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+  border-color: var(--color-accent);
+}
+
+.preview {
+  display: grid;
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 3px;
+  background-color: var(--color-bg);
+  pointer-events: none;
+}
+
+.previewPortrait {
+  width: 34px;
+  height: 46px;
+}
+
+.previewLandscape {
+  width: 46px;
+  height: 32px;
+}
+
+.previewBar {
+  height: 4px;
+  background-color: var(--color-accent);
+  border-radius: 1px;
+}
+
+.previewLine {
+  height: 2px;
+  background-color: var(--color-border-strong);
+  border-radius: 1px;
+}
+
+.copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.description {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.fieldset:disabled .card {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

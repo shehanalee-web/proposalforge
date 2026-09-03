@@ -1,8 +1,12 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useParams } from 'react-router'
 import { useProposal } from '../../hooks/useProposal.js'
 import { useRestoreProposalVersion } from '../../hooks/useRestoreProposalVersion.js'
+import { useUpdateProposal } from '../../hooks/useUpdateProposal.js'
+import { getClientPortalUrl } from '../../utils/clientProposal.js'
 import { toDuplicateDraft } from '../../utils/duplicateDraft.js'
+import { useCreateProposalDialog } from '../../hooks/useCreateProposalDialog.js'
+import { PATH } from '../../workspace/paths.js'
 import ProposalDetailView from './ProposalDetailView.jsx'
 import VersionHistoryPanel from './VersionHistoryPanel.jsx'
 import styles from './ProposalDetail.module.css'
@@ -11,21 +15,50 @@ const SKELETON_ROWS = 5
 
 function ProposalDetail() {
   const { id } = useParams()
-  const navigate = useNavigate()
+  const { openCreate } = useCreateProposalDialog()
   const { proposal, loading, error, notFound, refetch } = useProposal(id)
   const {
     restore,
     submitting: restoring,
     error: restoreError,
   } = useRestoreProposalVersion()
+  const { update, submitting: layoutSaving } = useUpdateProposal()
   const [exporting, setExporting] = useState(null)
   const [exportError, setExportError] = useState(null)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
 
   function handleDuplicate() {
     if (!proposal) return
 
-    navigate('/new', { state: { draft: toDuplicateDraft(proposal) } })
+    openCreate({
+      draft: toDuplicateDraft(proposal),
+      source: 'duplicate',
+    })
+  }
+
+  async function handleLayoutChange(layoutId) {
+    if (!proposal || layoutId === proposal.layoutId || layoutSaving) return
+
+    const updated = await update(proposal.id, { layoutId })
+
+    if (updated) {
+      await refetch()
+    }
+  }
+
+  async function handleCopyLink() {
+    if (!proposal) return
+
+    const url = getClientPortalUrl(proposal.shareToken)
+
+    try {
+      await navigator.clipboard.writeText(url)
+      setLinkCopied(true)
+      window.setTimeout(() => setLinkCopied(false), 2000)
+    } catch {
+      window.prompt('Copy client link', url)
+    }
   }
 
   async function handleRestore(versionId) {
@@ -69,8 +102,8 @@ function ProposalDetail() {
           <p className={styles.stateText}>
             This proposal does not exist, or it was lost when the app reloaded.
           </p>
-          <Link to="/history" className={styles.action}>
-            Back to history
+          <Link to={PATH.PROPOSALS} className={styles.action}>
+            Back to proposals
           </Link>
         </div>
       </section>
@@ -114,6 +147,10 @@ function ProposalDetail() {
         onDownloadPdf={() => runExport('download')}
         onPrint={() => runExport('print')}
         onOpenHistory={() => setHistoryOpen(true)}
+        onCopyLink={handleCopyLink}
+        onLayoutChange={handleLayoutChange}
+        layoutSaving={layoutSaving}
+        linkCopied={linkCopied}
         exporting={exporting}
         exportError={exportError}
       />

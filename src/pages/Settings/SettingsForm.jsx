@@ -128,7 +128,7 @@ function SettingsForm({
       </Field>
 
       <div className={styles.actions}>
-        <button type="submit" className={styles.submit} disabled={submitting}>
+        <button type="submit" className={`studio-btn-primary ${styles.submit}`} disabled={submitting}>
           {submitting ? 'Saving…' : 'Save settings'}
         </button>
       </div>

@@ -1,8 +1,7 @@
 /**
- * Build line items from the proposal.
+ * Build priced rows for on-screen tables and PDFs.
  *
- * Structured `items` are used when present so a future line-item editor can
- * feed this table without changing the PDF. Until then a single row is derived
+ * Structured `items` are used when present. Otherwise a single row is derived
  * from the proposal title, type and amount.
  */
 export function getPricingRows(proposal) {
