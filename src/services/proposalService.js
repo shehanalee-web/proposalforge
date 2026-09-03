@@ -7,6 +7,11 @@ import {
   makeProposal,
   validateProposal,
 } from '../models/proposal.js'
+import {
+  proposalFieldsFromSnapshot,
+  recordRestoreVersion,
+  recordSaveVersion,
+} from '../models/proposalVersion.js'
 import { NotFoundError, ValidationError } from './errors.js'
 import { prepareProposalAssets } from './hydrateAssets.js'
 import * as store from './proposalStore.js'
@@ -173,8 +178,8 @@ export async function createProposal(input) {
 /**
  * Apply a partial update to an existing proposal.
  *
- * `id` and `createdAt` are preserved and `updatedAt` is refreshed, so callers
- * cannot accidentally rewrite a record's identity or history.
+ * `id`, `createdAt` and version history are preserved. A new version is
+ * recorded only when the document changed since the last save.
  *
  * @param {string} id
  * @param {Partial<import('../models/proposal.js').Proposal>} changes
@@ -188,11 +193,19 @@ export async function updateProposal(id, changes = {}) {
     throw new NotFoundError(`No proposal found with id "${id}".`)
   }
 
+  const safeChanges = { ...changes }
+  delete safeChanges.versions
+  delete safeChanges.currentVersion
+  delete safeChanges.id
+  delete safeChanges.createdAt
+
   const updated = makeProposal({
     ...existing,
-    ...changes,
+    ...safeChanges,
     id: existing.id,
     createdAt: existing.createdAt,
+    versions: existing.versions,
+    currentVersion: existing.currentVersion,
     shareToken: existing.shareToken,
     updatedAt: new Date().toISOString(),
   })
@@ -203,9 +216,60 @@ export async function updateProposal(id, changes = {}) {
     throw new ValidationError('Proposal is not valid.', errors)
   }
 
+  const recorded = recordSaveVersion(updated)
+
   await boot()
 
-  return present(await store.replace(id, updated))
+  return present(await store.replace(id, recorded))
+}
+
+/**
+ * Re-apply a past snapshot as a new latest version. Older versions are kept.
+ *
+ * @param {string} id
+ * @param {string} versionId
+ * @returns {Promise<import('../models/proposal.js').Proposal>}
+ * @throws {NotFoundError}
+ */
+export async function restoreProposalVersion(id, versionId) {
+  const existing = store.findById(id)
+
+  if (!existing) {
+    throw new NotFoundError(`No proposal found with id "${id}".`)
+  }
+
+  const source = (existing.versions ?? []).find(
+    (version) => version.versionId === versionId,
+  )
+
+  if (!source) {
+    throw new NotFoundError(`No version found with id "${versionId}".`)
+  }
+
+  const restored = makeProposal({
+    ...existing,
+    ...proposalFieldsFromSnapshot(source.snapshot),
+    id: existing.id,
+    createdAt: existing.createdAt,
+    versions: existing.versions,
+    currentVersion: existing.currentVersion,
+    shareToken: existing.shareToken,
+    updatedAt: new Date().toISOString(),
+  })
+
+  const errors = validateProposal(restored)
+
+  if (errors.length > 0) {
+    throw new ValidationError('Proposal is not valid.', errors)
+  }
+
+  const recorded = recordRestoreVersion(restored, {
+    restoredFrom: source.versionNumber,
+  })
+
+  await boot()
+
+  return present(await store.replace(id, recorded))
 }
 
 /**
@@ -237,6 +301,7 @@ export async function deleteProposal(id) {
  *   from a genuine zero percent.
  * @property {Record<string, number>} statusCounts Count per status.
  * @property {string} currency         Currency the totals are expressed in.
+ * @property {number} versionCount     Saved snapshots across every proposal.
  */
 
 /**
@@ -260,8 +325,11 @@ export async function fetchProposalSummary() {
 
   let pipelineValue = 0
   let wonValue = 0
+  let versionCount = 0
 
   for (const record of records) {
+    versionCount += record.versions?.length ?? 0
+
     if (record.status in statusCounts) {
       statusCounts[record.status] += 1
     }
@@ -290,6 +358,7 @@ export async function fetchProposalSummary() {
       decided > 0 ? statusCounts[PROPOSAL_STATUS.ACCEPTED] / decided : null,
     statusCounts,
     currency: DEFAULT_CURRENCY,
+    versionCount,
   }
 }
 
@@ -300,6 +369,8 @@ function persistIdentity(existing, changes, timestamp) {
     id: existing.id,
     createdAt: existing.createdAt,
     shareToken: existing.shareToken,
+    versions: existing.versions,
+    currentVersion: existing.currentVersion,
     updatedAt: timestamp,
   })
 }

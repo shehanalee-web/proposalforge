@@ -1,0 +1,54 @@
+[
+  {
+    "id": "asset-8940464c-2d9e-459d-9f65-640b489f872a",
+    "name": "rate-card.pdf",
+    "kind": "document",
+    "mimeType": "application/pdf",
+    "sizeBytes": 193,
+    "url": "/uploads/asset-8940464c-2d9e-459d-9f65-640b489f872a/rate-card.pdf",
+    "thumbnailUrl": "/uploads/asset-8940464c-2d9e-459d-9f65-640b489f872a/rate-card.pdf",
+    "alt": "",
+    "caption": "",
+    "createdAt": "2026-09-01T12:01:59.758Z",
+    "updatedAt": "2026-09-01T12:01:59.758Z"
+  },
+  {
+    "id": "asset-03d43f04-ca84-4c8f-a634-d7a4bcda007f",
+    "name": "cover.png",
+    "kind": "image",
+    "mimeType": "image/png",
+    "sizeBytes": 78,
+    "url": "/uploads/asset-03d43f04-ca84-4c8f-a634-d7a4bcda007f/cover.png",
+    "thumbnailUrl": "/uploads/asset-03d43f04-ca84-4c8f-a634-d7a4bcda007f/cover.png",
+    "alt": "",
+    "caption": "",
+    "createdAt": "2026-09-01T14:50:18.126Z",
+    "updatedAt": "2026-09-01T14:50:18.126Z"
+  },
+  {
+    "id": "asset-8211156c-46fb-437f-9385-d131b1ecc362",
+    "name": "gallery.png",
+    "kind": "image",
+    "mimeType": "image/png",
+    "sizeBytes": 78,
+    "url": "/uploads/asset-8211156c-46fb-437f-9385-d131b1ecc362/gallery.png",
+    "thumbnailUrl": "/uploads/asset-8211156c-46fb-437f-9385-d131b1ecc362/gallery.png",
+    "alt": "",
+    "caption": "",
+    "createdAt": "2026-09-01T14:50:18.137Z",
+    "updatedAt": "2026-09-01T14:50:18.137Z"
+  },
+  {
+    "id": "asset-10a73da2-4df6-4c85-857b-0792af56049f",
+    "name": "rate-card.pdf",
+    "kind": "document",
+    "mimeType": "application/pdf",
+    "sizeBytes": 193,
+    "url": "/uploads/asset-10a73da2-4df6-4c85-857b-0792af56049f/rate-card.pdf",
+    "thumbnailUrl": "/uploads/asset-10a73da2-4df6-4c85-857b-0792af56049f/rate-card.pdf",
+    "alt": "",
+    "caption": "",
+    "createdAt": "2026-09-01T14:50:18.154Z",
+    "updatedAt": "2026-09-01T14:50:18.154Z"
+  }
+]

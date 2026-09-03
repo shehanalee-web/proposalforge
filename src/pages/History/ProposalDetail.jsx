@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useProposal } from '../../hooks/useProposal.js'
+import { useRestoreProposalVersion } from '../../hooks/useRestoreProposalVersion.js'
 import { useUpdateProposal } from '../../hooks/useUpdateProposal.js'
 import { getClientPortalUrl } from '../../utils/clientProposal.js'
 import { toDuplicateDraft } from '../../utils/duplicateDraft.js'
 import { useCreateProposalDialog } from '../../hooks/useCreateProposalDialog.js'
 import { PATH } from '../../workspace/paths.js'
 import ProposalDetailView from './ProposalDetailView.jsx'
+import VersionHistoryPanel from './VersionHistoryPanel.jsx'
 import styles from './ProposalDetail.module.css'
 
 const SKELETON_ROWS = 5
@@ -15,9 +17,15 @@ function ProposalDetail() {
   const { id } = useParams()
   const { openCreate } = useCreateProposalDialog()
   const { proposal, loading, error, notFound, refetch } = useProposal(id)
+  const {
+    restore,
+    submitting: restoring,
+    error: restoreError,
+  } = useRestoreProposalVersion()
   const { update, submitting: layoutSaving } = useUpdateProposal()
   const [exporting, setExporting] = useState(null)
   const [exportError, setExportError] = useState(null)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
 
   function handleDuplicate() {
@@ -50,6 +58,16 @@ function ProposalDetail() {
       window.setTimeout(() => setLinkCopied(false), 2000)
     } catch {
       window.prompt('Copy client link', url)
+    }
+  }
+
+  async function handleRestore(versionId) {
+    if (!id) return
+
+    const restored = await restore(id, versionId)
+
+    if (restored) {
+      await refetch()
     }
   }
 
@@ -128,6 +146,7 @@ function ProposalDetail() {
         onDuplicate={handleDuplicate}
         onDownloadPdf={() => runExport('download')}
         onPrint={() => runExport('print')}
+        onOpenHistory={() => setHistoryOpen(true)}
         onCopyLink={handleCopyLink}
         onLayoutChange={handleLayoutChange}
         layoutSaving={layoutSaving}
@@ -135,6 +154,16 @@ function ProposalDetail() {
         exporting={exporting}
         exportError={exportError}
       />
+
+      {historyOpen ? (
+        <VersionHistoryPanel
+          proposal={proposal}
+          onClose={() => setHistoryOpen(false)}
+          onRestore={handleRestore}
+          restoring={restoring}
+          restoreError={restoreError}
+        />
+      ) : null}
     </section>
   )
 }

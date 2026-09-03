@@ -23,6 +23,7 @@ function ProposalDetailView({
   onDuplicate,
   onDownloadPdf,
   onPrint,
+  onOpenHistory,
   onCopyLink,
   onLayoutChange,
   layoutSaving,
@@ -60,6 +61,14 @@ function ProposalDetailView({
             disabled={busy}
           >
             {exporting === 'print' ? 'Preparing print…' : 'Print proposal'}
+          </button>
+          <button
+            type="button"
+            className={styles.history}
+            onClick={onOpenHistory}
+            disabled={busy}
+          >
+            History
           </button>
           <Link to={proposalEditPath(proposal.id)} className={styles.edit}>
             Edit proposal

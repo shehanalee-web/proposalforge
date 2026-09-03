@@ -11,6 +11,8 @@ import { ensureProposalBlocks, syncLegacyFromBlocks } from '../blocks/hydrate.js
  * from any layer.
  */
 
+import { ensureProposalVersions } from './proposalVersion.js'
+
 export const PROPOSAL_STATUS = Object.freeze({
   DRAFT: 'draft',
   SENT: 'sent',
@@ -100,10 +102,10 @@ export const DEFAULT_CURRENCY = 'USD'
  * @property {string} layoutId                Registered layout id (portrait, landscape, …).
  * @property {import('../blocks/instance.js').BlockInstance[]} blocks Ordered Block Engine instances.
  * @property {object[]} [images]              Gallery fallback mirrored from blocks.
- * @property {number} [currentVersion]        Active version number, when history exists.
- * @property {object[]} [versions]            Snapshot history, when present.
  * @property {string} createdAt               ISO timestamp.
  * @property {string} updatedAt               ISO timestamp.
+ * @property {number} currentVersion          Version number currently applied.
+ * @property {import('./proposalVersion.js').ProposalVersion[]} versions
  */
 
 /**
@@ -160,7 +162,7 @@ export function makeProposal(input = {}) {
   const blocks = ensureProposalBlocks(input)
   const legacy = syncLegacyFromBlocks(blocks, input)
 
-  return {
+  const proposal = {
     id: input.id ?? createId('prop'),
     title: input.title ?? '',
     clientName: input.clientName ?? '',
@@ -184,11 +186,13 @@ export function makeProposal(input = {}) {
     clientFeedback: input.clientFeedback ?? '',
     layoutId: resolveLayoutId(input.layoutId ?? DEFAULT_LAYOUT_ID),
     blocks,
-    currentVersion: input.currentVersion ?? 0,
-    versions: Array.isArray(input.versions) ? [...input.versions] : [],
     createdAt: input.createdAt ?? timestamp,
     updatedAt: input.updatedAt ?? timestamp,
+    currentVersion: input.currentVersion ?? 0,
+    versions: Array.isArray(input.versions) ? [...input.versions] : [],
   }
+
+  return ensureProposalVersions(proposal)
 }
 
 /**

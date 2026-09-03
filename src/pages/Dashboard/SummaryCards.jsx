@@ -40,6 +40,12 @@ function buildCards(summary) {
       value: formatRate(summary.acceptanceRate),
       meta: decided > 0 ? `${accepted} of ${decided} decided` : 'Nothing decided yet',
     },
+    {
+      key: 'versions',
+      label: 'Version count',
+      value: String(summary.versionCount ?? 0),
+      meta: 'Saved snapshots across all proposals',
+    },
   ]
 }
 
