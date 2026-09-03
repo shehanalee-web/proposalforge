@@ -4,6 +4,7 @@ import ProposalContent from '../../components/ProposalContent/ProposalContent.js
 import { useAcceptProposal } from '../../hooks/useAcceptProposal.js'
 import { useClientProposal } from '../../hooks/useClientProposal.js'
 import { useRequestProposalChanges } from '../../hooks/useRequestProposalChanges.js'
+import { useExportProposalPdf, PDF_AUDIENCE } from '../../hooks/useExportProposalPdf.js'
 import { canClientRespond, PROPOSAL_STATUS } from '../../models/proposal.js'
 import { getActiveProposal } from '../../utils/clientProposal.js'
 import { getLayout } from '../../layouts/registry.js'
@@ -25,8 +26,7 @@ function ClientPortal() {
   const [comment, setComment] = useState('')
   const [showChangeForm, setShowChangeForm] = useState(false)
   const [justAccepted, setJustAccepted] = useState(false)
-  const [exporting, setExporting] = useState(null)
-  const [exportError, setExportError] = useState(null)
+  const { runExport, exporting, error: exportError } = useExportProposalPdf()
 
   const document = proposal ? getActiveProposal(proposal) : null
   const layout = getLayout(document?.layoutId)
@@ -58,29 +58,9 @@ function ClientPortal() {
     }
   }
 
-  async function runExport(action) {
-    if (!document || exporting) return
-
-    const pdfProposal = { ...document, notes: '' }
-
-    setExportError(null)
-    setExporting(action)
-
-    try {
-      const { downloadProposalPdf, printProposalPdf } = await import(
-        '../../pdf/generateProposalPdf.js'
-      )
-
-      if (action === 'download') {
-        await downloadProposalPdf(pdfProposal)
-      } else {
-        await printProposalPdf(pdfProposal)
-      }
-    } catch (caught) {
-      setExportError(caught)
-    } finally {
-      setExporting(null)
-    }
+  async function handleExport(action) {
+    if (!document) return
+    await runExport(document, action, { audience: PDF_AUDIENCE.CLIENT })
   }
 
   if (notFound) {
@@ -212,7 +192,7 @@ function ClientPortal() {
             <button
               type="button"
               className={styles.secondary}
-              onClick={() => runExport('download')}
+              onClick={() => handleExport('download')}
               disabled={busy}
             >
               {exporting === 'download' ? 'Preparing PDF…' : 'Download PDF'}
@@ -220,7 +200,7 @@ function ClientPortal() {
             <button
               type="button"
               className={styles.ghost}
-              onClick={() => runExport('print')}
+              onClick={() => handleExport('print')}
               disabled={busy}
             >
               {exporting === 'print' ? 'Preparing print…' : 'Print'}
