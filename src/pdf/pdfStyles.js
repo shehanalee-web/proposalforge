@@ -46,6 +46,34 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     marginBottom: 8,
   },
+  logo: {
+    width: 88,
+    height: 28,
+    objectFit: 'contain',
+    marginBottom: 8,
+  },
+  coverLogo: {
+    width: 96,
+    height: 32,
+    objectFit: 'contain',
+    marginBottom: 10,
+  },
+  watermark: {
+    position: 'absolute',
+    top: '38%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    opacity: 0.07,
+    transform: 'rotate(-28deg)',
+  },
+  watermarkText: {
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 54,
+    letterSpacing: 6,
+    textTransform: 'uppercase',
+    color: colors.ink,
+  },
   studioName: {
     fontFamily: 'Helvetica-Bold',
     fontSize: 14,
@@ -252,6 +280,13 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
+  },
+  footerCenter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
   },
   footerText: {
     fontSize: 8,

@@ -10,6 +10,7 @@ import { getLayout } from '../layouts/registry.js'
 import { resolveBrand, studioNameFromBrand } from '../blocks/brand.js'
 import { placePdfSequence } from '../blocks/place.js'
 import { getPdfRenderer } from '../blocks/pdfRegistry.js'
+import ProposalWatermark from './ProposalWatermark.jsx'
 
 function NotesChrome({ proposal }) {
   if (!proposal.notes?.trim()) return null
@@ -39,26 +40,29 @@ function ProposalDocument({ proposal, settings, kit }) {
   const studioName = studioNameFromBrand(brand, settings)
   const layout = getLayout(proposal.layoutId)
   const context = { proposal, settings, brand }
-  const pageStyle =
-    layout.orientation === 'landscape'
-      ? [styles.page, styles.pageLandscape]
-      : styles.page
-
   const sequence = placePdfSequence(proposal.blocks, layout.pdf.sequence)
+  const versionLabel = proposal.currentVersion ? ` v${proposal.currentVersion}` : ''
+  const brandedPage = [
+    styles.page,
+    layout.orientation === 'landscape' ? styles.pageLandscape : null,
+    brand.colors?.background ? { backgroundColor: brand.colors.background } : null,
+    brand.colors?.text ? { color: brand.colors.text } : null,
+  ].filter(Boolean)
 
   return (
     <Document
       title={proposal.title}
       author={studioName}
-      subject={`${formatProposalNumber(proposal.id)} — ${proposal.title}`}
+      subject={`${formatProposalNumber(proposal.id)}${versionLabel} — ${proposal.title}`}
       creator="ProposalForge"
     >
       <Page
         size={layout.pdf.size}
         orientation={layout.pdf.orientation}
-        style={pageStyle}
+        style={brandedPage}
         wrap
       >
+        <ProposalWatermark proposal={proposal} brand={brand} />
         {sequence.map((step, index) => {
           const chrome = (step.chrome ?? []).map((id) => renderChrome(id, context))
           const content = (step.instances ?? []).map((instance) => {
