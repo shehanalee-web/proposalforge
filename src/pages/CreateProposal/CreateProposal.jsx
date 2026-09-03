@@ -2,13 +2,11 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import Icon from '../../components/Icon/Icon.jsx'
 import { BRAND_FONTS } from '../../models/brandKit.js'
-import {
-  findTemplateForType,
-  PROPOSAL_TYPES,
-} from '../../models/proposalType.js'
+import { findTemplateForService } from '../../models/service.js'
 import { MOCK_WORKSPACES } from '../../data/mockWorkspaces.js'
 import { useBrandKit } from '../../hooks/useBrandKit.js'
 import { useCreateProposal } from '../../hooks/useCreateProposal.js'
+import { useServices } from '../../hooks/useServices.js'
 import { useTemplates } from '../../hooks/useTemplates.js'
 import { proposalFromTemplate } from '../../utils/proposalFromTemplate.js'
 import { PATH, proposalEditPath } from '../../workspace/paths.js'
@@ -17,7 +15,7 @@ import styles from './CreateProposal.module.css'
 const STEPS = [
   { id: 1, label: 'Workspace' },
   { id: 2, label: 'Brand Kit' },
-  { id: 3, label: 'Proposal type' },
+  { id: 3, label: 'Service' },
 ]
 
 const DEFAULT_CLIENT_NAME = 'New client'
@@ -80,11 +78,13 @@ function CreateProposal() {
   const navigate = useNavigate()
   const { kit, loading: kitLoading, error: kitError, refetch } = useBrandKit()
   const { templates, loading: templatesLoading } = useTemplates()
+  const { services, loading: servicesLoading, error: servicesError, refetch: refetchServices } =
+    useServices()
   const { create, submitting, error } = useCreateProposal()
 
   const [step, setStep] = useState(1)
   const [workspaceId, setWorkspaceId] = useState(null)
-  const [creatingTypeId, setCreatingTypeId] = useState(null)
+  const [creatingServiceId, setCreatingServiceId] = useState(null)
 
   const workspace = MOCK_WORKSPACES[0]
   const workspaceName = kit?.companyName?.trim() || workspace.name
@@ -100,19 +100,23 @@ function CreateProposal() {
     setStep(3)
   }
 
-  async function selectType(type) {
+  async function selectService(service) {
     if (submitting) return
 
-    setCreatingTypeId(type.id)
+    setCreatingServiceId(service.id)
 
-    const template = findTemplateForType(templates, type)
-    const extras = template ? proposalFromTemplate(template) : {}
+    const template = findTemplateForService(templates, service)
+    const extras = template ? proposalFromTemplate(template, service) : {}
     const created = await create({
       ...extras,
-      title: extras.title || `${type.label} proposal`,
+      title: extras.title || `${service.name} proposal`,
       clientName: extras.clientName?.trim() || DEFAULT_CLIENT_NAME,
-      projectType: type.projectType,
-      summary: extras.summary || type.description,
+      projectType: service.name,
+      serviceIds: [service.id],
+      summary:
+        extras.summary ||
+        service.defaultDescription ||
+        service.description,
     })
 
     if (created) {
@@ -120,7 +124,7 @@ function CreateProposal() {
       return
     }
 
-    setCreatingTypeId(null)
+    setCreatingServiceId(null)
   }
 
   return (
@@ -130,7 +134,7 @@ function CreateProposal() {
           <p className={styles.kicker}>New document</p>
           <p className={styles.lede}>
             Choose the workspace and company identity, then generate a draft
-            with AI or pick a proposal type.
+            with AI or pick a service.
           </p>
         </div>
         <div className={styles.heroActions}>
@@ -257,11 +261,34 @@ function CreateProposal() {
       ) : null}
 
       {step === 3 ? (
-        templatesLoading && templates.length === 0 ? (
+        servicesError ? (
+          <div className={styles.state}>
+            <p className={styles.stateTitle}>Could not load services</p>
+            <p className={styles.stateText}>
+              {servicesError.message ||
+                'The Service Library is required to start a proposal.'}
+            </p>
+            <button type="button" className={styles.retry} onClick={refetchServices}>
+              Try again
+            </button>
+          </div>
+        ) : (servicesLoading && services.length === 0) ||
+          (templatesLoading && templates.length === 0) ? (
           <div className={styles.typeGrid} aria-hidden="true">
             {Array.from({ length: 6 }, (_, index) => (
               <div key={index} className={styles.skeletonCard} />
             ))}
+          </div>
+        ) : services.length === 0 ? (
+          <div className={styles.state}>
+            <p className={styles.stateTitle}>No services yet</p>
+            <p className={styles.stateText}>
+              Add an offering in the Service Library, then come back to create
+              a proposal from it.
+            </p>
+            <Link to={PATH.SERVICES} className={styles.retry}>
+              Open services
+            </Link>
           </div>
         ) : (
           <div className={styles.typeGrid}>
@@ -283,25 +310,27 @@ function CreateProposal() {
               </span>
               <span className={styles.choiceHint}>Start chat</span>
             </button>
-            {PROPOSAL_TYPES.map((type) => {
-              const creating = creatingTypeId === type.id
+            {services.map((service) => {
+              const creating = creatingServiceId === service.id
               const busy = submitting && creating
 
               return (
                 <button
-                  key={type.id}
+                  key={service.id}
                   type="button"
                   className={styles.typeCard}
-                  style={{ '--type-accent': type.accent }}
-                  onClick={() => selectType(type)}
+                  style={
+                    service.accent ? { '--type-accent': service.accent } : undefined
+                  }
+                  onClick={() => selectService(service)}
                   disabled={submitting}
                   aria-busy={busy || undefined}
                 >
                   <span className={styles.typeIcon} aria-hidden="true">
-                    <Icon name={type.icon} size={22} />
+                    <Icon name={service.icon || 'services'} size={22} />
                   </span>
-                  <span className={styles.typeTitle}>{type.label}</span>
-                  <span className={styles.typeText}>{type.description}</span>
+                  <span className={styles.typeTitle}>{service.name}</span>
+                  <span className={styles.typeText}>{service.description}</span>
                   <span className={styles.typeHint}>
                     {busy ? 'Creating…' : 'Create proposal'}
                   </span>

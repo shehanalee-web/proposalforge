@@ -1,5 +1,4 @@
 import { makeLineItem, makeSection } from '../models/proposal.js'
-import { getProposalType } from '../models/proposalType.js'
 
 /**
  * Deep-copy a template into new-proposal payload shape.
@@ -8,17 +7,20 @@ import { getProposalType } from '../models/proposalType.js'
  * identity with the template. Client fields stay empty unless the caller
  * supplies them — they belong on the proposal, not the reusable template.
  *
+ * When a Service Library record is passed, `projectType` is the service name
+ * at create time (a snapshot) and `serviceIds` holds the live reference.
+ *
  * @param {import('../models/template.js').ProposalTemplate} template
+ * @param {import('../models/service.js').Service} [service]
  */
-export function proposalFromTemplate(template) {
-  const type = getProposalType(template.proposalType)
-
+export function proposalFromTemplate(template, service) {
   return {
     title: template.title ?? '',
     clientName: '',
     clientEmail: '',
     company: '',
-    projectType: type?.projectType,
+    projectType: service?.name,
+    serviceIds: service ? [service.id] : [],
     amount: template.amount ? String(template.amount) : '',
     summary: template.description ?? '',
     validUntil: '',

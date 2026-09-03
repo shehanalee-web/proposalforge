@@ -84,7 +84,7 @@ export const DEFAULT_CURRENCY = 'USD'
  * @property {string} clientName              Primary contact name.
  * @property {string} clientEmail             Primary contact email.
  * @property {string} company                 Client company name.
- * @property {string} projectType             One of PROJECT_TYPES.
+ * @property {string} projectType             Display snapshot of the service name at save time.
  * @property {ProposalStatus} status          Lifecycle state.
  * @property {number} amount                  Total value, in major units.
  * @property {string} currency                ISO 4217 currency code.
@@ -101,6 +101,7 @@ export const DEFAULT_CURRENCY = 'USD'
  * @property {string} clientFeedback          Comment from a revision request.
  * @property {string} layoutId                Registered layout id (portrait, landscape, …).
  * @property {import('../blocks/instance.js').BlockInstance[]} blocks Ordered Block Engine instances.
+ * @property {string[]} serviceIds            Service Library ids referenced by this document.
  * @property {object[]} [images]              Gallery fallback mirrored from blocks.
  * @property {string} createdAt               ISO timestamp.
  * @property {string} updatedAt               ISO timestamp.
@@ -186,6 +187,7 @@ export function makeProposal(input = {}) {
     clientFeedback: input.clientFeedback ?? '',
     layoutId: resolveLayoutId(input.layoutId ?? DEFAULT_LAYOUT_ID),
     blocks,
+    serviceIds: [...(input.serviceIds ?? [])],
     createdAt: input.createdAt ?? timestamp,
     updatedAt: input.updatedAt ?? timestamp,
     currentVersion: input.currentVersion ?? 0,

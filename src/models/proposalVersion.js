@@ -22,6 +22,7 @@ export const DEFAULT_UPDATED_BY = 'Studio'
  * @property {string[]} tags
  * @property {string | null} validUntil
  * @property {string} status
+ * @property {string[]} [serviceIds]
  */
 
 /**
@@ -90,6 +91,7 @@ export function snapshotFromProposal(proposal) {
       tags: proposal.tags ?? [],
       validUntil: proposal.validUntil ?? null,
       status: proposal.status ?? 'draft',
+      serviceIds: proposal.serviceIds ?? [],
     },
     layoutId: proposal.layoutId ?? '',
     blocks: proposal.blocks ?? [],
@@ -122,6 +124,10 @@ export function proposalFieldsFromSnapshot(snapshot) {
     tags: cloneDeep(metadata.tags ?? []),
     validUntil: metadata.validUntil ?? null,
     status: metadata.status ?? 'draft',
+  }
+
+  if (Array.isArray(metadata.serviceIds)) {
+    fields.serviceIds = cloneDeep(metadata.serviceIds)
   }
 
   if (snapshot.layoutId) {
@@ -199,6 +205,7 @@ function comparableSnapshot(snapshot) {
       tags: snapshot.metadata?.tags ?? [],
       validUntil: snapshot.metadata?.validUntil ?? null,
       status: snapshot.metadata?.status ?? 'draft',
+      serviceIds: snapshot.metadata?.serviceIds ?? [],
     },
     layoutId: snapshot.layoutId ?? '',
     blocks: comparableBlocks(snapshot.blocks),
