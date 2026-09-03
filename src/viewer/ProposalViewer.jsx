@@ -12,6 +12,7 @@ import ViewerActionBar from './ViewerActionBar.jsx'
 import ViewerDialog from './ViewerDialog.jsx'
 import ViewerToast from './ViewerToast.jsx'
 import GalleryLightbox from './GalleryLightbox.jsx'
+import { useProposalTheme } from '../theme/ProposalThemeContext.jsx'
 import styles from './ProposalViewer.module.css'
 
 function ViewerInner({
@@ -37,6 +38,7 @@ function ViewerInner({
   const sectionIds = sections.map((section) => section.id)
   const activeId = useScrollSpy(sectionIds)
   const progress = useReadingProgress(articleRef)
+  const { tokens, cssVars } = useProposalTheme()
   const { active: fullscreen, toggle: toggleFullscreen } = useFullscreen(shellRef)
   const {
     lightbox,
@@ -144,8 +146,9 @@ function ViewerInner({
     <div
       ref={shellRef}
       className={`${styles.shell} ${fullscreen ? styles.fullscreen : ''}`}
+      style={cssVars}
     >
-      <ReadingProgress value={progress} />
+      {tokens.page.showProgress ? <ReadingProgress value={progress} /> : null}
       <ViewerToast message={notice} />
 
       <div className={styles.frame} ref={articleRef}>

@@ -1,7 +1,7 @@
 .shell {
   min-height: 100dvh;
   background:
-    radial-gradient(1200px 480px at 50% -10%, rgba(20, 184, 166, 0.07), transparent 60%),
+    radial-gradient(1200px 480px at 50% -10%, color-mix(in srgb, var(--color-accent) 7%, transparent), transparent 60%),
     var(--color-bg);
   color: var(--color-text);
 }

@@ -9,6 +9,7 @@ export function EditorWorkspaceProvider({ children }) {
   const [expandedIds, setExpandedIds] = useState(() => new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const searchRef = useRef(null)
 
   const focusSearch = useCallback(() => {
@@ -52,6 +53,8 @@ export function EditorWorkspaceProvider({ children }) {
       setSearchQuery,
       commandPaletteOpen,
       setCommandPaletteOpen,
+      settingsOpen,
+      setSettingsOpen,
       searchRef,
       focusSearch,
       scrollToBlock,
@@ -63,6 +66,7 @@ export function EditorWorkspaceProvider({ children }) {
       expandedIds,
       searchQuery,
       commandPaletteOpen,
+      settingsOpen,
       focusSearch,
       scrollToBlock,
       toggleExpanded,

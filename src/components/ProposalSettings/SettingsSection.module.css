@@ -1,0 +1,33 @@
+.section {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.header:hover {
+  background: var(--color-surface-hover);
+}
+
+.body {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0 1rem 1rem;
+  animation: open 180ms ease;
+}
+
+@keyframes open {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}

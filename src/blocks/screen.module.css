@@ -1,6 +1,6 @@
 .logo {
-  width: var(--space-8);
-  height: var(--space-8);
+  width: auto;
+  height: var(--pf-logo-size, var(--space-8));
   object-fit: contain;
   border-radius: var(--radius-md);
   background-color: var(--color-surface-raised);
@@ -37,11 +37,15 @@
 .quote {
   display: grid;
   gap: var(--space-2);
-  padding: var(--space-4);
+  padding: var(--pf-card-padding, var(--space-4));
   border: 1px solid var(--color-border);
   border-left: 3px solid var(--doc-secondary, var(--color-border));
-  border-radius: var(--radius-lg);
-  background-color: var(--color-surface);
+  border-radius: var(--pf-card-radius, var(--radius-lg));
+  background-color: var(--pf-card-bg, var(--color-surface));
+  box-shadow: var(--shadow-md);
+  transition:
+    border-color var(--pf-motion-card, 160ms) ease,
+    box-shadow var(--pf-motion-card, 160ms) ease;
 }
 
 .file {
@@ -55,7 +59,7 @@
 }
 
 .coverImage {
-  width: 100%;
+  width: var(--pf-cover-image-size, 100%);
   max-height: 16rem;
   object-fit: cover;
   border-radius: var(--radius-md);

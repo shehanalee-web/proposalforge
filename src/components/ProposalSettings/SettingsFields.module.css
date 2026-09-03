@@ -1,0 +1,75 @@
+.field,
+.toggle,
+.color {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 500;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.sliderLabel {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.sliderLabel em {
+  color: var(--color-text-muted);
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.toggle {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 550;
+}
+
+.colorRow {
+  display: grid;
+  grid-template-columns: 2.1rem 1fr;
+  gap: var(--space-2);
+}
+
+.colorRow input[type='color'] {
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+}
+
+.thumb {
+  width: 100%;
+  max-height: 3.5rem;
+  object-fit: contain;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}

@@ -7,6 +7,7 @@ import { canClientRespond, PROPOSAL_STATUS } from '../../models/proposal.js'
 import { getActiveProposal } from '../../utils/clientProposal.js'
 import { formatDateTime } from '../../utils/format.js'
 import ProposalViewer from '../../viewer/ProposalViewer.jsx'
+import { ProposalThemeProvider } from '../../theme/ProposalThemeContext.jsx'
 import styles from './ClientPortal.module.css'
 
 function ClientPortal() {
@@ -124,16 +125,18 @@ function ClientPortal() {
   }
 
   return (
-    <ProposalViewer
-      proposal={document}
-      status={proposal.status}
-      notices={notices}
-      busy={busy}
-      canRespond={canRespond}
-      onAccept={handleAccept}
-      onDownload={() => handleExport('download')}
-      onPrint={() => handleExport('print')}
-    />
+    <ProposalThemeProvider proposalId={proposal.id} proposal={document}>
+      <ProposalViewer
+        proposal={document}
+        status={proposal.status}
+        notices={notices}
+        busy={busy}
+        canRespond={canRespond}
+        onAccept={handleAccept}
+        onDownload={() => handleExport('download')}
+        onPrint={() => handleExport('print')}
+      />
+    </ProposalThemeProvider>
   )
 }
 

@@ -14,7 +14,7 @@ function EditorCommandBar({
   onDownload,
   downloading = false,
 }) {
-  const { setPreviewMode, outlineOpen, setOutlineOpen, focusSearch } =
+  const { setPreviewMode, outlineOpen, setOutlineOpen, focusSearch, settingsOpen, setSettingsOpen } =
     useEditorWorkspace()
 
   return (
@@ -73,6 +73,16 @@ function EditorCommandBar({
           <span className={styles.toolLabel}>
             {previewMode ? 'Editing' : 'Preview'}
           </span>
+        </button>
+        <button
+          type="button"
+          className={`${styles.tool} ${settingsOpen ? styles.toolOn : ''}`}
+          onClick={() => setSettingsOpen(!settingsOpen)}
+          aria-pressed={settingsOpen}
+          title="Proposal settings"
+        >
+          <Icon name="settings" size={15} />
+          <span className={styles.toolLabel}>Design</span>
         </button>
         <button
           type="button"

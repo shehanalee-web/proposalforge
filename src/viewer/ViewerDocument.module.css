@@ -1,33 +1,34 @@
 .document {
   display: grid;
-  gap: var(--space-12);
-  width: min(52rem, 100%);
+  gap: var(--pf-section-gap, var(--space-12));
+  width: min(var(--pf-container, 52rem), 100%);
   margin-inline: auto;
-  font-size: 1.0625rem;
-  line-height: 1.7;
-  letter-spacing: -0.011em;
+  font-size: calc(1.0625rem * var(--pf-type-scale, 1));
+  line-height: var(--pf-line-height, 1.7);
+  letter-spacing: var(--pf-letter-spacing, -0.011em);
 }
 
 .document :global(h1) {
   font-size: clamp(2rem, 4vw, 3.1rem);
   font-weight: 680;
-  letter-spacing: -0.045em;
+  letter-spacing: var(--pf-letter-spacing, -0.045em);
   line-height: 1.12;
 }
 
 .document :global(h3) {
   font-size: 1.25rem;
   font-weight: 650;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--pf-letter-spacing, -0.03em);
 }
 
 .document :global(p) {
-  max-width: 68ch;
+  max-width: var(--pf-measure, 68ch);
+  margin-bottom: var(--pf-paragraph, 0);
 }
 
 .region {
   display: grid;
-  gap: var(--space-12);
+  gap: var(--pf-section-gap, var(--space-12));
   min-width: 0;
 }
 

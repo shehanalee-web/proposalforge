@@ -30,6 +30,8 @@ import {
 } from '../../components/Editor/EditorWorkspaceContext.jsx'
 import EditorCommandBar from '../../components/Editor/EditorCommandBar.jsx'
 import ProposalPreview from '../../components/Editor/ProposalPreview.jsx'
+import ProposalSettingsPanel from '../../components/ProposalSettings/ProposalSettingsPanel.jsx'
+import { ProposalThemeProvider } from '../../theme/ProposalThemeContext.jsx'
 import styles from './ProposalEdit.module.css'
 
 const SKELETON_ROWS = 4
@@ -77,6 +79,8 @@ function ProposalEditContent() {
     previewMode,
     setPreviewMode,
     outlineOpen,
+    settingsOpen,
+    setSettingsOpen,
     activeBlockId,
     scrollToBlock,
     focusSearch,
@@ -275,46 +279,52 @@ function ProposalEditContent() {
 
   if (notFound) {
     return (
-      <section className={styles.page}>
-        <div className={styles.state}>
-          <p className={styles.stateTitle}>Proposal not found</p>
-          <p className={styles.stateText}>
-            This proposal does not exist, or it was lost when the app reloaded.
-          </p>
-          <Link to={PATH.PROPOSALS} className={styles.action}>
-            Back to proposals
-          </Link>
-        </div>
-      </section>
+      <ProposalThemeProvider proposalId={id} proposal={proposal}>
+        <section className={styles.page}>
+          <div className={styles.state}>
+            <p className={styles.stateTitle}>Proposal not found</p>
+            <p className={styles.stateText}>
+              This proposal does not exist, or it was lost when the app reloaded.
+            </p>
+            <Link to={PATH.PROPOSALS} className={styles.action}>
+              Back to proposals
+            </Link>
+          </div>
+        </section>
+      </ProposalThemeProvider>
     )
   }
 
   if (error) {
     return (
-      <section className={styles.page}>
-        <div className={styles.state}>
-          <p className={styles.stateTitle}>Could not load this proposal</p>
-          <p className={styles.stateText}>
-            {error.message || 'Something went wrong while fetching the proposal.'}
-          </p>
-          <button type="button" className={styles.action} onClick={refetch}>
-            Try again
-          </button>
-        </div>
-      </section>
+      <ProposalThemeProvider proposalId={id} proposal={proposal}>
+        <section className={styles.page}>
+          <div className={styles.state}>
+            <p className={styles.stateTitle}>Could not load this proposal</p>
+            <p className={styles.stateText}>
+              {error.message || 'Something went wrong while fetching the proposal.'}
+            </p>
+            <button type="button" className={styles.action} onClick={refetch}>
+              Try again
+            </button>
+          </div>
+        </section>
+      </ProposalThemeProvider>
     )
   }
 
   if (loading || !values || servicesLoading) {
     return (
-      <section className={styles.page}>
-        <p className={styles.intro}>Loading proposal…</p>
-        <div className={styles.skeleton} aria-hidden="true">
-          {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-            <div key={index} className={styles.skeletonRow} />
-          ))}
-        </div>
-      </section>
+      <ProposalThemeProvider proposalId={id} proposal={proposal}>
+        <section className={styles.page}>
+          <p className={styles.intro}>Loading proposal…</p>
+          <div className={styles.skeleton} aria-hidden="true">
+            {Array.from({ length: SKELETON_ROWS }, (_, index) => (
+              <div key={index} className={styles.skeletonRow} />
+            ))}
+          </div>
+        </section>
+      </ProposalThemeProvider>
     )
   }
 
@@ -322,6 +332,7 @@ function ProposalEditContent() {
   const pageClass = [
     styles.page,
     sidebarOpen && styles.pageSidebarOpen,
+    settingsOpen && styles.pageSettingsOpen,
     outlineOpen && !previewMode && styles.pageOutlineOpen,
     previewMode && styles.pagePreview,
   ]
@@ -329,6 +340,7 @@ function ProposalEditContent() {
     .join(' ')
 
   return (
+    <ProposalThemeProvider proposalId={id} proposal={proposal}>
     <section
       className={pageClass}
       data-mode={previewMode ? 'preview' : 'edit'}
@@ -337,6 +349,10 @@ function ProposalEditContent() {
         proposal={proposal}
         blocks={documentBlocks}
         onAction={() => {}}
+      />
+      <ProposalSettingsPanel
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
       />
 
       <div className={styles.toolbar}>
@@ -422,6 +438,7 @@ function ProposalEditContent() {
         </div>
       </div>
     </section>
+    </ProposalThemeProvider>
   )
 }
 

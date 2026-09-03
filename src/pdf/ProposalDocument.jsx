@@ -8,6 +8,9 @@ import ProposalFooter from './ProposalFooter.jsx'
 import { PDF_BLOCK } from '../layouts/blocks/ids.js'
 import { getLayout } from '../layouts/registry.js'
 import { resolveBrand, studioNameFromBrand } from '../blocks/brand.js'
+import { applyDesignToBrand } from '../theme/brandBridge.js'
+import { readDesign } from '../theme/store.js'
+import { resolveDesign } from '../theme/resolve.js'
 import { placePdfSequence } from '../blocks/place.js'
 import { getPdfRenderer } from '../blocks/pdfRegistry.js'
 import ProposalWatermark from './ProposalWatermark.jsx'
@@ -36,7 +39,9 @@ function renderChrome(id, props) {
 }
 
 function ProposalDocument({ proposal, settings, kit }) {
-  const brand = resolveBrand(settings, kit)
+  const resolvedBrand = resolveBrand(settings, kit)
+  const design = resolveDesign(readDesign(proposal.id), proposal, resolvedBrand)
+  const brand = applyDesignToBrand(resolvedBrand, design)
   const studioName = studioNameFromBrand(brand, settings)
   const layout = getLayout(proposal.layoutId)
   const context = { proposal, settings, brand }

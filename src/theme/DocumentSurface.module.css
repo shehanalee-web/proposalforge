@@ -1,0 +1,43 @@
+.surface {
+  position: relative;
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: var(--doc-body-font, var(--font-sans));
+  letter-spacing: var(--pf-letter-spacing, -0.02em);
+  line-height: var(--pf-line-height, 1.6);
+  padding-inline: var(--pf-doc-padding, 0);
+  transition:
+    background-color var(--transition-base, 180ms ease),
+    color var(--transition-base, 180ms ease);
+}
+
+.surface :global(h1),
+.surface :global(h2),
+.surface :global(h3) {
+  font-family: var(--doc-heading-font, inherit);
+  letter-spacing: var(--pf-letter-spacing, -0.02em);
+}
+
+.surface :global(a) {
+  color: var(--color-link, var(--color-accent));
+}
+
+.surface :global(button) {
+  font-weight: var(--pf-button-weight, 650);
+  border-radius: var(--pf-btn-radius, var(--radius-md));
+  transition: background-color var(--pf-motion-button, 180ms) ease;
+}
+
+.watermark {
+  position: sticky;
+  top: 30%;
+  z-index: 2;
+  margin: 0;
+  pointer-events: none;
+  text-align: center;
+  font-size: clamp(3rem, 12vw, 7rem);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 8%, transparent);
+}
