@@ -3,6 +3,39 @@
   gap: var(--space-3);
 }
 
+.scoreRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.score {
+  font-size: var(--text-xl);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+  line-height: 1;
+}
+
+.risk {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.riskLow {
+  color: var(--color-success);
+}
+
+.riskMedium {
+  color: var(--color-warning);
+}
+
+.riskHigh {
+  color: var(--color-danger);
+}
+
 .bar {
   height: 4px;
   border-radius: 2px;
@@ -15,6 +48,24 @@
   border-radius: 2px;
   background-color: var(--color-accent);
   transition: width 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.barFill.riskLow {
+  background-color: var(--color-success);
+}
+
+.barFill.riskMedium {
+  background-color: var(--color-warning);
+}
+
+.barFill.riskHigh {
+  background-color: var(--color-danger);
+}
+
+.meta {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
 }
 
 .list {
@@ -32,4 +83,24 @@
 
 .itemPass {
   color: var(--color-success);
+}
+
+.tips {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tip {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+}
+
+.tip svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-accent);
 }

@@ -59,7 +59,7 @@ function AiSidebar({ proposal, blocks, onAction }) {
 
           {/* Sections */}
           <div className={styles.sections}>
-            <HealthScore blocks={blocks} />
+            <HealthScore proposal={proposal} blocks={blocks} />
             <AiSuggestions />
             <QuickActions onAction={onAction} />
             <WorkspaceMemory />

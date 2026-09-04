@@ -1,95 +1,60 @@
 import { useMemo } from 'react'
 import Icon from '../Icon/Icon.jsx'
-import { listEnabledBlocks } from '../../blocks/instance.js'
-import { isBlockDataEmpty } from '../../blocks/schemas.js'
+import { RISK_LEVEL, RISK_LEVEL_LABELS } from '../../insights/ids.js'
+import { useProposalHealth } from '../../hooks/useProposalHealth.js'
 import SidebarSection from './SidebarSection.jsx'
 import styles from './HealthScore.module.css'
 
 /**
- * Proposal Health Score — placeholder checklist that reports how
- * complete the current proposal feels. Scores are derived from
- * block presence, not AI.
+ * Live proposal health. Completeness still uses the original checklist;
+ * score, risk and suggestions come from the Insights health engine.
  */
 
-const CHECKS = [
-  {
-    id: 'cover',
-    label: 'Cover / Hero filled',
-    test: (blocks) =>
-      blocks.some((b) => b.type === 'cover' && !isBlockDataEmpty(b.type, b.data)),
-  },
-  {
-    id: 'summary',
-    label: 'Executive summary written',
-    test: (blocks) =>
-      blocks.some(
-        (b) => b.type === 'executive-summary' && !isBlockDataEmpty(b.type, b.data),
-      ),
-  },
-  {
-    id: 'pricing',
-    label: 'Pricing added',
-    test: (blocks) =>
-      blocks.some(
-        (b) => b.type === 'pricing' && !isBlockDataEmpty(b.type, b.data),
-      ),
-  },
-  {
-    id: 'team',
-    label: 'Team introduced',
-    test: (blocks) =>
-      blocks.some(
-        (b) => b.type === 'team' && !isBlockDataEmpty(b.type, b.data),
-      ),
-  },
-  {
-    id: 'terms',
-    label: 'Terms & conditions set',
-    test: (blocks) =>
-      blocks.some(
-        (b) => b.type === 'terms' && !isBlockDataEmpty(b.type, b.data),
-      ),
-  },
-  {
-    id: 'signature',
-    label: 'Signature block present',
-    test: (blocks) => blocks.some((b) => b.type === 'signature'),
-  },
-]
-
-function HealthScore({ blocks }) {
-  const enabled = useMemo(
-    () => listEnabledBlocks(blocks ?? []),
-    [blocks],
+function HealthScore({ proposal, blocks }) {
+  const report = useProposalHealth(proposal, blocks)
+  const suggestions = useMemo(
+    () => report.suggestions.slice(0, 3),
+    [report.suggestions],
   )
-
-  const results = useMemo(
-    () => CHECKS.map((check) => ({ ...check, pass: check.test(enabled) })),
-    [enabled],
-  )
-
-  const passed = results.filter((r) => r.pass).length
-  const total = results.length
-  const pct = total > 0 ? Math.round((passed / total) * 100) : 0
+  const riskClass =
+    report.riskLevel === RISK_LEVEL.HIGH
+      ? styles.riskHigh
+      : report.riskLevel === RISK_LEVEL.MEDIUM
+        ? styles.riskMedium
+        : styles.riskLow
 
   return (
-    <SidebarSection title="Proposal Health" icon="check" badge={`${pct}%`}>
+    <SidebarSection
+      title="Proposal Health"
+      icon="check"
+      badge={`${report.overallScore}`}
+    >
       <div className={styles.root}>
-        {/* Progress bar */}
+        <div className={styles.scoreRow}>
+          <span className={styles.score}>{report.overallScore}</span>
+          <span className={`${styles.risk} ${riskClass}`}>
+            {RISK_LEVEL_LABELS[report.riskLevel]}
+          </span>
+        </div>
+
         <div className={styles.bar}>
           <div
-            className={styles.barFill}
-            style={{ width: `${pct}%` }}
+            className={`${styles.barFill} ${riskClass}`}
+            style={{ width: `${report.overallScore}%` }}
             role="progressbar"
-            aria-valuenow={pct}
+            aria-valuenow={report.overallScore}
             aria-valuemin={0}
             aria-valuemax={100}
+            aria-label="Proposal health score"
           />
         </div>
 
-        {/* Checklist */}
+        <p className={styles.meta}>
+          {RISK_LEVEL_LABELS[report.riskLevel]} · {report.completionPercent}% complete
+        </p>
+
         <ul className={styles.list}>
-          {results.map((item) => (
+          {report.checks.map((item) => (
             <li
               key={item.id}
               className={`${styles.item} ${item.pass ? styles.itemPass : ''}`}
@@ -99,6 +64,17 @@ function HealthScore({ blocks }) {
             </li>
           ))}
         </ul>
+
+        {suggestions.length > 0 ? (
+          <ul className={styles.tips}>
+            {suggestions.map((item) => (
+              <li key={item.id} className={styles.tip}>
+                <Icon name="spark" size={12} />
+                <span>{item.suggestion}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
     </SidebarSection>
   )
