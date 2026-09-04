@@ -59,9 +59,10 @@ export function makeImprovementDraft(input = {}) {
     severity,
     reason: String(input.reason ?? '').trim(),
     suggestion: String(input.suggestion ?? '').trim(),
-    provider: String(input.provider ?? IMPROVE_PROVIDER.DETERMINISTIC),
+    provider: String(input.provider ?? IMPROVE_PROVIDER.MOCK),
     previewTitle: String(input.previewTitle ?? input.title ?? '').trim(),
     previewBody: String(input.previewBody ?? '').trim(),
     patch: makePatch(input.patch),
+    usage: input.usage && typeof input.usage === 'object' ? { ...input.usage } : null,
   }
 }

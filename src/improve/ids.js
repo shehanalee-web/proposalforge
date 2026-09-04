@@ -5,6 +5,7 @@
  */
 
 export const IMPROVE_PROVIDER = Object.freeze({
+  MOCK: 'mock',
   DETERMINISTIC: 'deterministic',
   OPENAI: 'openai',
   ANTHROPIC: 'anthropic',

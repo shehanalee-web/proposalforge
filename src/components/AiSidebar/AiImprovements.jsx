@@ -59,12 +59,15 @@ function ImprovementCard({
   draft,
   previewed,
   copied,
+  generating,
+  failed,
   onGenerate,
   onPreview,
   onInsert,
   onCopy,
 }) {
-  const ready = Boolean(draft)
+  const ready = Boolean(draft) && !generating
+  const generateLabel = generating ? 'Cancel' : failed ? 'Retry' : 'Generate'
 
   return (
     <article className={`${styles.card} ${severityClass(finding.severity)}`}>
@@ -78,12 +81,12 @@ function ImprovementCard({
         <span className={styles.label}>Suggested improvement</span>
         {finding.suggestion}
       </p>
-      {ready ? (
+      {draft?.previewBody ? (
         <pre className={styles.preview}>{draft.previewBody}</pre>
       ) : null}
       <div className={styles.actions}>
         <button type="button" className={styles.action} onClick={onGenerate}>
-          Generate
+          {generateLabel}
         </button>
         <button
           type="button"
@@ -110,7 +113,9 @@ function ImprovementCard({
           {copied ? 'Copied' : 'Copy'}
         </button>
       </div>
-      {ready && !previewed ? (
+      {failed ? (
+        <p className={`${styles.hint} ${styles.failed}`}>Generation failed.</p>
+      ) : ready && !previewed ? (
         <p className={styles.hint}>Preview the draft before inserting.</p>
       ) : null}
     </article>
@@ -128,6 +133,8 @@ function AiImprovements({ proposal, blocks, onApply }) {
     previewDraft,
     previewed,
     copiedCode,
+    busy,
+    errors,
     generate,
     preview,
     closePreview,
@@ -153,7 +160,9 @@ function AiImprovements({ proposal, blocks, onApply }) {
                 draft={drafts[finding.code]}
                 previewed={Boolean(previewed[finding.code])}
                 copied={copiedCode === finding.code}
-                onGenerate={() => generate(finding)}
+                generating={Boolean(busy[finding.code])}
+                failed={Boolean(errors[finding.code])}
+                onGenerate={() => generate(finding, { retry: Boolean(errors[finding.code]) })}
                 onPreview={() => preview(finding)}
                 onInsert={() => insert(finding)}
                 onCopy={() => copy(finding)}

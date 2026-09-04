@@ -121,6 +121,10 @@
   font-size: 0.625rem;
 }
 
+.failed {
+  color: var(--color-danger);
+}
+
 .overlay {
   position: fixed;
   inset: 0;

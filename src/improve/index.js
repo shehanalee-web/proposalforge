@@ -6,5 +6,10 @@ export {
   listImproveProviders,
 } from './registry.js'
 export { applyImprovement, draftPlainText } from './apply.js'
+export { buildImprovementPrompt } from './prompt.js'
+export {
+  generateMockImprovement,
+  generateDeterministicImprovement,
+} from './providers/mock.js'
 
-import './providers/deterministic.js'
+import './providers/mock.js'
