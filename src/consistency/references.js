@@ -131,8 +131,9 @@ function extractDates(text) {
   while ((match = monthRe.exec(source))) {
     const month = MONTHS[match[1].slice(0, 3).toLowerCase()]
     const day = Number(match[2])
-    const year = Number(match[3] || new Date().getUTCFullYear())
-    if (month == null || !Number.isFinite(day)) continue
+    if (!match[3]) continue
+    const year = Number(match[3])
+    if (month == null || !Number.isFinite(day) || !Number.isFinite(year)) continue
     found.push({
       raw: match[0],
       stamp: Date.UTC(year, month, day),
@@ -373,5 +374,3 @@ export function findReferenceIssues(claims) {
 
   return issues
 }
-
-export { extractDurations, detectFamilies }

@@ -1,4 +1,3 @@
-import { createRecordId } from '../models/ids.js'
 import {
   CONSISTENCY_REPAIR,
   CONSISTENCY_SECTION,
@@ -12,7 +11,7 @@ function labelOf(id) {
 
 function makeContradiction(input) {
   return {
-    id: input.id ?? createRecordId('cons'),
+    id: input.id ?? `cons-${input.code}`,
     code: input.code,
     severity: input.severity,
     title: input.title,

@@ -49,10 +49,13 @@ export function useProposalImprovements({ proposal, blocks, onApply } = {}) {
     [proposal, blocks, report],
   )
 
-  const findings = [
-    ...intelligence.repairOrder.diagnostics,
-    ...consistency.improvementFindings,
-  ]
+  const findings = useMemo(
+    () => [
+      ...intelligence.repairOrder.diagnostics,
+      ...consistency.improvementFindings,
+    ],
+    [intelligence, consistency],
+  )
 
   const previewDraft = useMemo(
     () => (previewCode ? drafts[previewCode] ?? null : null),
