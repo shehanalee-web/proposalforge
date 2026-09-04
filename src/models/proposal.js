@@ -20,6 +20,7 @@ import { makeProposalPayment } from './payment.js'
 import { makeProposalUpload, makeUploadFolder } from './upload.js'
 import { makeEmailDeliverySummary } from './emailDelivery.js'
 import { makeViewAnalytics } from './viewAnalytics.js'
+import { makeShareAccess } from './shareAccess.js'
 
 export const DEFAULT_OWNER_NAME = 'Studio'
 
@@ -115,6 +116,7 @@ export const DEFAULT_CURRENCY = 'USD'
  * @property {string[]} tags                  Free-form labels.
  * @property {string | null} validUntil       ISO date the offer expires.
  * @property {string} shareToken              Unguessable token for the client portal.
+ * @property {import('./shareAccess.js').ShareAccess} shareAccess Link revoke, password, email gate, expiry.
  * @property {string} ownerName               Studio owner display name.
  * @property {string | null} lastActivityAt   Latest commercial event timestamp.
  * @property {import('./viewAnalytics.js').ViewAnalytics} analytics Mock client-view stats.
@@ -212,6 +214,7 @@ export function makeProposal(input = {}) {
     images: [...(legacy.images ?? [])],
     validUntil: input.validUntil ?? null,
     shareToken: input.shareToken ?? createId('share'),
+    shareAccess: makeShareAccess(input.shareAccess),
     lastViewedAt: input.lastViewedAt ?? null,
     acceptedAt: input.acceptedAt ?? null,
     clientFeedback: input.clientFeedback ?? '',

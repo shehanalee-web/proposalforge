@@ -7,7 +7,6 @@ import { useDeleteProposalVersion } from '../../hooks/useDeleteProposalVersion.j
 import { useUpdateProposal } from '../../hooks/useUpdateProposal.js'
 import { useExportProposalPdf } from '../../hooks/useExportProposalPdf.js'
 import { useLatestEmailMessage } from '../../hooks/useLatestEmailMessage.js'
-import { getClientPortalUrl } from '../../utils/clientProposal.js'
 import { makeEmailDeliverySummary } from '../../models/emailDelivery.js'
 import { toDuplicateDraft } from '../../utils/duplicateDraft.js'
 import { useCreateProposalDialog } from '../../hooks/useCreateProposalDialog.js'
@@ -46,7 +45,6 @@ function ProposalDetail() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [activityOpen, setActivityOpen] = useState(false)
   const [sendOpen, setSendOpen] = useState(false)
-  const [linkCopied, setLinkCopied] = useState(false)
   const [archiving, setArchiving] = useState(false)
   const latestEmail = useLatestEmailMessage(proposal?.id, Boolean(proposal))
 
@@ -66,20 +64,6 @@ function ProposalDetail() {
 
     if (updated) {
       await refetch()
-    }
-  }
-
-  async function handleCopyLink() {
-    if (!proposal) return
-
-    const url = getClientPortalUrl(proposal.shareToken)
-
-    try {
-      await navigator.clipboard.writeText(url)
-      setLinkCopied(true)
-      window.setTimeout(() => setLinkCopied(false), 2000)
-    } catch {
-      window.prompt('Copy client link', url)
     }
   }
 
@@ -200,10 +184,8 @@ function ProposalDetail() {
           setHistoryOpen(false)
           setActivityOpen(true)
         }}
-        onCopyLink={handleCopyLink}
         onLayoutChange={handleLayoutChange}
         layoutSaving={layoutSaving}
-        linkCopied={linkCopied}
         exporting={exporting}
         exportError={exportError}
       />

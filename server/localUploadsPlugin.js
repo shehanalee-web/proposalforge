@@ -15,6 +15,28 @@ function json(res, status, body) {
   res.end(payload)
 }
 
+function parseRotateShareTokenIds(req) {
+  const raw = req.headers['x-rotate-share-token-ids']
+  if (!raw) return new Set()
+  return new Set(
+    String(raw)
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean),
+  )
+}
+
+function preserveLiveShareTokens(incoming, existing, rotateIds) {
+  const existingById = new Map(
+    (Array.isArray(existing) ? existing : []).map((row) => [row.id, row]),
+  )
+  return incoming.map((row) => {
+    const prev = existingById.get(row.id)
+    if (!prev || rotateIds.has(row.id)) return row
+    return { ...row, shareToken: prev.shareToken }
+  })
+}
+
 function readJson(file, fallback) {
   try {
     return JSON.parse(readFileSync(file, 'utf8'))
@@ -236,8 +258,14 @@ export function localUploadsPlugin() {
         if (!Array.isArray(body)) {
           return json(res, 400, { message: 'Expected an array of proposals.' })
         }
-        writeJson(proposalsFile, body)
-        return json(res, 200, { ok: true, count: body.length })
+        const existing = readJson(proposalsFile, [])
+        const next = preserveLiveShareTokens(
+          body,
+          existing,
+          parseRotateShareTokenIds(req),
+        )
+        writeJson(proposalsFile, next)
+        return json(res, 200, { ok: true, count: next.length })
       }
 
       if (method === 'GET' && matchRoute(url, '/api/brand-kit')) {

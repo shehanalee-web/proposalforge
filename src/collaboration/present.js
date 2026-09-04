@@ -3,6 +3,7 @@ import {
   isActivityVisibleToClient,
   makeActivityEvent,
 } from '../models/clientActivity.js'
+import { presentShareAccess } from '../models/shareAccess.js'
 
 /**
  * Strip internal-only comments and activity before the record leaves the
@@ -31,6 +32,7 @@ export function presentProposalForClient(proposal) {
   return {
     ...rest,
     notes: '',
+    shareAccess: presentShareAccess(rest.shareAccess),
     questionnaire,
     comments: listClientVisibleComments(proposal.comments),
     activity: (proposal.activity ?? [])

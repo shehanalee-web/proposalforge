@@ -13,6 +13,7 @@ import { hasQuestionnaire, isQuestionnaireSubmitted } from '../models/questionna
 import { questionnaireProgress } from '../forms/progress.js'
 import { countOpenThreads } from '../collaboration/threads.js'
 import {
+  PAYMENT_STATUS,
   PAYMENT_STATUS_LABELS,
 } from '../models/payment.js'
 import {
@@ -182,10 +183,10 @@ function PortalAside({
       >
         <p className={styles.copy}>
           {signature?.status === SIGNATURE_STATUS.WAITING
-            ? 'Waiting for signature. Providers will be connected in a future release.'
+            ? 'Waiting for your signature. Sign with your name to approve this proposal.'
             : signature?.status === SIGNATURE_STATUS.SIGNED
               ? `Signed${signature.signer ? ` by ${signature.signer}` : ''}.`
-              : 'Signature providers are not connected yet. You can still open the placeholder.'}
+              : 'Sign with your name to approve. The studio keeps a time, browser, and device trail.'}
         </p>
         <button type="button" className={styles.primary} onClick={onSign}>
           Sign proposal
@@ -212,7 +213,7 @@ function PortalAside({
           </div>
         </dl>
         <button type="button" className={styles.primary} onClick={onPay}>
-          Pay now
+          {payment?.status === PAYMENT_STATUS.PAID ? 'Payment recorded' : 'Pay now'}
         </button>
       </PortalDashboardModule>
     </aside>

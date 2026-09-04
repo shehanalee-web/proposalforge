@@ -3,7 +3,6 @@ import { ViewerProvider, useViewer } from '../viewer/ViewerContext.jsx'
 import { useFullscreen } from '../viewer/useFullscreen.js'
 import ViewerStage from '../viewer/ViewerStage.jsx'
 import ViewerActionBar from '../viewer/ViewerActionBar.jsx'
-import ViewerDialog from '../viewer/ViewerDialog.jsx'
 import { useProposalTheme } from '../theme/ProposalThemeContext.jsx'
 import {
   hasCapability,
@@ -11,6 +10,7 @@ import {
 } from '../models/portalPermissions.js'
 import { PORTAL_MODULE } from '../models/portalModules.js'
 import { hasQuestionnaire } from '../models/questionnaire.js'
+import { getClientPortalUrl } from '../utils/clientProposal.js'
 import { usePortal } from './PortalContext.jsx'
 import PortalHeader from './PortalHeader.jsx'
 import PortalAside from './PortalAside.jsx'
@@ -19,8 +19,9 @@ import PortalComments from './PortalComments.jsx'
 import PortalRequestChanges from './PortalRequestChanges.jsx'
 import PortalFiles from './PortalFiles.jsx'
 import PortalDecline from './PortalDecline.jsx'
+import PortalSign from './PortalSign.jsx'
+import PortalPay from './PortalPay.jsx'
 import styles from './PortalShell.module.css'
-import requestStyles from './PortalRequestChanges.module.css'
 
 function PortalAppInner({
   notices,
@@ -61,7 +62,11 @@ function PortalAppInner({
   }
 
   function handleShare() {
-    const url = window.location.href
+    const url = getClientPortalUrl(proposal.shareToken)
+    if (!url) {
+      flash('Could not copy the link.')
+      return
+    }
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(url).then(
         () => flash('Link copied'),
@@ -204,49 +209,19 @@ function PortalAppInner({
         />
       ) : null}
 
-      <ViewerDialog
-        open={signOpen}
-        title="Signature"
-        description="Signature providers will be connected in a future release."
-        onClose={() => setSignOpen(false)}
-        footer={
-          <button
-            type="button"
-            className={requestStyles.submit}
-            onClick={() => setSignOpen(false)}
-          >
-            Close
-          </button>
-        }
-      >
-        <p className={styles.placeholder}>
-          Internal, DocuSign, Dropbox Sign, Adobe Sign, and OpenSign stay
-          architecture-only until a later milestone. No signature is collected
-          in this release.
-        </p>
-      </ViewerDialog>
+      {signOpen ? (
+        <PortalSign
+          onClose={() => setSignOpen(false)}
+          onSigned={onProposalChange}
+        />
+      ) : null}
 
-      <ViewerDialog
-        open={payOpen}
-        title="Payment"
-        description="Payment providers will be connected in a future release."
-        onClose={() => setPayOpen(false)}
-        footer={
-          <button
-            type="button"
-            className={requestStyles.submit}
-            onClick={() => setPayOpen(false)}
-          >
-            Close
-          </button>
-        }
-      >
-        <p className={styles.placeholder}>
-          Stripe, PayPal, Square, manual invoices, and bank transfer are
-          registered as providers. Pay Now does not collect a payment in this
-          release.
-        </p>
-      </ViewerDialog>
+      {payOpen ? (
+        <PortalPay
+          onClose={() => setPayOpen(false)}
+          onPaid={onProposalChange}
+        />
+      ) : null}
     </div>
   )
 }

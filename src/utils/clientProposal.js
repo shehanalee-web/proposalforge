@@ -33,3 +33,46 @@ export function getClientPortalUrl(shareToken) {
 
   return `${window.location.origin}${path}`
 }
+
+function shareGateKey(token) {
+  return `proposalforge.shareGate.${token}`
+}
+
+/**
+ * Session unlock for a gated client link. Cleared when the tab closes.
+ *
+ * @param {string} token
+ * @returns {{ password: string, email: string }}
+ */
+export function readShareGate(token) {
+  if (!token || typeof sessionStorage === 'undefined') {
+    return { password: '', email: '' }
+  }
+  try {
+    const raw = sessionStorage.getItem(shareGateKey(token))
+    if (!raw) return { password: '', email: '' }
+    const parsed = JSON.parse(raw)
+    return {
+      password: String(parsed?.password ?? ''),
+      email: String(parsed?.email ?? ''),
+    }
+  } catch {
+    return { password: '', email: '' }
+  }
+}
+
+export function writeShareGate(token, credentials = {}) {
+  if (!token || typeof sessionStorage === 'undefined') return
+  sessionStorage.setItem(
+    shareGateKey(token),
+    JSON.stringify({
+      password: String(credentials.password ?? ''),
+      email: String(credentials.email ?? ''),
+    }),
+  )
+}
+
+export function clearShareGate(token) {
+  if (!token || typeof sessionStorage === 'undefined') return
+  sessionStorage.removeItem(shareGateKey(token))
+}

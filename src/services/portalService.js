@@ -5,6 +5,7 @@ import {
 } from '../models/portalPermissions.js'
 import { ForbiddenError } from './errors.js'
 import { presentProposalForClient } from '../collaboration/present.js'
+import { readShareGate } from '../utils/clientProposal.js'
 import {
   acceptProposal,
   addClientComment,
@@ -13,10 +14,13 @@ import {
   deleteClientUpload,
   editClientComment,
   fetchClientProposal,
+  inspectShareLink,
+  payClientProposal,
   replaceClientUpload,
   requestProposalChanges,
   resolveClientThread,
   saveQuestionnaireResponses,
+  signClientProposal,
   submitQuestionnaireResponses,
 } from './proposalService.js'
 
@@ -37,6 +41,15 @@ function presentPortal(proposal, token) {
   }
 }
 
+function withShareGate(token, input = {}) {
+  const saved = readShareGate(token)
+  return {
+    ...input,
+    password: String(input.password ?? saved.password ?? ''),
+    email: String(input.email ?? saved.email ?? ''),
+  }
+}
+
 export function getPortalSession(proposal, token) {
   const capabilities = enforceClientReadOnly(resolveClientCapabilities(proposal))
   return {
@@ -48,8 +61,12 @@ export function getPortalSession(proposal, token) {
   }
 }
 
-export async function loadPortalProposal(token) {
-  const proposal = await fetchClientProposal(token)
+export async function inspectPortalShare(token) {
+  return inspectShareLink(token)
+}
+
+export async function loadPortalProposal(token, credentials = {}) {
+  const proposal = await fetchClientProposal(token, credentials)
   return presentPortal(proposal, token)
 }
 
@@ -105,6 +122,16 @@ export async function replacePortalUpload(token, uploadId, file) {
 
 export async function deletePortalUpload(token, uploadId) {
   const proposal = await deleteClientUpload(token, uploadId)
+  return presentPortal(proposal, token)
+}
+
+export async function signPortalProposal(token, input = {}) {
+  const proposal = await signClientProposal(token, withShareGate(token, input))
+  return presentPortal(proposal, token)
+}
+
+export async function payPortalProposal(token, input = {}) {
+  const proposal = await payClientProposal(token, withShareGate(token, input))
   return presentPortal(proposal, token)
 }
 

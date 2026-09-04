@@ -74,7 +74,7 @@ import {
   PROPOSAL_UPLOAD_MAX_BYTES,
   UPLOAD_ACTOR,
 } from '../models/upload.js'
-import { getClientPortalUrl } from '../utils/clientProposal.js'
+import { clearShareGate, getClientPortalUrl } from '../utils/clientProposal.js'
 import { fetchBrandKit } from './brandKitService.js'
 import { sendProposalEmail } from './email/sendProposalEmail.js'
 import {
@@ -85,9 +85,21 @@ import {
 } from '../models/emailDelivery.js'
 import { createRecordId } from '../models/ids.js'
 import { getStorageAdapter } from '../storage/adapter.js'
-import { makeProposalSignature, makeSignatureAuditEvent, SIGNATURE_STATUS } from '../models/signature.js'
-import { makeProposalPayment, PAYMENT_STATUS } from '../models/payment.js'
-import { recordAnalyticsSent, recordViewSession } from '../models/viewAnalytics.js'
+import { recordAnalyticsSent, recordViewSession, mockViewContext } from '../models/viewAnalytics.js'
+import {
+  createShareToken,
+  getShareAccessState,
+  hashShareSecret,
+  isShareAccessExpired,
+  isShareRevoked,
+  makeShareAccess,
+  maskEmail,
+  SHARE_ACCESS_STATE,
+  shareEmailMatches,
+  sharePasswordMatches,
+} from '../models/shareAccess.js'
+import { makeProposalSignature, makeSignatureAuditEvent, SIGNATURE_PROVIDER, SIGNATURE_STATUS } from '../models/signature.js'
+import { clientPaymentAmount, makeProposalPayment, PAYMENT_STATUS } from '../models/payment.js'
 import {
   buildCommercialQueues,
   buildOperationalStats,
@@ -294,6 +306,7 @@ export async function updateProposal(id, changes = {}) {
   delete safeChanges.currentVersion
   delete safeChanges.id
   delete safeChanges.createdAt
+  delete safeChanges.shareToken
 
   const updated = makeProposal({
     ...existing,
@@ -930,7 +943,7 @@ async function storeUploadBytes(proposal, file, uploadId) {
   })
 }
 
-function requireByShareToken(token) {
+function requireByShareToken(token, options = {}) {
   if (!token) {
     throw new NotFoundError('No proposal found for this client link.')
   }
@@ -941,7 +954,62 @@ function requireByShareToken(token) {
     throw new NotFoundError('No proposal found for this client link.')
   }
 
+  const access = makeShareAccess(proposal.shareAccess)
+  if (isShareRevoked(access)) {
+    throw new NotFoundError('This client link is no longer available.')
+  }
+  if (!options.allowExpired && isShareAccessExpired(access)) {
+    throw new ForbiddenError('This client link has expired.')
+  }
+
   return proposal
+}
+
+async function assertClientShareAccess(existing, credentials = {}) {
+  const access = makeShareAccess(existing.shareAccess)
+  const state = getShareAccessState(access)
+
+  if (state === SHARE_ACCESS_STATE.REVOKED) {
+    throw new NotFoundError('This client link is no longer available.')
+  }
+
+  if (state === SHARE_ACCESS_STATE.EXPIRED) {
+    throw new ForbiddenError('This client link has expired.')
+  }
+
+  if (access.passwordHash) {
+    const matches = await sharePasswordMatches(access, credentials.password)
+    if (!matches) {
+      throw new ForbiddenError('Enter the link password to continue.')
+    }
+  }
+
+  if (access.requireEmail && !shareEmailMatches(existing, credentials.email)) {
+    throw new ForbiddenError('Enter the client email this proposal was sent to.')
+  }
+}
+
+/**
+ * Describe a share link without recording a view.
+ *
+ * Used by the portal gate so password / email checks do not inflate analytics.
+ *
+ * @param {string} token
+ */
+export async function inspectShareLink(token) {
+  await boot()
+  const existing = requireByShareToken(token, { allowExpired: true })
+  const access = makeShareAccess(existing.shareAccess)
+  const state = getShareAccessState(access)
+
+  return {
+    state,
+    title: existing.title,
+    company: existing.company,
+    requirePassword: Boolean(access.passwordHash),
+    requireEmail: Boolean(access.requireEmail),
+    emailHint: access.requireEmail ? maskEmail(existing.clientEmail) : '',
+  }
 }
 
 /**
@@ -951,13 +1019,15 @@ function requireByShareToken(token) {
  * shuffle studio sort order. Version snapshots stay untouched.
  *
  * @param {string} token
+ * @param {{ password?: string, email?: string }} [credentials]
  * @returns {Promise<import('../models/proposal.js').Proposal>}
  * @throws {NotFoundError}
  */
-export async function fetchClientProposal(token) {
+export async function fetchClientProposal(token, credentials = {}) {
   await boot()
 
   const existing = requireByShareToken(token)
+  await assertClientShareAccess(existing, credentials)
   const current = await persistExpired(existing)
   const now = new Date().toISOString()
   const changes = {
@@ -1826,7 +1896,7 @@ export async function requestProposalSignature(id) {
         at: now,
         actor: PORTAL_ACTOR.STUDIO,
         action: 'requested',
-        detail: 'Signature requested. No e-sign vendor is connected.',
+        detail: 'Signature requested. The client can sign in the portal.',
       }),
     ],
   })
@@ -1874,13 +1944,250 @@ export async function updateProposalPayment(id, patch = {}) {
             actor: PORTAL_ACTOR.CLIENT,
             metadata: {
               visibility: COMMENT_VISIBILITY.CLIENT,
-              detail: 'Payment was recorded. No gateway is connected.',
+              detail: 'Payment was recorded.',
             },
           })
         : existing.activity,
     },
     now,
   )
+  return present(await store.replace(existing.id, updated))
+}
+
+export async function updateShareAccess(id, patch = {}) {
+  await boot()
+  const existing = requireById(id)
+  const current = makeShareAccess(existing.shareAccess)
+  let passwordHash = current.passwordHash
+  if (patch.clearPassword) {
+    passwordHash = ''
+  } else if (patch.password != null && String(patch.password).trim()) {
+    passwordHash = await hashShareSecret(patch.password)
+  }
+
+  let revokedAt = current.revokedAt
+  if (patch.revoked === true) {
+    revokedAt = current.revokedAt || new Date().toISOString()
+  } else if (patch.revoked === false) {
+    revokedAt = null
+  }
+
+  const shareAccess = makeShareAccess({
+    ...current,
+    passwordHash,
+    revokedAt,
+    requireEmail:
+      patch.requireEmail == null ? current.requireEmail : Boolean(patch.requireEmail),
+    accessExpiresAt:
+      patch.accessExpiresAt === undefined
+        ? current.accessExpiresAt
+        : patch.accessExpiresAt || null,
+  })
+
+  const updated = persistIdentity(existing, { shareAccess }, existing.updatedAt)
+  return present(await store.replace(existing.id, updated))
+}
+
+export async function rotateShareToken(id) {
+  await boot()
+  const existing = requireById(id)
+  const previousToken = existing.shareToken
+  let shareToken = createShareToken()
+  while (shareToken === previousToken || store.findByShareToken(shareToken)) {
+    shareToken = createShareToken()
+  }
+
+  const updated = persistIdentity(
+    existing,
+    { lastActivityAt: existing.lastActivityAt },
+    existing.updatedAt,
+  )
+  const saved = present(
+    await store.replace(
+      existing.id,
+      { ...updated, shareToken },
+      { rotateShareToken: true },
+    ),
+  )
+  clearShareGate(previousToken)
+  return saved
+}
+
+export async function signClientProposal(token, input = {}) {
+  await boot()
+  const existing = requireByShareToken(token)
+  await assertClientShareAccess(existing, input)
+
+  if (existing.signature?.status === SIGNATURE_STATUS.SIGNED) {
+    return present(existing)
+  }
+
+  if (
+    existing.status === PROPOSAL_STATUS.DECLINED ||
+    existing.status === PROPOSAL_STATUS.EXPIRED ||
+    existing.status === PROPOSAL_STATUS.CANCELLED ||
+    existing.status === PROPOSAL_STATUS.ARCHIVED
+  ) {
+    throw new ValidationError('This proposal can no longer be signed.', [
+      { field: 'status', message: 'Locked proposals cannot be signed.' },
+    ])
+  }
+
+  const signerName = String(input.signerName ?? '').trim()
+  if (!signerName) {
+    throw new ValidationError('Enter the name that should appear on the signature.', [
+      { field: 'signerName', message: 'A signer name is required.' },
+    ])
+  }
+  if (!input.agreed) {
+    throw new ValidationError('Confirm that you agree to the proposal terms.', [
+      { field: 'agreed', message: 'Agreement is required to sign.' },
+    ])
+  }
+
+  const now = new Date().toISOString()
+  const context = mockViewContext()
+  const signature = makeProposalSignature({
+    ...existing.signature,
+    proposalId: existing.id,
+    provider: SIGNATURE_PROVIDER.INTERNAL,
+    status: SIGNATURE_STATUS.SIGNED,
+    signer: signerName,
+    signerEmail: existing.signature?.signerEmail || existing.clientEmail || '',
+    requestedAt: existing.signature?.requestedAt || now,
+    signedAt: now,
+    ipAddress: String(input.ipAddress ?? '').trim() || 'local',
+    browser: context.browser,
+    device: context.device,
+    auditTrail: [
+      ...(existing.signature?.auditTrail ?? []),
+      makeSignatureAuditEvent({
+        at: now,
+        actor: PORTAL_ACTOR.CLIENT,
+        action: 'signed',
+        detail: `${signerName} signed (${context.browser} · ${context.device}).`,
+      }),
+    ],
+  })
+
+  const shouldAccept = canClientRespond(existing) && existing.status !== PROPOSAL_STATUS.ACCEPTED
+  const signedActivity = recordActivity(existing, {
+    type: CLIENT_ACTIVITY_TYPE.SIGNED,
+    actor: PORTAL_ACTOR.CLIENT,
+    metadata: {
+      visibility: COMMENT_VISIBILITY.CLIENT,
+      detail: `${signerName} signed the proposal.`,
+    },
+  })
+  const activity = shouldAccept
+    ? recordActivity(
+        { ...existing, activity: signedActivity },
+        {
+          type: CLIENT_ACTIVITY_TYPE.ACCEPTED,
+          actor: PORTAL_ACTOR.CLIENT,
+          metadata: {
+            visibility: COMMENT_VISIBILITY.CLIENT,
+            detail: 'The proposal was approved with a signature.',
+          },
+        },
+      )
+    : signedActivity
+  const updated = persistIdentity(
+    existing,
+    {
+      signature,
+      activity,
+      ...(shouldAccept
+        ? {
+            status: PROPOSAL_STATUS.ACCEPTED,
+            acceptedAt: now,
+            lastViewedAt: existing.lastViewedAt ?? now,
+            approval: makeProposalApproval(
+              {
+                ...existing.approval,
+                status: PROPOSAL_STATUS.ACCEPTED,
+                decidedAt: now,
+                actor: PORTAL_ACTOR.CLIENT,
+                summary: `${signerName} signed and approved this proposal.`,
+                locked: true,
+              },
+              { ...existing, status: PROPOSAL_STATUS.ACCEPTED, acceptedAt: now },
+            ),
+          }
+        : {}),
+    },
+    now,
+  )
+
+  const recorded = shouldAccept
+    ? recordMilestoneVersion(updated, {
+        source: VERSION_SOURCE.APPROVED,
+        createdBy: signerName,
+      })
+    : updated
+
+  return present(await store.replace(existing.id, recorded))
+}
+
+export async function payClientProposal(token, input = {}) {
+  await boot()
+  const existing = requireByShareToken(token)
+  await assertClientShareAccess(existing, input)
+
+  if (
+    existing.status === PROPOSAL_STATUS.DECLINED ||
+    existing.status === PROPOSAL_STATUS.EXPIRED ||
+    existing.status === PROPOSAL_STATUS.CANCELLED ||
+    existing.status === PROPOSAL_STATUS.ARCHIVED
+  ) {
+    throw new ValidationError('This proposal can no longer take a payment.', [
+      { field: 'status', message: 'Locked proposals cannot be paid.' },
+    ])
+  }
+
+  const kind = input.kind === 'deposit' ? 'deposit' : 'balance'
+  const amount = clientPaymentAmount(existing.payment, kind)
+  if (amount <= 0) {
+    throw new ValidationError('Nothing is outstanding on this proposal.', [
+      { field: 'amount', message: 'This proposal is already paid.' },
+    ])
+  }
+
+  const now = new Date().toISOString()
+  const paidAmount = Number(existing.payment?.paidAmount ?? 0) + amount
+  const payment = makeProposalPayment({
+    ...existing.payment,
+    proposalId: existing.id,
+    currency: existing.payment?.currency ?? existing.currency,
+    subtotal: existing.payment?.subtotal ?? existing.amount,
+    paidAmount,
+    transactionReference: createRecordId('txn'),
+    invoice: {
+      ...(existing.payment?.invoice ?? {}),
+      status: 'recorded',
+      issuedAt: existing.payment?.invoice?.issuedAt || now,
+    },
+  })
+
+  const updated = persistIdentity(
+    existing,
+    {
+      payment,
+      activity: recordActivity(existing, {
+        type: CLIENT_ACTIVITY_TYPE.PAYMENT_COMPLETED,
+        actor: PORTAL_ACTOR.CLIENT,
+        metadata: {
+          visibility: COMMENT_VISIBILITY.CLIENT,
+          detail:
+            kind === 'deposit'
+              ? `Deposit of ${amount} recorded.`
+              : `Payment of ${amount} recorded.`,
+        },
+      }),
+    },
+    now,
+  )
+
   return present(await store.replace(existing.id, updated))
 }
 

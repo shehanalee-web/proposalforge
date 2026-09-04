@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import ProposalContent from '../../components/ProposalContent/ProposalContent.jsx'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
@@ -7,11 +8,12 @@ import {
   EMAIL_DELIVERY_STATUS_LABELS,
 } from '../../models/emailDelivery.js'
 import { getLastActivityAt, getViewCount } from '../../models/commercialQueues.js'
-import { getClientPortalPath } from '../../utils/clientProposal.js'
+import { getClientPortalPath, getClientPortalUrl } from '../../utils/clientProposal.js'
 import { formatCurrency, formatDate, formatDateTime } from '../../utils/format.js'
 import { getLayout } from '../../layouts/registry.js'
 import LayoutPicker from '../../layouts/screen/LayoutPicker.jsx'
 import { PATH, proposalEditPath } from '../../workspace/paths.js'
+import { useShareAccess } from '../../hooks/useShareAccess.js'
 import {
   ProposalAnalyticsCard,
   ProposalCommentsSection,
@@ -30,6 +32,122 @@ function MetaItem({ label, children }) {
   )
 }
 
+function ShareLinkControls({ proposal, onProposalChange, disabled }) {
+  const share = useShareAccess()
+  const [password, setPassword] = useState('')
+  const [rotated, setRotated] = useState(false)
+  const access = proposal.shareAccess ?? {}
+  const revoked = Boolean(access.revokedAt)
+  const passwordSet = Boolean(access.passwordSet || access.passwordHash)
+  const busy = disabled || share.submitting
+
+  async function apply(patch) {
+    const saved = await share.update(proposal.id, patch)
+    if (saved) {
+      setRotated(false)
+      onProposalChange?.(saved)
+    }
+  }
+
+  async function handleRotate() {
+    const saved = await share.rotate(proposal.id)
+    if (saved) {
+      setRotated(true)
+      onProposalChange?.(saved)
+    }
+  }
+
+  return (
+    <div className={styles.shareTools}>
+      {share.error ? (
+        <p className={styles.shareError} role="alert">
+          {share.error.message}
+        </p>
+      ) : null}
+      <p className={styles.shareStatus}>
+        {revoked
+          ? 'Link revoked — the current URL will not open the portal.'
+          : passwordSet
+            ? 'Password protected'
+            : 'Anyone with the link can open this proposal'}
+        {access.requireEmail ? ' · Email gate on' : ''}
+        {access.accessExpiresAt ? ` · Access ends ${access.accessExpiresAt}` : ''}
+        {rotated ? ' · New link issued; the previous URL no longer opens this proposal.' : ''}
+      </p>
+      <div className={styles.shareActions}>
+        <button
+          type="button"
+          className={styles.history}
+          onClick={() => apply({ revoked: !revoked })}
+          disabled={busy}
+        >
+          {revoked ? 'Restore link' : 'Revoke link'}
+        </button>
+        <button
+          type="button"
+          className={styles.history}
+          onClick={handleRotate}
+          disabled={busy || revoked}
+        >
+          Rotate link
+        </button>
+        <label className={styles.shareCheck}>
+          <input
+            type="checkbox"
+            checked={Boolean(access.requireEmail)}
+            disabled={busy}
+            onChange={(event) => apply({ requireEmail: event.target.checked })}
+          />
+          Require client email
+        </label>
+      </div>
+      <div className={styles.shareFields}>
+        <label className={styles.shareField}>
+          Link password
+          <input
+            type="password"
+            value={password}
+            disabled={busy}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder={passwordSet ? 'Password is set' : 'Optional'}
+            autoComplete="new-password"
+          />
+        </label>
+        <button
+          type="button"
+          className={styles.print}
+          disabled={busy || !password.trim()}
+          onClick={async () => {
+            await apply({ password })
+            setPassword('')
+          }}
+        >
+          Set password
+        </button>
+        {passwordSet ? (
+          <button
+            type="button"
+            className={styles.print}
+            disabled={busy}
+            onClick={() => apply({ clearPassword: true })}
+          >
+            Clear password
+          </button>
+        ) : null}
+        <label className={styles.shareField}>
+          Access expires
+          <input
+            type="date"
+            value={access.accessExpiresAt ? String(access.accessExpiresAt).slice(0, 10) : ''}
+            disabled={busy}
+            onChange={(event) => apply({ accessExpiresAt: event.target.value || null })}
+          />
+        </label>
+      </div>
+    </div>
+  )
+}
+
 function ProposalDetailView({
   proposal,
   onDuplicate,
@@ -41,15 +159,30 @@ function ProposalDetailView({
   onProposalChange,
   onOpenHistory,
   onOpenActivity,
-  onCopyLink,
   onLayoutChange,
   layoutSaving,
-  linkCopied,
   exporting,
   exportError,
 }) {
+  const [linkCopied, setLinkCopied] = useState(false)
   const busy = Boolean(exporting) || Boolean(layoutSaving)
   const clientPath = getClientPortalPath(proposal.shareToken)
+
+  useEffect(() => {
+    setLinkCopied(false)
+  }, [proposal.shareToken])
+
+  async function handleCopyLink() {
+    if (!proposal.shareToken) return
+    const url = getClientPortalUrl(proposal.shareToken)
+    try {
+      await navigator.clipboard.writeText(url)
+      setLinkCopied(true)
+      window.setTimeout(() => setLinkCopied(false), 2000)
+    } catch {
+      window.prompt('Copy client link', url)
+    }
+  }
   const hasFeedback = Boolean(proposal.clientFeedback?.trim())
   const layout = getLayout(proposal.layoutId)
   const locked = isProposalLocked(proposal)
@@ -175,23 +308,30 @@ function ProposalDetailView({
       </dl>
 
       <section className={styles.share}>
-        <div className={styles.shareCopy}>
-          <p className={styles.shareLabel}>Client portal</p>
-          <p className={styles.shareUrl}>{clientPath}</p>
+        <div className={styles.shareRow}>
+          <div className={styles.shareCopy}>
+            <p className={styles.shareLabel}>Client portal</p>
+            <p className={styles.shareUrl}>{clientPath}</p>
+          </div>
+          <div className={styles.shareActions}>
+            <button
+              type="button"
+              className={styles.print}
+              onClick={handleCopyLink}
+              disabled={busy}
+            >
+              {linkCopied ? 'Link copied' : 'Copy client link'}
+            </button>
+            <Link to={clientPath} className={styles.edit} key={clientPath}>
+              Open client page
+            </Link>
+          </div>
         </div>
-        <div className={styles.shareActions}>
-          <button
-            type="button"
-            className={styles.print}
-            onClick={onCopyLink}
-            disabled={busy}
-          >
-            {linkCopied ? 'Link copied' : 'Copy client link'}
-          </button>
-          <Link to={clientPath} className={styles.edit}>
-            Open client page
-          </Link>
-        </div>
+        <ShareLinkControls
+          proposal={proposal}
+          onProposalChange={onProposalChange}
+          disabled={busy}
+        />
       </section>
 
       {hasFeedback ? (

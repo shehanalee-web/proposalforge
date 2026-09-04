@@ -95,7 +95,7 @@ export function hydrateProposalAssets(proposal) {
 function persistSnapshot(snapshot) {
   if (!snapshot || typeof snapshot !== 'object') return snapshot
 
-  return {
+  const next = {
     ...snapshot,
     blocks: (snapshot.blocks ?? []).map((block) => {
       const data = stripItem(block.data ?? {})
@@ -107,6 +107,8 @@ function persistSnapshot(snapshot) {
     images: (snapshot.images ?? []).map(stripItem),
     uploads: uploadMetadataList(snapshot.uploads),
   }
+  delete next.shareToken
+  return next
 }
 
 function uploadMetadataList(uploads = []) {

@@ -113,9 +113,9 @@ export function ProposalSignatureCard({ proposal }) {
         <Fact label="Declined">{formatDateTime(signature?.declinedAt)}</Fact>
       </dl>
       <div className={styles.placeholder}>
-        Signature block placeholder — no e-sign vendor is connected.
+        Internal clickwrap. DocuSign and other vendors remain optional providers.
       </div>
-      <p className={styles.note}>Audit trail placeholder</p>
+      <p className={styles.note}>Audit trail</p>
       {(signature?.auditTrail ?? []).length === 0 ? (
         <p className={styles.muted}>No signature events recorded yet.</p>
       ) : (
@@ -168,8 +168,8 @@ export function ProposalPaymentCard({ proposal }) {
         {payment?.invoice?.number ? ` · ${payment.invoice.number}` : ' · not issued'}
       </div>
       <p className={styles.note}>
-        No payment gateway is connected. Stripe, PayPal, Square, and bank
-        transfer remain provider ids on this record.
+        Pay Now records a mock payment on this proposal. Stripe and other
+        gateways remain provider ids until a vendor is connected.
       </p>
     </Card>
   )

@@ -6,19 +6,24 @@ import { useAsyncData } from './useAsyncData.js'
 /**
  * Load a proposal for the client portal by share token.
  *
- * Opening the portal records a view. Passing a falsy token skips the request.
- * Goes through the portal service so clients never hit studio update APIs.
+ * Opening the portal records a view once access checks pass.
+ * Passing a falsy token or `enabled: false` skips the request.
  *
  * @param {string | null | undefined} token
+ * @param {{ password?: string, email?: string }} [credentials]
+ * @param {boolean} [enabled]
  */
-export function useClientProposal(token) {
+export function useClientProposal(token, credentials = {}, enabled = true) {
+  const password = credentials.password ?? ''
+  const email = credentials.email ?? ''
+
   const task = useCallback(async () => {
-    const loaded = await loadPortalProposal(token)
+    const loaded = await loadPortalProposal(token, { password, email })
     return loaded.proposal
-  }, [token])
+  }, [token, password, email])
 
   const { data, loading, error, refetch, setData } = useAsyncData(task, {
-    enabled: Boolean(token),
+    enabled: Boolean(token) && enabled,
     initialData: null,
   })
 

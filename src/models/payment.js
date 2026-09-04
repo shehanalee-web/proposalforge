@@ -177,3 +177,22 @@ export function makeProposalPayment(input = {}) {
     transactionReference: String(input.transactionReference ?? '').trim(),
   }
 }
+
+/**
+ * Resolve how much a client Pay Now action should collect.
+ *
+ * @param {ProposalPayment | null | undefined} payment
+ * @param {'deposit' | 'balance'} [kind]
+ * @returns {number}
+ */
+export function clientPaymentAmount(payment, kind = 'balance') {
+  const current = makeProposalPayment(payment ?? {})
+  const total = Math.max(0, current.subtotal + current.tax - current.discount)
+  const remaining = Math.max(0, total - current.paidAmount)
+  if (remaining <= 0) return 0
+  if (kind === 'deposit' && current.deposit > 0) {
+    const due = Math.max(0, current.deposit - current.paidAmount)
+    return due > 0 ? Math.min(due, remaining) : remaining
+  }
+  return remaining
+}
