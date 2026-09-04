@@ -16,8 +16,11 @@ import { computeCommercials } from '../../utils/commercialTotals.js'
 import { BLOCK_TYPE } from '../../blocks/ids.js'
 import {
   duplicateBlock,
+  pasteBlock,
   removeBlock,
   reorderBlocks,
+  setBlockEnabled,
+  updateBlockSettings,
   updateBlocksByType,
 } from '../../blocks/instance.js'
 import BlockEditor from '../../blocks/editor/BlockEditor.jsx'
@@ -31,7 +34,12 @@ import {
 import EditorCommandBar from '../../components/Editor/EditorCommandBar.jsx'
 import ProposalPreview from '../../components/Editor/ProposalPreview.jsx'
 import ProposalSettingsPanel from '../../components/ProposalSettings/ProposalSettingsPanel.jsx'
+import BlockInspector from '../../components/BlockInspector/BlockInspector.jsx'
+import ClientResponsesPanel from '../../components/ClientResponses/ClientResponsesPanel.jsx'
+import CollaborationPanel from '../../components/Collaboration/CollaborationPanel.jsx'
+import ClientWorkspacePanel from '../../components/ClientWorkspace/ClientWorkspacePanel.jsx'
 import { ProposalThemeProvider } from '../../theme/ProposalThemeContext.jsx'
+import { hasQuestionnaire } from '../../models/questionnaire.js'
 import styles from './ProposalEdit.module.css'
 
 const SKELETON_ROWS = 4
@@ -81,13 +89,23 @@ function ProposalEditContent() {
     outlineOpen,
     settingsOpen,
     setSettingsOpen,
+    inspectorOpen,
+    setInspectorOpen,
+    responsesOpen,
+    setResponsesOpen,
+    collaborationOpen,
+    setCollaborationOpen,
+    clientOpen,
+    setClientOpen,
+    copyBlock,
+    takeClipboard,
     activeBlockId,
     scrollToBlock,
     focusSearch,
     toggleExpanded,
   } = useEditorWorkspace()
 
-  const { proposal, loading, error, notFound, refetch } = useProposal(id)
+  const { proposal, loading, error, notFound, refetch, setProposal } = useProposal(id)
   const {
     update,
     submitting,
@@ -176,6 +194,18 @@ function ProposalEditContent() {
       if (!base || base.amount === nextAmount) return current
       return { ...base, amount: nextAmount }
     })
+  }
+
+  const activeBlock = documentBlocks.find((block) => block.id === activeBlockId) ?? null
+
+  function handlePasteAt(index = null) {
+    const source = takeClipboard()
+    if (!source) return
+    const { blocks: next, created } = pasteBlock(documentBlocks, source, index)
+    handleBlocksChange(next)
+    if (created) {
+      setInspectorOpen(true)
+    }
   }
 
   async function handleSubmit(event) {
@@ -273,6 +303,10 @@ function ProposalEditContent() {
       if (!activeBlockId) return
       toggleExpanded(activeBlockId, nextValue)
     },
+    onCopy: () => {
+      if (activeBlock) copyBlock(activeBlock)
+    },
+    onPaste: () => handlePasteAt(activeIndex >= 0 ? activeIndex + 1 : null),
   })
 
   useEffect(() => () => window.clearTimeout(debounceRef.current), [])
@@ -333,6 +367,10 @@ function ProposalEditContent() {
     styles.page,
     sidebarOpen && styles.pageSidebarOpen,
     settingsOpen && styles.pageSettingsOpen,
+    inspectorOpen && !settingsOpen && !responsesOpen && !collaborationOpen && !clientOpen && styles.pageInspectorOpen,
+    responsesOpen && styles.pageResponsesOpen,
+    collaborationOpen && styles.pageCollaborationOpen,
+    clientOpen && styles.pageClientOpen,
     outlineOpen && !previewMode && styles.pageOutlineOpen,
     previewMode && styles.pagePreview,
   ]
@@ -354,6 +392,34 @@ function ProposalEditContent() {
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
       />
+      <ClientResponsesPanel
+        proposal={proposal}
+        open={responsesOpen}
+        onClose={() => setResponsesOpen(false)}
+      />
+      <CollaborationPanel
+        proposal={proposal}
+        open={collaborationOpen}
+        onClose={() => setCollaborationOpen(false)}
+        onProposalChange={setProposal}
+      />
+      <ClientWorkspacePanel
+        proposal={proposal}
+        open={clientOpen}
+        onClose={() => setClientOpen(false)}
+        onProposalChange={setProposal}
+      />
+      <BlockInspector
+        block={activeBlock}
+        open={inspectorOpen && !settingsOpen && !responsesOpen && !collaborationOpen && !clientOpen && !previewMode}
+        onClose={() => setInspectorOpen(false)}
+        onEnabled={(value) =>
+          handleBlocksChange(setBlockEnabled(documentBlocks, activeBlockId, value))
+        }
+        onSettings={(settings) =>
+          handleBlocksChange(updateBlockSettings(documentBlocks, activeBlockId, settings))
+        }
+      />
 
       <div className={styles.toolbar}>
         <div className={styles.toolbarCopy}>
@@ -374,6 +440,7 @@ function ProposalEditContent() {
         previewMode={previewMode}
         onDownload={handleDownloadPdf}
         downloading={busy && Boolean(exporting)}
+        hasResponses={hasQuestionnaire(proposal?.questionnaire)}
       />
 
       {exportError ? (
@@ -409,6 +476,12 @@ function ProposalEditContent() {
           onReorder={(from, to) =>
             handleBlocksChange(reorderBlocks(documentBlocks, from, to))
           }
+          onDuplicate={(blockId) =>
+            handleBlocksChange(duplicateBlock(documentBlocks, blockId))
+          }
+          onRemove={(blockId) => handleBlocksChange(removeBlock(documentBlocks, blockId))}
+          onCopy={(block) => copyBlock(block)}
+          onPaste={(index) => handlePasteAt(index)}
         />
 
         <div className={styles.panel}>

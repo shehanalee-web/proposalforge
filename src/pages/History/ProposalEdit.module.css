@@ -18,6 +18,23 @@
   padding-right: min(22rem, 92vw);
 }
 
+.pageResponsesOpen,
+.pagePreview.pageResponsesOpen {
+  padding-right: min(24rem, 92vw);
+}
+
+.pageCollaborationOpen,
+.pagePreview.pageCollaborationOpen,
+.pageClientOpen,
+.pagePreview.pageClientOpen {
+  padding-right: min(28rem, 92vw);
+}
+
+.pageInspectorOpen,
+.pagePreview.pageInspectorOpen {
+  padding-right: min(20rem, 92vw);
+}
+
 .workspace {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);

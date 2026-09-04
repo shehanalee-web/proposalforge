@@ -13,6 +13,8 @@ import { readDesign } from '../theme/store.js'
 import { resolveDesign } from '../theme/resolve.js'
 import { placePdfSequence } from '../blocks/place.js'
 import { getPdfRenderer } from '../blocks/pdfRegistry.js'
+import { shouldRenderBlock } from '../blocks/visibility.js'
+import { buildVariableContext, interpolateInstance } from '../blocks/variables.js'
 import ProposalWatermark from './ProposalWatermark.jsx'
 
 function NotesChrome({ proposal }) {
@@ -45,6 +47,12 @@ function ProposalDocument({ proposal, settings, kit }) {
   const studioName = studioNameFromBrand(brand, settings)
   const layout = getLayout(proposal.layoutId)
   const context = { proposal, settings, brand }
+  const variableContext = buildVariableContext({
+    proposal,
+    brand,
+    tokens: design,
+    settings,
+  })
   const sequence = placePdfSequence(proposal.blocks, layout.pdf.sequence)
   const versionLabel = proposal.currentVersion ? ` v${proposal.currentVersion}` : ''
   const brandedPage = [
@@ -70,10 +78,18 @@ function ProposalDocument({ proposal, settings, kit }) {
         <ProposalWatermark proposal={proposal} brand={brand} />
         {sequence.map((step, index) => {
           const chrome = (step.chrome ?? []).map((id) => renderChrome(id, context))
-          const content = (step.instances ?? []).map((instance) => {
-            const Pdf = getPdfRenderer(instance.type)
-            return <Pdf key={instance.id} instance={instance} {...context} />
-          })
+          const content = (step.instances ?? [])
+            .filter((instance) => shouldRenderBlock(instance, proposal))
+            .map((instance) => {
+              const Pdf = getPdfRenderer(instance.type)
+              return (
+                <Pdf
+                  key={instance.id}
+                  instance={interpolateInstance(instance, variableContext)}
+                  {...context}
+                />
+              )
+            })
 
           if (step.type === 'row') {
             const cells = [...chrome, ...content].filter(Boolean)

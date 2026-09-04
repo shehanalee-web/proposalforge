@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { acceptProposal } from '../services/proposalService.js'
+import { acceptPortalProposal } from '../services/portalService.js'
 
 /**
  * Accept a proposal from the client portal.
@@ -24,7 +24,8 @@ export function useAcceptProposal() {
     setError(null)
 
     try {
-      return await acceptProposal(token)
+      const result = await acceptPortalProposal(token)
+      return result.proposal
     } catch (caught) {
       setError(caught)
       return null

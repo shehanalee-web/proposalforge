@@ -108,7 +108,19 @@ export function persistableProposal(proposal) {
     return { ...block, data }
   })
 
-  return { ...proposal, blocks, images: (proposal.images ?? []).map(stripItem) }
+  return {
+    ...proposal,
+    blocks,
+    images: (proposal.images ?? []).map(stripItem),
+    uploads: (proposal.uploads ?? []).map((item) => ({
+      ...item,
+      url: persistableUrl(item.url),
+      versions: (item.versions ?? []).map((version) => ({
+        ...version,
+        url: persistableUrl(version.url),
+      })),
+    })),
+  }
 }
 
 export async function prepareProposalAssets(proposal) {

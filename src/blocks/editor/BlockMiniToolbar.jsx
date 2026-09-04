@@ -24,6 +24,8 @@ function BlockMiniToolbar({
   disabled,
   onMove,
   onDuplicate,
+  onCopy,
+  onPaste,
   onHide,
   onDelete,
   onAi,
@@ -45,6 +47,8 @@ function BlockMiniToolbar({
         onClick={() => onMove(1)}
       />
       <Tool label="Duplicate" icon="duplicate" disabled={disabled} onClick={onDuplicate} />
+      <Tool label="Copy" icon="copy" disabled={disabled} onClick={onCopy} />
+      <Tool label="Paste" icon="plus" disabled={disabled} onClick={onPaste} />
       <Tool
         label={block.enabled ? 'Hide' : 'Show'}
         icon={block.enabled ? 'eye' : 'eyeOff'}

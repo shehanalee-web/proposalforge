@@ -9,6 +9,10 @@ const DRAG_TYPE = 'application/x-pf-block'
 function BlockOutline({
   blocks,
   onReorder,
+  onDuplicate,
+  onRemove,
+  onCopy,
+  onPaste,
   disabled = false,
 }) {
   const {
@@ -19,6 +23,8 @@ function BlockOutline({
     setSearchQuery,
     searchRef,
     previewMode,
+    setInspectorOpen,
+    setActiveBlockId,
   } = useEditorWorkspace()
   const [dropIndex, setDropIndex] = useState(-1)
 
@@ -103,7 +109,11 @@ function BlockOutline({
               <button
                 type="button"
                 className={styles.row}
-                onClick={() => scrollToBlock(block.id)}
+                onClick={() => {
+                  setActiveBlockId(block.id)
+                  setInspectorOpen(true)
+                  scrollToBlock(block.id)
+                }}
               >
                 <Icon name={meta.icon} size={13} />
                 <span className={styles.label}>{meta.short}</span>
@@ -111,6 +121,20 @@ function BlockOutline({
                   <span className={styles.hidden}>Hidden</span>
                 ) : null}
               </button>
+              <div className={styles.tools}>
+                <button type="button" title="Duplicate" onClick={() => onDuplicate?.(block.id)} disabled={disabled}>
+                  <Icon name="duplicate" size={11} />
+                </button>
+                <button type="button" title="Copy" onClick={() => onCopy?.(block)} disabled={disabled}>
+                  <Icon name="copy" size={11} />
+                </button>
+                <button type="button" title="Paste" onClick={() => onPaste?.(index + 1)} disabled={disabled}>
+                  <Icon name="plus" size={11} />
+                </button>
+                <button type="button" title="Delete" onClick={() => onRemove?.(block.id)} disabled={disabled}>
+                  <Icon name="trash" size={11} />
+                </button>
+              </div>
             </li>
           )
         })}

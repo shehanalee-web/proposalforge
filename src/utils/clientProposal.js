@@ -54,7 +54,7 @@ export function getActiveProposal(proposal) {
  * @returns {string}
  */
 export function getClientPortalPath(shareToken) {
-  return `/p/${shareToken}`
+  return `/p/share/${shareToken}`
 }
 
 /**

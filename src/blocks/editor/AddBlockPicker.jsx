@@ -3,21 +3,22 @@ import Icon from '../../components/Icon/Icon.jsx'
 import { BUILTIN_BLOCK_TYPES } from '../ids.js'
 import { getBlockType } from '../registry.js'
 import { getBlockIcon } from './blockIcons.js'
+import { useLibraryBlocks } from '../../hooks/useLibraryBlocks.js'
+import { LIBRARY_BLOCK_STATUS } from '../../models/contentBlock.js'
 import styles from './AddBlockPicker.module.css'
 
-/**
- * Floating menu that lets the user pick a block type to insert.
- *
- * @param {{
- *   onAdd: (type: string) => void,
- *   disabled?: boolean,
- * }} props
- */
-function AddBlockPicker({ onAdd, disabled = false, compact = false }) {
+function AddBlockPicker({
+  onAdd,
+  onInsertLibrary,
+  disabled = false,
+  compact = false,
+}) {
   const [open, setOpen] = useState(false)
   const [filter, setFilter] = useState('')
+  const [tab, setTab] = useState('library')
   const rootRef = useRef(null)
   const inputRef = useRef(null)
+  const { blocks: library } = useLibraryBlocks()
 
   const types = BUILTIN_BLOCK_TYPES.map((type) => ({
     type,
@@ -25,9 +26,22 @@ function AddBlockPicker({ onAdd, disabled = false, compact = false }) {
     icon: getBlockIcon(type),
   }))
 
-  const filtered = filter
-    ? types.filter((t) => t.label.toLowerCase().includes(filter.toLowerCase()))
+  const q = filter.trim().toLowerCase()
+  const filteredTypes = q
+    ? types.filter((t) => t.label.toLowerCase().includes(q))
     : types
+  const libraryItems = library
+    .filter((block) => block.status === LIBRARY_BLOCK_STATUS.PUBLISHED)
+    .filter((block) => {
+      if (!q) return true
+      return `${block.name} ${(block.tags ?? []).join(' ')}`.toLowerCase().includes(q)
+    })
+    .sort((a, b) => {
+      if (Boolean(a.favorite) !== Boolean(b.favorite)) {
+        return a.favorite ? -1 : 1
+      }
+      return (b.useCount ?? 0) - (a.useCount ?? 0)
+    })
 
   useEffect(() => {
     if (!open) return undefined
@@ -58,6 +72,12 @@ function AddBlockPicker({ onAdd, disabled = false, compact = false }) {
     setOpen(false)
   }
 
+  function pickLibrary(block) {
+    if (onInsertLibrary) onInsertLibrary(block)
+    else onAdd(block.type)
+    setOpen(false)
+  }
+
   return (
     <div className={styles.root} ref={rootRef}>
       <button
@@ -73,6 +93,22 @@ function AddBlockPicker({ onAdd, disabled = false, compact = false }) {
 
       {open ? (
         <div className={styles.dropdown}>
+          <div className={styles.tabs}>
+            <button
+              type="button"
+              className={tab === 'library' ? styles.tabOn : styles.tab}
+              onClick={() => setTab('library')}
+            >
+              Library
+            </button>
+            <button
+              type="button"
+              className={tab === 'types' ? styles.tabOn : styles.tab}
+              onClick={() => setTab('types')}
+            >
+              Types
+            </button>
+          </div>
           <div className={styles.searchRow}>
             <Icon name="search" size={14} className={styles.searchIcon} />
             <input
@@ -81,17 +117,37 @@ function AddBlockPicker({ onAdd, disabled = false, compact = false }) {
               className={styles.searchInput}
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              placeholder="Filter blocks…"
+              placeholder={tab === 'library' ? 'Filter library…' : 'Filter types…'}
               autoComplete="off"
               spellCheck={false}
             />
           </div>
 
           <ul className={styles.list}>
-            {filtered.length === 0 ? (
+            {tab === 'library' ? (
+              libraryItems.length === 0 ? (
+                <li className={styles.noMatch}>No published library blocks</li>
+              ) : (
+                libraryItems.map((block) => (
+                  <li key={block.id}>
+                    <button
+                      type="button"
+                      className={styles.option}
+                      onClick={() => pickLibrary(block)}
+                    >
+                      <Icon name={getBlockIcon(block.type)} size={16} />
+                      <span>
+                        {block.name}
+                        {block.favorite ? ' ★' : ''}
+                      </span>
+                    </button>
+                  </li>
+                ))
+              )
+            ) : filteredTypes.length === 0 ? (
               <li className={styles.noMatch}>No matching block types</li>
             ) : (
-              filtered.map((t) => (
+              filteredTypes.map((t) => (
                 <li key={t.type}>
                   <button
                     type="button"

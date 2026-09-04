@@ -1,3 +1,13 @@
+.stage {
+  min-width: 0;
+}
+
+.stageEmbedded .frame {
+  width: 100%;
+  gap: var(--space-8);
+  padding: var(--space-6) 0 7rem;
+}
+
 .shell {
   min-height: 100dvh;
   background:

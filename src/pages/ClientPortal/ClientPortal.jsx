@@ -3,31 +3,37 @@ import { useParams } from 'react-router'
 import { useAcceptProposal } from '../../hooks/useAcceptProposal.js'
 import { useClientProposal } from '../../hooks/useClientProposal.js'
 import { useExportProposalPdf, PDF_AUDIENCE } from '../../hooks/useExportProposalPdf.js'
-import { canClientRespond, PROPOSAL_STATUS } from '../../models/proposal.js'
+import { PROPOSAL_STATUS } from '../../models/proposal.js'
 import { getActiveProposal } from '../../utils/clientProposal.js'
 import { formatDateTime } from '../../utils/format.js'
-import ProposalViewer from '../../viewer/ProposalViewer.jsx'
 import { ProposalThemeProvider } from '../../theme/ProposalThemeContext.jsx'
+import { PortalProvider } from '../../portal/PortalContext.jsx'
+import PortalApp from '../../portal/PortalApp.jsx'
 import styles from './ClientPortal.module.css'
 
 function ClientPortal() {
   const { token } = useParams()
-  const { proposal, loading, error, notFound, refetch } = useClientProposal(token)
+  const { proposal, loading, error, notFound, refetch, setProposal } = useClientProposal(token)
   const { accept, submitting: accepting, error: acceptError } = useAcceptProposal()
   const { runExport, exporting, error: exportError } = useExportProposalPdf()
   const [justAccepted, setJustAccepted] = useState(false)
+  const [justDeclined, setJustDeclined] = useState(false)
 
   const document = proposal ? getActiveProposal(proposal) : null
   const busy = accepting || Boolean(exporting)
-  const canRespond = proposal ? canClientRespond(proposal) : false
 
   async function handleAccept() {
     if (!token || busy) return
     const next = await accept(token)
     if (next) {
       setJustAccepted(true)
-      await refetch()
+      setProposal(next)
     }
+  }
+
+  function handleDeclined(next) {
+    setJustDeclined(true)
+    if (next) setProposal(next)
   }
 
   async function handleExport(action) {
@@ -37,7 +43,7 @@ function ClientPortal() {
 
   if (notFound) {
     return (
-      <div className={styles.shell}>
+      <div className={styles.shell} data-surface="client-portal">
         <main className={styles.main}>
           <div className={styles.state}>
             <p className={styles.stateTitle}>Proposal not found</p>
@@ -53,7 +59,7 @@ function ClientPortal() {
 
   if (error) {
     return (
-      <div className={styles.shell}>
+      <div className={styles.shell} data-surface="client-portal">
         <main className={styles.main}>
           <div className={styles.state}>
             <p className={styles.stateTitle}>Could not load this proposal</p>
@@ -71,13 +77,21 @@ function ClientPortal() {
 
   if (loading || !proposal || !document) {
     return (
-      <div className={styles.shell}>
+      <div className={styles.shell} data-surface="client-portal">
         <main className={styles.main}>
           <p className={styles.loading}>Loading proposal…</p>
-          <div className={styles.skeleton} aria-hidden="true">
-            <div className={styles.skeletonRow} />
-            <div className={styles.skeletonRow} />
-            <div className={styles.skeletonRow} />
+          <div className={styles.skeletonLayout} aria-hidden="true">
+            <div className={styles.skeletonDoc}>
+              <div className={styles.skeletonRow} />
+              <div className={styles.skeletonRow} />
+              <div className={styles.skeletonRow} />
+              <div className={styles.skeletonRow} />
+            </div>
+            <div className={styles.skeletonAside}>
+              <div className={styles.skeletonCard} />
+              <div className={styles.skeletonCard} />
+              <div className={styles.skeletonCard} />
+            </div>
           </div>
         </main>
       </div>
@@ -85,6 +99,7 @@ function ClientPortal() {
   }
 
   const accepted = proposal.status === PROPOSAL_STATUS.ACCEPTED
+  const declined = proposal.status === PROPOSAL_STATUS.DECLINED
   const revisionRequested = proposal.status === PROPOSAL_STATUS.REVISION_REQUESTED
   const notices = []
 
@@ -92,10 +107,19 @@ function ClientPortal() {
     notices.push({
       id: 'accepted',
       tone: 'banner',
-      title: 'Proposal accepted',
+      title: 'Proposal approved',
       body: proposal.acceptedAt
-        ? `Thank you. This proposal was accepted on ${formatDateTime(proposal.acceptedAt)}.`
-        : 'Thank you. This proposal was accepted.',
+        ? `Thank you. This proposal was approved on ${formatDateTime(proposal.acceptedAt)}.`
+        : 'Thank you. This proposal is approved and locked.',
+    })
+  }
+
+  if (justDeclined || declined) {
+    notices.push({
+      id: 'declined',
+      tone: 'dangerBanner',
+      title: 'Proposal declined',
+      body: proposal.clientFeedback || 'This proposal has been declined and locked.',
     })
   }
 
@@ -103,7 +127,7 @@ function ClientPortal() {
     notices.push({
       id: 'revision',
       tone: 'warning',
-      title: 'Revision requested',
+      title: 'Needs revision',
       body: proposal.clientFeedback,
     })
   }
@@ -126,16 +150,17 @@ function ClientPortal() {
 
   return (
     <ProposalThemeProvider proposalId={proposal.id} proposal={document}>
-      <ProposalViewer
-        proposal={document}
-        status={proposal.status}
-        notices={notices}
-        busy={busy}
-        canRespond={canRespond}
-        onAccept={handleAccept}
-        onDownload={() => handleExport('download')}
-        onPrint={() => handleExport('print')}
-      />
+      <PortalProvider proposal={document} token={token}>
+        <PortalApp
+          notices={notices}
+          busy={busy}
+          onAccept={handleAccept}
+          onDownload={() => handleExport('download')}
+          onPrint={() => handleExport('print')}
+          onProposalChange={setProposal}
+          onDeclined={handleDeclined}
+        />
+      </PortalProvider>
     </ProposalThemeProvider>
   )
 }

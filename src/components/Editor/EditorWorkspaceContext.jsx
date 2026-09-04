@@ -10,6 +10,11 @@ export function EditorWorkspaceProvider({ children }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
+  const [responsesOpen, setResponsesOpen] = useState(false)
+  const [collaborationOpen, setCollaborationOpen] = useState(false)
+  const [clientOpen, setClientOpen] = useState(false)
+  const clipboardRef = useRef(null)
   const searchRef = useRef(null)
 
   const focusSearch = useCallback(() => {
@@ -37,6 +42,14 @@ export function EditorWorkspaceProvider({ children }) {
     setActiveBlockId(id)
   }, [])
 
+  const copyBlock = useCallback((block) => {
+    clipboardRef.current = block
+      ? JSON.parse(JSON.stringify(block))
+      : null
+  }, [])
+
+  const takeClipboard = useCallback(() => clipboardRef.current, [])
+
   const value = useMemo(
     () => ({
       previewMode,
@@ -55,6 +68,16 @@ export function EditorWorkspaceProvider({ children }) {
       setCommandPaletteOpen,
       settingsOpen,
       setSettingsOpen,
+      inspectorOpen,
+      setInspectorOpen,
+      responsesOpen,
+      setResponsesOpen,
+      collaborationOpen,
+      setCollaborationOpen,
+      clientOpen,
+      setClientOpen,
+      copyBlock,
+      takeClipboard,
       searchRef,
       focusSearch,
       scrollToBlock,
@@ -67,6 +90,12 @@ export function EditorWorkspaceProvider({ children }) {
       searchQuery,
       commandPaletteOpen,
       settingsOpen,
+      inspectorOpen,
+      responsesOpen,
+      collaborationOpen,
+      clientOpen,
+      copyBlock,
+      takeClipboard,
       focusSearch,
       scrollToBlock,
       toggleExpanded,

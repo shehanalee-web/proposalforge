@@ -1,6 +1,7 @@
 import { DEFAULT_LAYOUT_ID } from '../layouts/ids.js'
 import { resolveLayoutId } from '../layouts/registry.js'
 import { ensureProposalBlocks, syncLegacyFromBlocks } from '../blocks/hydrate.js'
+import { makeQuestionnaire } from './questionnaire.js'
 
 /**
  * Proposal model.
@@ -12,6 +13,11 @@ import { ensureProposalBlocks, syncLegacyFromBlocks } from '../blocks/hydrate.js
  */
 
 import { ensureProposalVersions } from './proposalVersion.js'
+import { makeComment } from './comment.js'
+import { makeProposalApproval, isPastValidUntil } from './approval.js'
+import { makeProposalSignature } from './signature.js'
+import { makeProposalPayment } from './payment.js'
+import { makeProposalUpload, makeUploadFolder } from './upload.js'
 
 export const PROPOSAL_STATUS = Object.freeze({
   DRAFT: 'draft',
@@ -19,6 +25,8 @@ export const PROPOSAL_STATUS = Object.freeze({
   ACCEPTED: 'accepted',
   DECLINED: 'declined',
   REVISION_REQUESTED: 'revision_requested',
+  EXPIRED: 'expired',
+  CANCELLED: 'cancelled',
 })
 
 export const PROPOSAL_STATUSES = Object.freeze(Object.values(PROPOSAL_STATUS))
@@ -33,7 +41,9 @@ export const PROPOSAL_STATUS_LABELS = Object.freeze({
   [DISPLAY_STATUS.VIEWED]: 'Viewed',
   [PROPOSAL_STATUS.ACCEPTED]: 'Accepted',
   [PROPOSAL_STATUS.DECLINED]: 'Declined',
-  [PROPOSAL_STATUS.REVISION_REQUESTED]: 'Revision requested',
+  [PROPOSAL_STATUS.REVISION_REQUESTED]: 'Needs revision',
+  [PROPOSAL_STATUS.EXPIRED]: 'Expired',
+  [PROPOSAL_STATUS.CANCELLED]: 'Cancelled',
 })
 
 /** Status chips shown in history filters, including display-only Viewed. */
@@ -44,6 +54,8 @@ export const LIST_STATUS_FILTERS = Object.freeze([
   PROPOSAL_STATUS.REVISION_REQUESTED,
   PROPOSAL_STATUS.ACCEPTED,
   PROPOSAL_STATUS.DECLINED,
+  PROPOSAL_STATUS.EXPIRED,
+  PROPOSAL_STATUS.CANCELLED,
 ])
 
 export const PROJECT_TYPES = Object.freeze([
@@ -99,6 +111,13 @@ export const DEFAULT_CURRENCY = 'USD'
  * @property {string | null} lastViewedAt     When a client last opened the portal.
  * @property {string | null} acceptedAt       When a client accepted the proposal.
  * @property {string} clientFeedback          Comment from a revision request.
+ * @property {import('./comment.js').ProposalComment[]} comments Threaded collaboration.
+ * @property {object[]} activity              Stored proposal activity log.
+ * @property {import('./upload.js').ProposalUpload[]} uploads Proposal-only files.
+ * @property {import('./upload.js').UploadFolder[]} uploadFolders
+ * @property {import('./approval.js').ProposalApproval} approval
+ * @property {import('./signature.js').ProposalSignature} signature
+ * @property {import('./payment.js').ProposalPayment} payment
  * @property {string} layoutId                Registered layout id (portrait, landscape, …).
  * @property {import('../blocks/instance.js').BlockInstance[]} blocks Ordered Block Engine instances.
  * @property {string[]} serviceIds            Service Library ids referenced by this document.
@@ -162,9 +181,10 @@ export function makeProposal(input = {}) {
   const timestamp = new Date().toISOString()
   const blocks = ensureProposalBlocks(input)
   const legacy = syncLegacyFromBlocks(blocks, input)
+  const id = input.id ?? createId('prop')
 
   const proposal = {
-    id: input.id ?? createId('prop'),
+    id,
     title: input.title ?? '',
     clientName: input.clientName ?? '',
     clientEmail: input.clientEmail ?? '',
@@ -188,6 +208,47 @@ export function makeProposal(input = {}) {
     layoutId: resolveLayoutId(input.layoutId ?? DEFAULT_LAYOUT_ID),
     blocks,
     serviceIds: [...(input.serviceIds ?? [])],
+    questionnaire: input.questionnaire
+      ? makeQuestionnaire({
+          ...input.questionnaire,
+          proposalId: id,
+        })
+      : null,
+    comments: (input.comments ?? []).map((item) =>
+      makeComment({ ...item, proposalId: id }),
+    ),
+    activity: (Array.isArray(input.activity)
+      ? input.activity
+      : Array.isArray(input.clientActivity)
+        ? input.clientActivity
+        : []
+    ).map((item) => ({
+      ...item,
+      proposalId: item.proposalId ?? id,
+      metadata: { ...(item.metadata ?? item.meta ?? {}) },
+    })),
+    uploads: (input.uploads ?? []).map((item) =>
+      makeProposalUpload({ ...item, proposalId: id }),
+    ),
+    uploadFolders: (input.uploadFolders?.length
+      ? input.uploadFolders
+      : [{ name: 'Files', proposalId: id }]
+    ).map((item) => makeUploadFolder({ ...item, proposalId: id })),
+    approval: makeProposalApproval(
+      { ...(input.approval ?? {}), proposalId: id },
+      { ...input, id, status: input.status ?? PROPOSAL_STATUS.DRAFT },
+    ),
+    signature: makeProposalSignature({
+      ...(input.signature ?? {}),
+      proposalId: id,
+      signer: input.signature?.signer || input.clientName || '',
+    }),
+    payment: makeProposalPayment({
+      ...(input.payment ?? {}),
+      proposalId: id,
+      currency: input.payment?.currency ?? input.currency ?? DEFAULT_CURRENCY,
+      subtotal: input.payment?.subtotal ?? input.amount ?? 0,
+    }),
     createdAt: input.createdAt ?? timestamp,
     updatedAt: input.updatedAt ?? timestamp,
     currentVersion: input.currentVersion ?? 0,
@@ -209,8 +270,24 @@ export function getDisplayStatus(proposal) {
     return PROPOSAL_STATUS.ACCEPTED
   }
 
+  if (proposal.status === PROPOSAL_STATUS.DECLINED) {
+    return PROPOSAL_STATUS.DECLINED
+  }
+
+  if (proposal.status === PROPOSAL_STATUS.EXPIRED) {
+    return PROPOSAL_STATUS.EXPIRED
+  }
+
+  if (proposal.status === PROPOSAL_STATUS.CANCELLED) {
+    return PROPOSAL_STATUS.CANCELLED
+  }
+
   if (proposal.status === PROPOSAL_STATUS.REVISION_REQUESTED) {
     return PROPOSAL_STATUS.REVISION_REQUESTED
+  }
+
+  if (proposal.status === PROPOSAL_STATUS.SENT && isPastValidUntil(proposal.validUntil)) {
+    return PROPOSAL_STATUS.EXPIRED
   }
 
   if (proposal.lastViewedAt && proposal.status === PROPOSAL_STATUS.SENT) {
@@ -229,7 +306,9 @@ export function getDisplayStatus(proposal) {
 export function canClientRespond(proposal) {
   return (
     proposal.status !== PROPOSAL_STATUS.ACCEPTED &&
-    proposal.status !== PROPOSAL_STATUS.DECLINED
+    proposal.status !== PROPOSAL_STATUS.DECLINED &&
+    proposal.status !== PROPOSAL_STATUS.EXPIRED &&
+    proposal.status !== PROPOSAL_STATUS.CANCELLED
   )
 }
 

@@ -65,8 +65,33 @@
 }
 
 .item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   border-radius: var(--radius-sm);
   transition: background-color 180ms ease, transform 180ms ease;
+}
+
+.tools {
+  display: none;
+  gap: 1px;
+}
+
+.item:hover .tools,
+.itemActive .tools {
+  display: flex;
+}
+
+.tools button {
+  display: grid;
+  place-items: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  color: var(--color-text-muted);
+}
+
+.tools button:hover {
+  color: var(--color-text);
 }
 
 .item:hover {

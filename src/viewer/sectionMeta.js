@@ -1,5 +1,5 @@
 import { BLOCK_TYPE } from '../blocks/ids.js'
-import { isBlockDataEmpty } from '../blocks/schemas.js'
+import { shouldRenderBlock } from '../blocks/visibility.js'
 
 const TITLES = {
   [BLOCK_TYPE.COVER]: 'Cover',
@@ -30,14 +30,9 @@ export function getViewerSectionTitle(block) {
   return TITLES[block.type] ?? 'Section'
 }
 
-export function listViewerSections(blocks = []) {
+export function listViewerSections(blocks = [], proposal = {}) {
   return blocks
-    .filter((block) => block.enabled !== false)
-    .filter((block) => {
-      if (block.type === BLOCK_TYPE.COVER) return true
-      if (block.type === BLOCK_TYPE.SIGNATURE) return true
-      return !isBlockDataEmpty(block.type, block.data)
-    })
+    .filter((block) => shouldRenderBlock(block, proposal))
     .map((block) => ({
       id: block.id,
       type: block.type,

@@ -9,12 +9,17 @@ import styles from './BlockInsertSlot.module.css'
  *   disabled?: boolean,
  * }} props
  */
-function BlockInsertSlot({ onAdd, disabled = false }) {
+function BlockInsertSlot({ onAdd, onInsertLibrary, disabled = false }) {
   return (
     <li className={styles.slot} aria-hidden={disabled}>
       <div className={styles.line} />
       <div className={styles.control}>
-        <AddBlockPicker onAdd={onAdd} disabled={disabled} compact />
+        <AddBlockPicker
+          onAdd={onAdd}
+          onInsertLibrary={onInsertLibrary}
+          disabled={disabled}
+          compact
+        />
       </div>
     </li>
   )

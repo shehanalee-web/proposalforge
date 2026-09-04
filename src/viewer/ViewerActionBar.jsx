@@ -25,26 +25,44 @@ function Action({ icon, label, onClick, disabled, primary, danger }) {
 function ViewerActionBar({
   busy = false,
   canRespond = true,
+  showAccept = true,
+  showReject = true,
+  showAsk = true,
+  showRevision = false,
+  acceptLabel = 'Accept',
+  rejectLabel = 'Reject',
   fullscreen,
   onToggleFullscreen,
   onAccept,
   onReject,
   onAskQuestion,
+  onRequestChanges,
   onDownload,
   onPrint,
   onShare,
   onSave,
 }) {
   const { saved } = useViewer()
+  const respond =
+    canRespond && (showAccept || showReject || showAsk || showRevision)
 
   return (
     <div className={styles.wrap}>
       <div className={styles.bar} role="toolbar" aria-label="Proposal actions">
-        {canRespond ? (
+        {respond ? (
           <>
-            <Action icon="check" label="Accept" primary disabled={busy} onClick={onAccept} />
-            <Action icon="xCircle" label="Reject" danger disabled={busy} onClick={onReject} />
-            <Action icon="message" label="Ask question" disabled={busy} onClick={onAskQuestion} />
+            {showAccept ? (
+              <Action icon="check" label={acceptLabel} primary disabled={busy} onClick={onAccept} />
+            ) : null}
+            {showReject ? (
+              <Action icon="xCircle" label={rejectLabel} danger disabled={busy} onClick={onReject} />
+            ) : null}
+            {showAsk ? (
+              <Action icon="message" label="Ask question" disabled={busy} onClick={onAskQuestion} />
+            ) : null}
+            {showRevision ? (
+              <Action icon="pen" label="Request Changes" disabled={busy} onClick={onRequestChanges} />
+            ) : null}
           </>
         ) : null}
         <Action icon="download" label="Download PDF" disabled={busy} onClick={onDownload} />

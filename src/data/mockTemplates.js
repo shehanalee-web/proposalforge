@@ -1,5 +1,6 @@
 import { LAYOUT_ID } from '../layouts/ids.js'
 import { PROPOSAL_TYPE } from '../models/proposalType.js'
+import { seedBrandDiscoveryQuestionnaire } from './seedDiscoveryQuestionnaire.js'
 
 /**
  * Seed templates for development.
@@ -23,6 +24,7 @@ function seedTemplate({
   items,
   terms,
   notes,
+  questionnaire,
   createdAt,
   updatedAt,
 }) {
@@ -54,6 +56,7 @@ function seedTemplate({
     })),
     terms,
     notes,
+    questionnaire,
     createdAt,
     updatedAt,
   }
@@ -88,6 +91,7 @@ export const MOCK_TEMPLATES = [
     terms: SHARED_TERMS,
     notes:
       'Ask the client for existing brand assets and competitor examples before the discovery workshop.',
+    questionnaire: seedBrandDiscoveryQuestionnaire(),
     createdAt: '2026-08-01T10:00:00.000Z',
     updatedAt: '2026-08-12T14:30:00.000Z',
   }),

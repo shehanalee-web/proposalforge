@@ -1,4 +1,4 @@
-import { createWriteStream, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { createWriteStream, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { Readable } from 'node:stream'
@@ -26,6 +26,12 @@ function readJson(file, fallback) {
 function writeJson(file, value) {
   mkdirSync(dirname(file), { recursive: true })
   writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
+}
+
+function safeId(value) {
+  return String(value || '')
+    .replace(/[^\w.-]+/g, '_')
+    .trim()
 }
 
 function safeFileName(name) {
@@ -176,6 +182,46 @@ export function localUploadsPlugin() {
         records[index] = updated
         saveAssets(records)
         return json(res, 200, updated)
+      }
+
+      if (method === 'POST' && matchRoute(url, '/api/proposal-files')) {
+        const proposalId = safeId(req.headers['x-proposal-id'])
+        const uploadId = safeId(req.headers['x-upload-id']) || `upl-${crypto.randomUUID()}`
+        if (!proposalId) return json(res, 400, { message: 'A proposal id is required.' })
+
+        const name = safeFileName(
+          decodeURIComponent(req.headers['x-file-name'] || 'file'),
+        )
+        const mimeType = String(req.headers['content-type'] || 'application/octet-stream')
+        const body = await readBody(req, 48 * 1024 * 1024)
+        const folder = join(uploadsDir, 'proposals', proposalId, uploadId)
+        mkdirSync(folder, { recursive: true })
+        await pipeline(Readable.from(body), createWriteStream(join(folder, name)))
+
+        const publicPath = `/uploads/proposals/${proposalId}/${uploadId}/${name}`
+        return json(res, 201, {
+          id: uploadId,
+          proposalId,
+          name,
+          mimeType,
+          sizeBytes: body.length,
+          storageKey: `proposals/${proposalId}/${uploadId}/${name}`,
+          url: publicPath,
+        })
+      }
+
+      const proposalFile = matchRoute(url, '/api/proposal-files/:id')
+      if (method === 'DELETE' && proposalFile) {
+        const proposalId = safeId(new URL(url, 'http://local').searchParams.get('proposalId'))
+        const uploadId = safeId(proposalFile.id)
+        if (!proposalId || !uploadId) return json(res, 400, { message: 'A proposal id is required.' })
+        const folder = join(uploadsDir, 'proposals', proposalId, uploadId)
+        try {
+          rmSync(folder, { recursive: true, force: true })
+        } catch {
+          /* missing folder is fine */
+        }
+        return json(res, 200, { ok: true })
       }
 
       if (method === 'GET' && matchRoute(url, '/api/proposals')) {

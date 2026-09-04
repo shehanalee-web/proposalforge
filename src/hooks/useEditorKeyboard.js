@@ -27,6 +27,8 @@ export function useEditorKeyboard({
   onFocusSearch,
   onNextBlock,
   onPrevBlock,
+  onCopy,
+  onPaste,
 }) {
   useEffect(() => {
     if (disabled) return undefined
@@ -91,6 +93,12 @@ export function useEditorKeyboard({
       } else if ((event.key === 'Enter' || event.key === ' ') && !interactive) {
         event.preventDefault()
         onToggleExpand?.()
+      } else if (event.key.toLowerCase() === 'c' && meta && !event.shiftKey) {
+        event.preventDefault()
+        onCopy?.()
+      } else if (event.key.toLowerCase() === 'v' && meta && !event.shiftKey) {
+        event.preventDefault()
+        onPaste?.()
       } else if (event.key.toLowerCase() === 'd' && meta) {
         event.preventDefault()
         onDuplicate?.()
@@ -120,5 +128,7 @@ export function useEditorKeyboard({
     onFocusSearch,
     onNextBlock,
     onPrevBlock,
+    onCopy,
+    onPaste,
   ])
 }

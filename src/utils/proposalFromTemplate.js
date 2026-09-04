@@ -1,4 +1,5 @@
 import { makeLineItem, makeSection } from '../models/proposal.js'
+import { cloneQuestionnaireForProposal } from '../models/questionnaire.js'
 
 /**
  * Deep-copy a template into new-proposal payload shape.
@@ -34,5 +35,8 @@ export function proposalFromTemplate(template, service) {
     notes: template.notes ?? '',
     tags: [],
     layoutId: template.defaultLayoutId,
+    questionnaire: cloneQuestionnaireForProposal(template.questionnaire, {
+      templateId: template.id,
+    }),
   }
 }

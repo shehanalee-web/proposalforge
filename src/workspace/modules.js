@@ -131,17 +131,18 @@ export const WORKSPACE_MODULES = Object.freeze([
   {
     id: WORKSPACE_MODULE.CONTENT_LIBRARY,
     path: PATH.CONTENT_LIBRARY,
-    label: 'Content Library',
+    label: 'Proposal Blocks',
     icon: 'content',
     group: WORKSPACE_GROUP.LIBRARIES,
     inNav: true,
     status: 'live',
     summary: 'Reusable proposal blocks — the Component Library.',
     description:
-      'Executive summaries, galleries, pricing, timelines, FAQs and every other block type. Layouts place these blocks; they do not define their schemas. Custom industry sections are new block types, not new proposal engines.',
+      'Create unlimited reusable blocks. Proposals assemble from these records; layouts place them. Variables, conditions and theme tokens apply at render time.',
     capabilities: [
-      'Registered block types used by the proposal editor, portal and PDF',
-      'Used by templates as default assemblies',
+      'Reusable blocks with categories, tags and favorites',
+      'Variables such as {{client_name}} resolve live in preview, portal and PDF',
+      'Insert into any proposal without rewriting sent documents',
     ],
   },
   {

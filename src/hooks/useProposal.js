@@ -19,12 +19,13 @@ import { useAsyncData } from './useAsyncData.js'
  *   error: Error | null,
  *   notFound: boolean,
  *   refetch: () => Promise<void>,
+ *   setProposal: (proposal: import('../models/proposal.js').Proposal) => void,
  * }}
  */
 export function useProposal(id) {
   const task = useCallback(() => fetchProposalById(id), [id])
 
-  const { data, loading, error, refetch } = useAsyncData(task, {
+  const { data, loading, error, refetch, setData } = useAsyncData(task, {
     enabled: Boolean(id),
     initialData: null,
   })
@@ -35,5 +36,6 @@ export function useProposal(id) {
     error,
     notFound: error instanceof NotFoundError,
     refetch,
+    setProposal: setData,
   }
 }

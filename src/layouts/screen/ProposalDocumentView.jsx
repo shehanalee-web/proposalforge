@@ -11,6 +11,8 @@ import { applyDesignToBrand } from '../../theme/brandBridge.js'
 import { DocumentFooter, DocumentHeader } from '../../theme/DocumentChrome.jsx'
 import DocumentSurface from '../../theme/DocumentSurface.jsx'
 import { useProposalTheme } from '../../theme/ProposalThemeContext.jsx'
+import { shouldRenderBlock, settingsToStyle } from '../../blocks/visibility.js'
+import { buildVariableContext, interpolateInstance } from '../../blocks/variables.js'
 import styles from './ProposalDocumentView.module.css'
 
 function shouldRenderChrome(id, options) {
@@ -42,6 +44,12 @@ function ProposalDocumentView({
   const layout = getLayout(proposal.layoutId)
   const brand = applyDesignToBrand(resolveBrand(resolvedSettings, kit), tokens)
   const options = { includeCover, showNotes, showTags, showSignature }
+  const variableContext = buildVariableContext({
+    proposal,
+    brand,
+    tokens,
+    settings: resolvedSettings,
+  })
   const context = {
     proposal,
     settings: resolvedSettings,
@@ -70,7 +78,7 @@ function ProposalDocumentView({
         <DocumentHeader proposal={proposal} brand={brand} />
       {placed.map((region) => {
         const instances = region.instances.filter((instance) =>
-          shouldRenderInstance(instance, options),
+          shouldRenderInstance(instance, options) && shouldRenderBlock(instance, proposal),
         )
         const chrome = (region.chrome ?? [])
           .filter((id) => shouldRenderChrome(id, options))
@@ -89,7 +97,12 @@ function ProposalDocumentView({
           <div key={region.id} className={regionClass}>
             {instances.map((instance) => {
               const Screen = getScreenRenderer(instance.type)
-              return <Screen key={instance.id} instance={instance} {...context} />
+              const live = interpolateInstance(instance, variableContext)
+              return (
+                <div key={instance.id} style={settingsToStyle(instance.settings)}>
+                  <Screen instance={live} {...context} />
+                </div>
+              )
             })}
             {chrome.map(({ id, Block }) => (
               <Block key={id} {...context} />

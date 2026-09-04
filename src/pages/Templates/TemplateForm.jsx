@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { makeLineItem, makeSection, DEFAULT_CURRENCY } from '../../models/proposal.js'
 import { formatCurrency } from '../../utils/format.js'
 import { sumItemAmounts } from '../../models/template.js'
 import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
 import LayoutPicker from '../../layouts/screen/LayoutPicker.jsx'
+import QuestionnaireBuilder from './QuestionnaireBuilder.jsx'
 import styles from './TemplateForm.module.css'
 
 function Field({ id, label, error, children }) {
@@ -32,6 +34,7 @@ function TemplateForm({
   submitLabel = 'Save template',
   submittingLabel = 'Saving…',
 }) {
+  const [tab, setTab] = useState('details')
   const pricingTotal = sumItemAmounts(
     values.items.map((item) => ({
       ...item,
@@ -88,6 +91,37 @@ function TemplateForm({
 
   return (
     <form className={styles.form} onSubmit={onSubmit} noValidate>
+      <div className={styles.tabs} role="tablist" aria-label="Template editor">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'details'}
+          className={tab === 'details' ? styles.tabOn : styles.tab}
+          onClick={() => setTab('details')}
+        >
+          Details
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'questionnaire'}
+          className={tab === 'questionnaire' ? styles.tabOn : styles.tab}
+          onClick={() => setTab('questionnaire')}
+        >
+          Questionnaire
+        </button>
+      </div>
+
+      {tab === 'questionnaire' ? (
+        <QuestionnaireBuilder
+          value={values.questionnaire}
+          onChange={(questionnaire) => onChange('questionnaire', questionnaire)}
+          disabled={submitting}
+        />
+      ) : null}
+
+      {tab === 'details' ? (
+        <>
       <Field id="title" label="Title" error={fieldErrors.title}>
         <input
           id="title"
@@ -287,6 +321,8 @@ function TemplateForm({
           disabled={submitting}
         />
       </Field>
+        </>
+      ) : null}
 
       <div className={styles.actions}>
         <button type="submit" className={styles.submit} disabled={submitting}>

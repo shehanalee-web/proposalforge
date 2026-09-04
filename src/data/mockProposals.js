@@ -1,5 +1,12 @@
 import { PROPOSAL_STATUS } from '../models/proposal.js'
 import { LAYOUT_ID } from '../layouts/ids.js'
+import { cloneQuestionnaireForProposal } from '../models/questionnaire.js'
+import { MOCK_TEMPLATES } from './mockTemplates.js'
+
+function clonedQuestionnaire(templateId) {
+  const template = MOCK_TEMPLATES.find((entry) => entry.id === templateId)
+  return cloneQuestionnaireForProposal(template?.questionnaire, { templateId })
+}
 
 /**
  * Seed data for development.
@@ -44,6 +51,7 @@ export const MOCK_PROPOSALS = [
     shareToken: 'share-1001',
     lastViewedAt: '2026-08-20T14:30:00.000Z',
     layoutId: LAYOUT_ID.LANDSCAPE,
+    questionnaire: clonedQuestionnaire('tpl-2001'),
     items: [
       { id: 'item-1001-1', description: 'Identity system', amount: 12000 },
       { id: 'item-1001-2', description: 'Brand guidelines', amount: 6500 },
@@ -218,6 +226,7 @@ export const MOCK_PROPOSALS = [
     tags: ['editorial', 'annual'],
     validUntil: '2026-09-01',
     shareToken: 'share-1008',
+    questionnaire: clonedQuestionnaire('tpl-2001'),
     createdAt: '2026-08-01T09:00:00.000Z',
     updatedAt: '2026-08-12T11:15:00.000Z',
   },

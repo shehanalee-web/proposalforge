@@ -1,6 +1,7 @@
 import { DEFAULT_CURRENCY, makeLineItem, makeSection } from './proposal.js'
 import { DEFAULT_LAYOUT_ID } from '../layouts/ids.js'
 import { resolveLayoutId } from '../layouts/registry.js'
+import { makeQuestionnaire } from './questionnaire.js'
 
 /**
  * Proposal template model.
@@ -53,9 +54,10 @@ export function sumItemAmounts(items) {
 export function makeTemplate(input = {}) {
   const timestamp = new Date().toISOString()
   const items = (input.items ?? []).map(makeLineItem)
+  const id = input.id ?? createId('tpl')
 
   return {
-    id: input.id ?? createId('tpl'),
+    id,
     title: input.title ?? '',
     description: input.description ?? '',
     sections: (input.sections ?? []).map(makeSection),
@@ -67,6 +69,14 @@ export function makeTemplate(input = {}) {
     defaultLayoutId: resolveLayoutId(input.defaultLayoutId ?? DEFAULT_LAYOUT_ID),
     proposalType: input.proposalType ?? '',
     isDefault: Boolean(input.isDefault),
+    questionnaire: makeQuestionnaire({
+      ...(input.questionnaire ?? {}),
+      proposalId: null,
+      templateId: input.questionnaire?.templateId ?? id,
+      frozen: false,
+      responses: [],
+      submittedAt: null,
+    }),
     createdAt: input.createdAt ?? timestamp,
     updatedAt: input.updatedAt ?? timestamp,
   }

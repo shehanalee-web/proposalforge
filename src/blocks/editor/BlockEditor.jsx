@@ -5,12 +5,15 @@ import { useDragAutoscroll } from '../../hooks/useDragAutoscroll.js'
 import {
   addBlock,
   duplicateBlock,
+  insertLibraryBlock,
   makeBlock,
+  pasteBlock,
   reorderBlocks,
   removeBlock,
   setBlockEnabled,
   updateBlockData,
 } from '../instance.js'
+import { touchLibraryBlock } from '../../services/libraryBlockService.js'
 import { DEFAULT_CURRENCY } from '../../models/proposal.js'
 import AddBlockPicker from './AddBlockPicker.jsx'
 import BlockFields from './BlockFields.jsx'
@@ -46,6 +49,9 @@ function BlockEditor({
     setExpandedIds,
     toggleExpanded,
     collapseAll,
+    setInspectorOpen,
+    copyBlock,
+    takeClipboard,
   } = useEditorWorkspace()
 
   const [dragId, setDragId] = useState(null)
@@ -75,11 +81,21 @@ function BlockEditor({
       const created = next[next.length - 1]
       setExpandedIds((prev) => new Set(prev).add(created.id))
       setActiveBlockId(created.id)
+      setInspectorOpen(true)
       update(next)
       requestAnimationFrame(() => scrollToBlock(created.id))
     },
     [list], // eslint-disable-line react-hooks/exhaustive-deps
   )
+
+  function handleInsertLibrary(libraryBlock, index = null) {
+    const { blocks: next, created } = insertLibraryBlock(list, libraryBlock, index)
+    setExpandedIds((prev) => new Set(prev).add(created.id))
+    setActiveBlockId(created.id)
+    setInspectorOpen(true)
+    update(next)
+    touchLibraryBlock(libraryBlock.id)
+  }
 
   function handleAddAtIndex(type, index) {
     const created = makeBlock({ type, enabled: true })
@@ -87,6 +103,7 @@ function BlockEditor({
     next.splice(index, 0, created)
     setExpandedIds((prev) => new Set(prev).add(created.id))
     setActiveBlockId(created.id)
+    setInspectorOpen(true)
     update(next)
   }
 
@@ -204,7 +221,11 @@ function BlockEditor({
           >
             Collapse all
           </button>
-          <AddBlockPicker onAdd={handleAdd} disabled={disabled} />
+          <AddBlockPicker
+            onAdd={handleAdd}
+            onInsertLibrary={(block) => handleInsertLibrary(block)}
+            disabled={disabled}
+          />
         </div>
       </div>
 
@@ -228,6 +249,7 @@ function BlockEditor({
             <Fragment key={block.id}>
               <BlockInsertSlot
                 onAdd={(type) => handleAddAtIndex(type, index)}
+                onInsertLibrary={(block) => handleInsertLibrary(block, index)}
                 disabled={disabled}
               />
               <li
@@ -248,7 +270,10 @@ function BlockEditor({
                 onDrop={(event) => handleDrop(event, index)}
                 onDragEnd={handleDragEnd}
                 onFocus={() => setActiveBlockId(block.id)}
-                onMouseDown={() => setActiveBlockId(block.id)}
+                onMouseDown={() => {
+                  setActiveBlockId(block.id)
+                  setInspectorOpen(true)
+                }}
               >
                 <BlockMiniToolbar
                   block={block}
@@ -257,6 +282,17 @@ function BlockEditor({
                   disabled={disabled}
                   onMove={(offset) => handleMove(index, offset)}
                   onDuplicate={() => handleDuplicate(block.id)}
+                  onCopy={() => copyBlock(block)}
+                  onPaste={() => {
+                    const source = takeClipboard()
+                    if (!source) return
+                    const { blocks: next, created } = pasteBlock(list, source, index + 1)
+                    if (created) {
+                      setExpandedIds((prev) => new Set(prev).add(created.id))
+                      setActiveBlockId(created.id)
+                    }
+                    update(next)
+                  }}
                   onHide={() => handleToggleEnabled(block.id, !block.enabled)}
                   onDelete={() => handleRemove(block.id)}
                 />
@@ -301,7 +337,11 @@ function BlockEditor({
           )
         })}
         {list.length > 0 ? (
-          <BlockInsertSlot onAdd={handleAdd} disabled={disabled} />
+          <BlockInsertSlot
+            onAdd={handleAdd}
+            onInsertLibrary={(block) => handleInsertLibrary(block)}
+            disabled={disabled}
+          />
         ) : null}
       </ol>
 
@@ -312,7 +352,11 @@ function BlockEditor({
           <p className={styles.emptyText}>
             Add your first block to start building this proposal.
           </p>
-          <AddBlockPicker onAdd={handleAdd} disabled={disabled} />
+          <AddBlockPicker
+            onAdd={handleAdd}
+            onInsertLibrary={(block) => handleInsertLibrary(block)}
+            disabled={disabled}
+          />
         </div>
       ) : null}
     </div>

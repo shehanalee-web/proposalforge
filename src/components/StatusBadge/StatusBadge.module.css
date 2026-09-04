@@ -50,3 +50,10 @@
   background-color: color-mix(in srgb, var(--color-danger) 14%, transparent);
   border-color: color-mix(in srgb, var(--color-danger) 32%, transparent);
 }
+
+.expired,
+.cancelled {
+  color: var(--color-text-muted);
+  background-color: var(--color-surface-active);
+  border-color: var(--color-border-strong);
+}

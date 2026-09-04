@@ -13,9 +13,22 @@ function EditorCommandBar({
   previewMode,
   onDownload,
   downloading = false,
+  hasResponses = false,
 }) {
-  const { setPreviewMode, outlineOpen, setOutlineOpen, focusSearch, settingsOpen, setSettingsOpen } =
-    useEditorWorkspace()
+  const {
+    setPreviewMode,
+    outlineOpen,
+    setOutlineOpen,
+    focusSearch,
+    settingsOpen,
+    setSettingsOpen,
+    responsesOpen,
+    setResponsesOpen,
+    collaborationOpen,
+    setCollaborationOpen,
+    clientOpen,
+    setClientOpen,
+  } = useEditorWorkspace()
 
   return (
     <div className={styles.bar} data-editor-chrome>
@@ -77,12 +90,72 @@ function EditorCommandBar({
         <button
           type="button"
           className={`${styles.tool} ${settingsOpen ? styles.toolOn : ''}`}
-          onClick={() => setSettingsOpen(!settingsOpen)}
+          onClick={() => {
+            setSettingsOpen(!settingsOpen)
+            if (!settingsOpen) {
+              setResponsesOpen(false)
+              setCollaborationOpen(false)
+              setClientOpen(false)
+            }
+          }}
           aria-pressed={settingsOpen}
           title="Proposal settings"
         >
           <Icon name="settings" size={15} />
           <span className={styles.toolLabel}>Design</span>
+        </button>
+        {hasResponses ? (
+          <button
+            type="button"
+            className={`${styles.tool} ${responsesOpen ? styles.toolOn : ''}`}
+            onClick={() => {
+              setResponsesOpen(!responsesOpen)
+              if (!responsesOpen) {
+                setSettingsOpen(false)
+                setCollaborationOpen(false)
+                setClientOpen(false)
+              }
+            }}
+            aria-pressed={responsesOpen}
+            title="Client responses"
+          >
+            <Icon name="clipboard" size={15} />
+            <span className={styles.toolLabel}>Responses</span>
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className={`${styles.tool} ${collaborationOpen ? styles.toolOn : ''}`}
+          onClick={() => {
+            setCollaborationOpen(!collaborationOpen)
+            if (!collaborationOpen) {
+              setSettingsOpen(false)
+              setResponsesOpen(false)
+              setClientOpen(false)
+            }
+          }}
+          aria-pressed={collaborationOpen}
+          title="Collaboration"
+        >
+          <Icon name="message" size={15} />
+          <span className={styles.toolLabel}>Collab</span>
+        </button>
+        <button
+          type="button"
+          className={`${styles.tool} ${clientOpen ? styles.toolOn : ''}`}
+          onClick={() => {
+            setClientOpen(!clientOpen)
+            if (!clientOpen) {
+              setSettingsOpen(false)
+              setResponsesOpen(false)
+              setCollaborationOpen(false)
+            }
+          }}
+          aria-pressed={clientOpen}
+          title="Client workspace"
+        >
+          <Icon name="upload" size={15} />
+          <span className={styles.toolLabel}>Client</span>
         </button>
         <button
           type="button"
