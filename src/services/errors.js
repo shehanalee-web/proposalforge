@@ -32,3 +32,18 @@ export class ValidationError extends Error {
     this.errors = errors
   }
 }
+
+export class MailError extends Error {
+  /**
+   * @param {string} message
+   * @param {{ code?: string, retryable?: boolean, status?: number, errors?: { field: string, message: string }[] }} [options]
+   */
+  constructor(message, options = {}) {
+    super(message)
+    this.name = 'MailError'
+    this.code = options.code ?? 'rejected'
+    this.retryable = options.retryable !== false
+    this.status = options.status ?? 0
+    this.errors = options.errors ?? []
+  }
+}

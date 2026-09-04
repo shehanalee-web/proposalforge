@@ -10,6 +10,7 @@ export const THREAD_FILTER = Object.freeze({
   INTERNAL: 'internal',
   OPEN: 'open',
   RESOLVED: 'resolved',
+  PINNED: 'pinned',
 })
 
 /**
@@ -130,6 +131,7 @@ export function groupCommentThreads(comments = []) {
         replies: threadReplies,
         comments: [root, ...threadReplies],
         resolved: Boolean(root.resolved),
+        pinned: Boolean(root.pinned),
         visibility: root.visibility,
       }
     })
@@ -158,6 +160,8 @@ export function filterCommentThreads(threads, filter) {
       return threads.filter((thread) => !thread.resolved)
     case THREAD_FILTER.RESOLVED:
       return threads.filter((thread) => thread.resolved)
+    case THREAD_FILTER.PINNED:
+      return threads.filter((thread) => thread.pinned || thread.root?.pinned)
     default:
       return threads
   }

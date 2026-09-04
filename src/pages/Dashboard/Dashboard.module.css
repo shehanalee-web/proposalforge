@@ -26,6 +26,13 @@
   color: var(--color-accent-hover);
 }
 
+button.panelLink {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+}
+
 .callout {
   display: flex;
   flex-wrap: wrap;

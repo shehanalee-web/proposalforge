@@ -5,6 +5,8 @@ import { useCreateProposalDialog } from '../../hooks/useCreateProposalDialog.js'
 import { PATH } from '../../workspace/paths.js'
 import SummaryCards from './SummaryCards.jsx'
 import RecentProposals from './RecentProposals.jsx'
+import OperationalQueues from './OperationalQueues.jsx'
+import { useCommercialOverview } from '../../hooks/useCommercialOverview.js'
 import styles from './Dashboard.module.css'
 
 const RECENT_LIMIT = 5
@@ -24,6 +26,12 @@ function Dashboard() {
     error: listError,
     refetch: refetchList,
   } = useProposals({ page: 1, pageSize: RECENT_LIMIT })
+  const {
+    overview,
+    loading: overviewLoading,
+    error: overviewError,
+    refetch: refetchOverview,
+  } = useCommercialOverview()
 
   const isFirstRun =
     !summaryLoading &&
@@ -60,6 +68,19 @@ function Dashboard() {
         error={summaryError}
         onRetry={refetchSummary}
       />
+
+      {overviewError ? (
+        <div className={`studio-panel ${styles.panel}`}>
+          <div className={styles.panelHeader}>
+            <h2 className={styles.panelTitle}>Could not load queues</h2>
+            <button type="button" className={styles.panelLink} onClick={refetchOverview}>
+              Try again
+            </button>
+          </div>
+        </div>
+      ) : (
+        <OperationalQueues overview={overview} loading={overviewLoading} />
+      )}
 
       <div className={`studio-panel ${styles.panel}`}>
         <div className={styles.panelHeader}>

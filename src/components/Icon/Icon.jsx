@@ -441,6 +441,93 @@ const ICONS = {
       <path d="M12 7.5V12l3 2" />
     </>
   ),
+  activity: (
+    <>
+      <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+      <path d="M12 5.5v2.25M12 16.25V19M5.5 12h2.25M16.25 12H19" />
+      <circle cx="12" cy="12" r="6.25" />
+    </>
+  ),
+  activityCreated: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 8.5v7M8.5 12h7" />
+    </>
+  ),
+  activityEdited: (
+    <>
+      <path d="M14.5 5.5 18.5 9.5" />
+      <path d="M5 19.5 7.2 18.3 16.8 8.7 14.7 6.6 5.1 16.2 4 19.5Z" />
+    </>
+  ),
+  activityViewed: (
+    <>
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    </>
+  ),
+  activityAccepted: <path d="M5 12.5 9.5 17 19 7.5" />,
+  activityDeclined: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="m9 9 6 6M15 9l-6 6" />
+    </>
+  ),
+  activityDownloaded: (
+    <>
+      <path d="M12 4v11" />
+      <path d="m7.5 11.5 4.5 4.5 4.5-4.5" />
+      <path d="M5 19.5h14" />
+    </>
+  ),
+  activityRestored: <path d="M8 8H4.5V4.5M4.7 8A8 8 0 1 1 4 12" />,
+  activitySaved: (
+    <>
+      <path d="M7 4.5h10A1.5 1.5 0 0 1 18.5 6v14L12 16.5 5.5 20V6A1.5 1.5 0 0 1 7 4.5Z" />
+    </>
+  ),
+  activityDuplicated: (
+    <>
+      <rect x="8" y="8" width="11" height="11" rx="1.75" />
+      <path d="M16 6.5V5.75A1.75 1.75 0 0 0 14.25 4H5.75A1.75 1.75 0 0 0 4 5.75v8.5A1.75 1.75 0 0 0 5.75 16H7.5" />
+    </>
+  ),
+  activityArchived: (
+    <>
+      <path d="M4.5 7.5h15v3H4.5z" />
+      <path d="M6 10.5v8h12v-8M10 13.5h4" />
+      <path d="M4.5 4.5h15v3H4.5z" />
+    </>
+  ),
+  activityDeleted: (
+    <>
+      <path d="M5 7h14M9 7V5.5h6V7M7 7l.75 12.5a1.5 1.5 0 0 0 1.5 1.5h5.5a1.5 1.5 0 0 0 1.5-1.5L17 7" />
+    </>
+  ),
+  activityEmail: (
+    <>
+      <rect x="3.5" y="6" width="17" height="12" rx="1.75" />
+      <path d="m4 7.5 8 6 8-6" />
+    </>
+  ),
+  activityReminder: (
+    <>
+      <path d="M12 4.5a6 6 0 0 1 6 6c0 4 1.5 5.5 1.5 5.5H4.5S6 14.5 6 10.5a6 6 0 0 1 6-6Z" />
+      <path d="M10 18.5a2 2 0 0 0 4 0" />
+    </>
+  ),
+  bell: (
+    <>
+      <path d="M12 4.5a6 6 0 0 1 6 6c0 4 1.5 5.5 1.5 5.5H4.5S6 14.5 6 10.5a6 6 0 0 1 6-6Z" />
+      <path d="M10 18.5a2 2 0 0 0 4 0" />
+    </>
+  ),
+  pin: (
+    <>
+      <path d="M9 4.5h6l-.8 5.2 2.3 2.3V13H7.5v-1l2.3-2.3L9 4.5Z" />
+      <path d="M12 13v6.5" />
+    </>
+  ),
 }
 
 function Icon({ name, size = 18, className }) {

@@ -23,6 +23,7 @@ const FILTERS = [
   { id: THREAD_FILTER.INTERNAL, label: 'Internal' },
   { id: THREAD_FILTER.OPEN, label: 'Open' },
   { id: THREAD_FILTER.RESOLVED, label: 'Resolved' },
+  { id: THREAD_FILTER.PINNED, label: 'Pinned' },
 ]
 
 function CollaborationPanel({ proposal, open, onClose, onProposalChange }) {
@@ -104,8 +105,8 @@ function CollaborationPanel({ proposal, open, onClose, onProposalChange }) {
         <CommentComposer
           placeholder={
             internalNote
-              ? 'Leave an internal note. The client will not see this.'
-              : 'Reply to the client or start a conversation…'
+              ? 'Internal note. Use @name to mention. The client will not see this.'
+              : 'Reply to the client or start a conversation. Use @name to mention…'
           }
           submitLabel={internalNote ? 'Add note' : 'Post'}
           disabled={flow.busy}
@@ -137,10 +138,12 @@ function CollaborationPanel({ proposal, open, onClose, onProposalChange }) {
               canReply
               canResolve={!thread.resolved}
               canReopen={thread.resolved}
+              canPin
               disabled={flow.busy}
               onReply={handleReply}
               onResolve={(id) => flow.setResolved(id, true)}
               onReopen={(id) => flow.setResolved(id, false)}
+              onPin={(id, pinned) => flow.setPinned(id, pinned)}
             />
           ))
         )}

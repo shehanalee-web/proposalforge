@@ -13,7 +13,13 @@ function EditorCommandBar({
   previewMode,
   onDownload,
   downloading = false,
+  onSend,
+  sending = false,
   hasResponses = false,
+  historyOpen = false,
+  onToggleHistory,
+  activityOpen = false,
+  onToggleActivity,
 }) {
   const {
     setPreviewMode,
@@ -96,6 +102,8 @@ function EditorCommandBar({
               setResponsesOpen(false)
               setCollaborationOpen(false)
               setClientOpen(false)
+              if (historyOpen) onToggleHistory?.()
+              if (activityOpen) onToggleActivity?.()
             }
           }}
           aria-pressed={settingsOpen}
@@ -114,6 +122,8 @@ function EditorCommandBar({
                 setSettingsOpen(false)
                 setCollaborationOpen(false)
                 setClientOpen(false)
+                if (historyOpen) onToggleHistory?.()
+                if (activityOpen) onToggleActivity?.()
               }
             }}
             aria-pressed={responsesOpen}
@@ -132,6 +142,8 @@ function EditorCommandBar({
               setSettingsOpen(false)
               setResponsesOpen(false)
               setClientOpen(false)
+              if (historyOpen) onToggleHistory?.()
+              if (activityOpen) onToggleActivity?.()
             }
           }}
           aria-pressed={collaborationOpen}
@@ -149,6 +161,8 @@ function EditorCommandBar({
               setSettingsOpen(false)
               setResponsesOpen(false)
               setCollaborationOpen(false)
+              if (historyOpen) onToggleHistory?.()
+              if (activityOpen) onToggleActivity?.()
             }
           }}
           aria-pressed={clientOpen}
@@ -159,11 +173,57 @@ function EditorCommandBar({
         </button>
         <button
           type="button"
+          className={`${styles.tool} ${historyOpen ? styles.toolOn : ''}`}
+          onClick={() => {
+            if (!historyOpen) {
+              setSettingsOpen(false)
+              setResponsesOpen(false)
+              setCollaborationOpen(false)
+              setClientOpen(false)
+              if (activityOpen) onToggleActivity?.()
+            }
+            onToggleHistory?.()
+          }}
+          aria-pressed={historyOpen}
+          title="Version history"
+        >
+          <Icon name="history" size={15} />
+          <span className={styles.toolLabel}>History</span>
+        </button>
+        <button
+          type="button"
+          className={`${styles.tool} ${activityOpen ? styles.toolOn : ''}`}
+          onClick={() => {
+            if (!activityOpen) {
+              setSettingsOpen(false)
+              setResponsesOpen(false)
+              setCollaborationOpen(false)
+              setClientOpen(false)
+              if (historyOpen) onToggleHistory?.()
+            }
+            onToggleActivity?.()
+          }}
+          aria-pressed={activityOpen}
+          title="Proposal activity"
+        >
+          <Icon name="activity" size={15} />
+          <span className={styles.toolLabel}>Activity</span>
+        </button>
+        <button
+          type="button"
           className={styles.export}
           onClick={onDownload}
-          disabled={downloading}
+          disabled={downloading || sending}
         >
           {downloading ? 'Preparing PDF…' : 'Download PDF'}
+        </button>
+        <button
+          type="button"
+          className={styles.export}
+          onClick={() => onSend?.()}
+          disabled={downloading || sending}
+        >
+          {sending ? 'Sending…' : 'Send proposal'}
         </button>
       </div>
     </div>

@@ -38,8 +38,14 @@ import BlockInspector from '../../components/BlockInspector/BlockInspector.jsx'
 import ClientResponsesPanel from '../../components/ClientResponses/ClientResponsesPanel.jsx'
 import CollaborationPanel from '../../components/Collaboration/CollaborationPanel.jsx'
 import ClientWorkspacePanel from '../../components/ClientWorkspace/ClientWorkspacePanel.jsx'
+import SendProposalDialog from '../../components/SendProposal/SendProposalDialog.jsx'
 import { ProposalThemeProvider } from '../../theme/ProposalThemeContext.jsx'
 import { hasQuestionnaire } from '../../models/questionnaire.js'
+import { useRestoreProposalVersion } from '../../hooks/useRestoreProposalVersion.js'
+import { useSaveProposalVersion } from '../../hooks/useSaveProposalVersion.js'
+import { useDeleteProposalVersion } from '../../hooks/useDeleteProposalVersion.js'
+import VersionHistoryPanel from './VersionHistoryPanel.jsx'
+import ActivityPanel from './ActivityPanel.jsx'
 import styles from './ProposalEdit.module.css'
 
 const SKELETON_ROWS = 4
@@ -116,9 +122,27 @@ function ProposalEditContent() {
   const { services, loading: servicesLoading } = useServices()
   const history = useHistoryStack()
   const save = useSaveStatus()
+  const {
+    restore,
+    submitting: restoring,
+    error: restoreError,
+  } = useRestoreProposalVersion()
+  const {
+    saveVersion,
+    submitting: savingVersion,
+    error: saveVersionError,
+  } = useSaveProposalVersion()
+  const {
+    removeVersion,
+    submitting: deletingVersion,
+    error: deleteVersionError,
+  } = useDeleteProposalVersion()
 
   const [draft, setDraft] = useState(null)
   const [blocks, setBlocks] = useState(null)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [activityOpen, setActivityOpen] = useState(false)
+  const [sendOpen, setSendOpen] = useState(false)
   const values = draft ?? (proposal ? valuesFromProposal(proposal) : null)
   const documentBlocks = blocks ?? (proposal ? ensureProposalBlocks(proposal) : [])
   const snapshot = useMemo(
@@ -222,6 +246,33 @@ function ProposalEditContent() {
     }
 
     save.markDirty()
+  }
+
+  function applyProposalRecord(next) {
+    if (!next) return
+    setProposal(next)
+    setDraft(valuesFromProposal(next))
+    setBlocks(ensureProposalBlocks(next))
+  }
+
+  async function handleRestoreVersion(versionId) {
+    if (!id) return null
+    const restored = await restore(id, versionId)
+    applyProposalRecord(restored)
+    return restored
+  }
+
+  async function handleSaveVersion() {
+    if (!id) return null
+    const next = await saveVersion(id)
+    if (next) setProposal(next)
+    return next
+  }
+
+  async function handleDeleteVersion(versionId) {
+    if (!id) return
+    const next = await removeVersion(id, versionId)
+    if (next) setProposal(next)
   }
 
   async function handleDownloadPdf() {
@@ -408,6 +459,40 @@ function ProposalEditContent() {
         open={clientOpen}
         onClose={() => setClientOpen(false)}
         onProposalChange={setProposal}
+        onSend={() => {
+          setClientOpen(false)
+          setSendOpen(true)
+        }}
+      />
+      {historyOpen && proposal ? (
+        <VersionHistoryPanel
+          proposal={proposal}
+          onClose={() => setHistoryOpen(false)}
+          onRestore={handleRestoreVersion}
+          restoring={restoring}
+          restoreError={restoreError}
+          onSaveVersion={handleSaveVersion}
+          savingVersion={savingVersion}
+          saveVersionError={saveVersionError}
+          onDeleteVersion={handleDeleteVersion}
+          deleting={deletingVersion}
+          deleteError={deleteVersionError}
+        />
+      ) : null}
+      {activityOpen && proposal ? (
+        <ActivityPanel
+          proposal={proposal}
+          onClose={() => setActivityOpen(false)}
+        />
+      ) : null}
+      <SendProposalDialog
+        proposal={proposal}
+        open={sendOpen}
+        onClose={() => setSendOpen(false)}
+        onSent={(sent) => {
+          setSendOpen(false)
+          if (sent) setProposal(sent)
+        }}
       />
       <BlockInspector
         block={activeBlock}
@@ -440,7 +525,20 @@ function ProposalEditContent() {
         previewMode={previewMode}
         onDownload={handleDownloadPdf}
         downloading={busy && Boolean(exporting)}
+        onSend={() => {
+          setSettingsOpen(false)
+          setResponsesOpen(false)
+          setCollaborationOpen(false)
+          setClientOpen(false)
+          setHistoryOpen(false)
+          setActivityOpen(false)
+          setSendOpen(true)
+        }}
         hasResponses={hasQuestionnaire(proposal?.questionnaire)}
+        historyOpen={historyOpen}
+        onToggleHistory={() => setHistoryOpen((open) => !open)}
+        activityOpen={activityOpen}
+        onToggleActivity={() => setActivityOpen((open) => !open)}
       />
 
       {exportError ? (

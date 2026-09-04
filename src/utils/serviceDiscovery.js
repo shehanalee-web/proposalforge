@@ -1,22 +1,26 @@
 import { INDUSTRY, getIndustryLabel, inferIndustry } from '../models/industry.js'
+import { getCategoryLabel } from '../models/category.js'
 import { PROPOSAL_TYPE } from '../models/proposalType.js'
 
 /**
  * @typedef {object} ServiceDiscoveryItem
  * @property {string} id
  * @property {string} title
+ * @property {string} subtitle
  * @property {string} description
  * @property {string} industry
+ * @property {string[]} industries
+ * @property {string} categoryId
+ * @property {string} categoryLabel
  * @property {string[]} keywords
+ * @property {string[]} tags
+ * @property {string[]} proposalSections
  */
 
 /**
- * Discovery overlay for existing library services.
+ * Fallback overlay for untagged custom services. Catalogue seed fields win.
  *
- * New services can be registered here without changing the Service store.
- * Unknown ids still get a record from the live service name and description.
- *
- * @type {Readonly<Record<string, { industry: string, keywords?: string[] }>>}
+ * @type {Readonly<Record<string, { industry: string, industries?: string[], keywords?: string[] }>>}
  */
 export const SERVICE_DISCOVERY = Object.freeze({
   [PROPOSAL_TYPE.ARCHITECTURE]: {
@@ -59,6 +63,7 @@ export const SERVICE_DISCOVERY = Object.freeze({
   },
   [PROPOSAL_TYPE.CREATIVE_AGENCY]: {
     industry: INDUSTRY.CREATIVE,
+    industries: [INDUSTRY.CREATIVE, INDUSTRY.BRANDING],
     keywords: [
       'brand',
       'branding',
@@ -122,30 +127,54 @@ function tokenize(value) {
     .filter((token) => token.length > 1)
 }
 
+function unique(values) {
+  return [...new Set(values.filter(Boolean))]
+}
+
 /**
  * Build the discovery record used to search and filter a service.
  *
  * @param {import('../models/service.js').Service} service
+ * @param {import('../models/category.js').ServiceCategory[]} [categories]
  * @returns {ServiceDiscoveryItem}
  */
-export function toServiceDiscoveryItem(service) {
+export function toServiceDiscoveryItem(service, categories = []) {
   const overlay = SERVICE_DISCOVERY[service.id] ?? {}
   const title = service.name ?? ''
+  const subtitle = service.subtitle ?? ''
   const description = service.description ?? ''
-  const keywords = [
-    ...new Set([
-      ...(overlay.keywords ?? []),
-      ...tokenize(title),
-      ...tokenize(description),
-    ]),
-  ]
+  const categoryId = service.categoryId ?? ''
+  const categoryLabel = getCategoryLabel(categories, categoryId)
+  const keywords = unique([
+    ...(service.keywords ?? []),
+    ...(overlay.keywords ?? []),
+    ...tokenize(title),
+    ...tokenize(subtitle),
+    ...tokenize(description),
+  ])
+  const tags = unique([...(service.tags ?? []), ...tokenize(categoryLabel)])
+  const proposalSections = [...(service.proposalSections ?? [])]
+
+  const primary =
+    service.industry || overlay.industry || inferIndustry(title)
+  const industries = unique([
+    ...(service.industries ?? []),
+    ...(overlay.industries ?? []),
+    primary,
+  ]).filter((id) => id && id !== INDUSTRY.ALL)
 
   return {
     id: service.id,
     title,
+    subtitle,
     description,
-    industry: overlay.industry ?? inferIndustry(title),
+    industry: primary,
+    industries,
+    categoryId,
+    categoryLabel,
     keywords,
+    tags,
+    proposalSections,
   }
 }
 
@@ -159,15 +188,28 @@ function matchesSearch(item, query) {
 
   const haystack = [
     item.title,
+    item.subtitle,
     item.description,
     item.industry,
+    item.categoryId,
+    item.categoryLabel,
     getIndustryLabel(item.industry),
+    ...industryIdsFor(item).map((id) => getIndustryLabel(id)),
     ...(item.keywords ?? []),
+    ...(item.tags ?? []),
+    ...(item.proposalSections ?? []),
   ]
     .join(' ')
     .toLowerCase()
 
   return haystack.includes(query)
+}
+
+function industryIdsFor(item) {
+  if (Array.isArray(item.industries) && item.industries.length > 0) {
+    return item.industries
+  }
+  return item.industry ? [item.industry] : []
 }
 
 /**
@@ -177,26 +219,42 @@ function matchesSearch(item, query) {
  */
 function matchesIndustry(item, industry) {
   if (!industry) return true
-  return item.industry === industry
+  return industryIdsFor(item).includes(industry)
 }
 
 /**
- * Filter library services by search text and industry.
- * Both constraints apply together. Safe for hundreds of records.
+ * @param {ServiceDiscoveryItem} item
+ * @param {string} category
+ * @returns {boolean}
+ */
+function matchesCategory(item, category) {
+  if (!category) return true
+  return item.categoryId === category
+}
+
+/**
+ * Filter library services by search, industry and category together.
+ * Safe for hundreds of records. One code path for the catalogue.
  *
  * @param {import('../models/service.js').Service[]} services
- * @param {{ search?: string, industry?: string }} [options]
+ * @param {{ search?: string, industry?: string, category?: string, categories?: import('../models/category.js').ServiceCategory[] }} [options]
  * @returns {import('../models/service.js').Service[]}
  */
 export function filterServices(services, options = {}) {
   const search = String(options.search ?? '').trim().toLowerCase()
   const industry = String(options.industry ?? '').trim()
+  const category = String(options.category ?? '').trim()
+  const categories = options.categories ?? []
 
   if (!Array.isArray(services) || services.length === 0) return []
-  if (!search && !industry) return services
+  if (!search && !industry && !category) return services
 
   return services.filter((service) => {
-    const item = toServiceDiscoveryItem(service)
-    return matchesIndustry(item, industry) && matchesSearch(item, search)
+    const item = toServiceDiscoveryItem(service, categories)
+    return (
+      matchesIndustry(item, industry) &&
+      matchesCategory(item, category) &&
+      matchesSearch(item, search)
+    )
   })
 }

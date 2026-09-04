@@ -9,11 +9,20 @@ import {
   validateProposal,
 } from '../models/proposal.js'
 import {
+  DEFAULT_UPDATED_BY,
+  findVersion,
   proposalFieldsFromSnapshot,
+  recordMilestoneVersion,
   recordRestoreVersion,
   recordSaveVersion,
+  VERSION_SOURCE,
 } from '../models/proposalVersion.js'
-import { NotFoundError, ValidationError, ForbiddenError } from './errors.js'
+import {
+  canCreateProposalVersion,
+  canDeleteDraftVersion,
+  canRestoreProposalVersion,
+} from '../models/versionAccess.js'
+import { NotFoundError, ValidationError, ForbiddenError, MailError } from './errors.js'
 import { prepareProposalAssets } from './hydrateAssets.js'
 import * as store from './proposalStore.js'
 import {
@@ -41,6 +50,18 @@ import {
 import { PORTAL_ACTOR } from '../models/portalPermissions.js'
 import { scheduleCollaborationNotice } from '../collaboration/notify.js'
 import {
+  recordEmailSent,
+  recordEmailFailed,
+  recordFromClientActivity,
+  recordProposalArchived,
+  recordProposalCreated,
+  recordProposalDeleted,
+  recordProposalEdited,
+  recordVersionRestored,
+  recordVersionSaved,
+  recordStudioView,
+} from './activityService.js'
+import {
   findComment,
   findThreadRoot,
   resolveReplyParentId,
@@ -53,10 +74,25 @@ import {
   PROPOSAL_UPLOAD_MAX_BYTES,
   UPLOAD_ACTOR,
 } from '../models/upload.js'
+import { getClientPortalUrl } from '../utils/clientProposal.js'
+import { fetchBrandKit } from './brandKitService.js'
+import { sendProposalEmail } from './email/sendProposalEmail.js'
+import {
+  EMAIL_DELIVERY_STATUS,
+  MAIL_ERROR_CODE,
+  makeEmailDeliverySummary,
+  makeEmailMessage,
+} from '../models/emailDelivery.js'
 import { createRecordId } from '../models/ids.js'
 import { getStorageAdapter } from '../storage/adapter.js'
-import { makeProposalSignature, SIGNATURE_STATUS } from '../models/signature.js'
-import { makeProposalPayment } from '../models/payment.js'
+import { makeProposalSignature, makeSignatureAuditEvent, SIGNATURE_STATUS } from '../models/signature.js'
+import { makeProposalPayment, PAYMENT_STATUS } from '../models/payment.js'
+import { recordAnalyticsSent, recordViewSession } from '../models/viewAnalytics.js'
+import {
+  buildCommercialQueues,
+  buildOperationalStats,
+} from '../models/commercialQueues.js'
+import * as activityStore from './activityStore.js'
 
 /**
  * Public data access layer for proposals.
@@ -194,7 +230,9 @@ export async function fetchProposalById(id) {
     throw new NotFoundError(`No proposal found with id "${id}".`)
   }
 
-  return present(await persistExpired(proposal))
+  const presented = present(await persistExpired(proposal))
+  recordStudioView(presented)
+  return presented
 }
 
 /**
@@ -205,6 +243,7 @@ export async function fetchProposalById(id) {
  * @throws {ValidationError}
  */
 export async function createProposal(input) {
+  const duplicatedFromId = input.duplicatedFromId ?? null
   const proposal = makeProposal(input)
   const prepared = makeProposal({
     ...proposal,
@@ -227,7 +266,9 @@ export async function createProposal(input) {
 
   await boot()
 
-  return present(await store.insert(prepared))
+  const saved = present(await store.insert(prepared))
+  recordProposalCreated(saved, { duplicatedFromId })
+  return saved
 }
 
 /**
@@ -271,11 +312,20 @@ export async function updateProposal(id, changes = {}) {
     throw new ValidationError('Proposal is not valid.', errors)
   }
 
-  const recorded = recordSaveVersion(updated)
+  const source =
+    existing.status === PROPOSAL_STATUS.DRAFT
+      ? VERSION_SOURCE.MANUAL
+      : VERSION_SOURCE.CONTENT_EDIT
+  const recorded = recordSaveVersion(updated, {
+    source,
+    createdBy: DEFAULT_UPDATED_BY,
+  })
 
   await boot()
 
-  return present(await store.replace(id, recorded))
+  const saved = present(await store.replace(id, recorded))
+  recordProposalEdited(existing, recorded)
+  return saved
 }
 
 /**
@@ -287,15 +337,17 @@ export async function updateProposal(id, changes = {}) {
  * @throws {NotFoundError}
  */
 export async function restoreProposalVersion(id, versionId) {
+  if (!canRestoreProposalVersion()) {
+    throw new ForbiddenError('You cannot restore proposal versions.')
+  }
+
   const existing = store.findById(id)
 
   if (!existing) {
     throw new NotFoundError(`No proposal found with id "${id}".`)
   }
 
-  const source = (existing.versions ?? []).find(
-    (version) => version.versionId === versionId,
-  )
+  const source = findVersion(existing.versions, versionId)
 
   if (!source) {
     throw new NotFoundError(`No version found with id "${versionId}".`)
@@ -320,11 +372,274 @@ export async function restoreProposalVersion(id, versionId) {
 
   const recorded = recordRestoreVersion(restored, {
     restoredFrom: source.versionNumber,
+    createdBy: DEFAULT_UPDATED_BY,
   })
 
   await boot()
 
-  return present(await store.replace(id, recorded))
+  const saved = present(await store.replace(id, recorded))
+  recordVersionRestored(saved, source.versionNumber)
+  return saved
+}
+
+/**
+ * Force-append a checkpoint of the current stored proposal. Used by
+ * Manual Save Version. Identical snapshots still get a new row.
+ *
+ * @param {string} id
+ */
+export async function saveProposalVersion(id) {
+  if (!canCreateProposalVersion()) {
+    throw new ForbiddenError('You cannot create proposal versions.')
+  }
+
+  const existing = store.findById(id)
+
+  if (!existing) {
+    throw new NotFoundError(`No proposal found with id "${id}".`)
+  }
+
+  const recorded = recordSaveVersion(existing, {
+    force: true,
+    source: VERSION_SOURCE.MANUAL,
+    createdBy: DEFAULT_UPDATED_BY,
+  })
+
+  await boot()
+
+  const saved = present(await store.replace(id, recorded))
+  recordVersionSaved(saved, saved.currentVersion)
+  return saved
+}
+
+/**
+ * Admin-only. Draft versions may be removed. Approved versions cannot.
+ * History of remaining versions is left intact.
+ *
+ * @param {string} id
+ * @param {string} versionId
+ */
+export async function deleteProposalVersion(id, versionId) {
+  const existing = store.findById(id)
+
+  if (!existing) {
+    throw new NotFoundError(`No proposal found with id "${id}".`)
+  }
+
+  const target = findVersion(existing.versions, versionId)
+
+  if (!target) {
+    throw new NotFoundError(`No version found with id "${versionId}".`)
+  }
+
+  if (!canDeleteDraftVersion(target)) {
+    throw new ForbiddenError(
+      'Only draft versions can be deleted, and only by an admin. Approved versions are immutable.',
+    )
+  }
+
+  const remaining = (existing.versions ?? []).filter(
+    (version) => version.versionId !== target.versionId && version.id !== target.id,
+  )
+
+  if (remaining.length === 0) {
+    throw new ValidationError('The last version cannot be deleted.', [
+      { field: 'versions', message: 'At least one version must remain.' },
+    ])
+  }
+
+  const latest = remaining.reduce((lead, version) =>
+    version.versionNumber > lead.versionNumber ? version : lead,
+  )
+  const currentStillExists = remaining.some(
+    (version) => version.versionNumber === existing.currentVersion,
+  )
+
+  const updated = makeProposal({
+    ...existing,
+    id: existing.id,
+    createdAt: existing.createdAt,
+    shareToken: existing.shareToken,
+    versions: remaining,
+    currentVersion: currentStillExists ? existing.currentVersion : latest.versionNumber,
+    updatedAt: new Date().toISOString(),
+  })
+
+  await boot()
+
+  return present(await store.replace(id, updated))
+}
+
+/**
+ * Send the proposal to the client through the mail provider.
+ * Status becomes Sent only after the provider accepts the message.
+ *
+ * @param {string} id
+ * @param {{
+ *   to?: string | string[],
+ *   cc?: string | string[],
+ *   bcc?: string | string[],
+ *   fromName?: string,
+ *   fromEmail?: string,
+ *   subject?: string,
+ *   message?: string,
+ *   expiresAt?: string | null,
+ *   scheduledAt?: string | null,
+ *   appUrl?: string,
+ * }} [options]
+ */
+export async function sendProposal(id, options = {}) {
+  if (!canCreateProposalVersion()) {
+    throw new ForbiddenError('You cannot record send versions.')
+  }
+
+  await boot()
+
+  const existing = store.findById(id)
+
+  if (!existing) {
+    throw new NotFoundError(`No proposal found with id "${id}".`)
+  }
+
+  requireOpenProposal(existing, 'be sent')
+
+  const kit = await fetchBrandKit().catch(() => null)
+  const appUrl =
+    options.appUrl ||
+    (typeof window !== 'undefined' ? window.location.origin : '')
+  const proposalUrl = getClientPortalUrl(existing.shareToken)
+  const messageId = createRecordId('eml')
+  const trackingUrl = appUrl ? `${appUrl}/api/email/click/${messageId}` : proposalUrl
+  const openPixelUrl = appUrl ? `${appUrl}/api/email/open/${messageId}` : ''
+  const to = options.to || existing.clientEmail
+  const fromName =
+    options.fromName || kit?.companyName || kit?.contact?.legalName || DEFAULT_UPDATED_BY
+  const fromEmail = options.fromEmail || kit?.contact?.email || ''
+  const logoUrl =
+    kit?.logos?.primary?.url || kit?.logos?.light?.url || kit?.logos?.dark?.url || ''
+  const expiresAt = options.expiresAt === undefined ? existing.validUntil : options.expiresAt
+  const draftMessage = makeEmailMessage({
+    id: messageId,
+    proposalId: existing.id,
+    fromName,
+    fromEmail,
+    to,
+    cc: options.cc,
+    bcc: options.bcc,
+    subject: options.subject,
+    message: options.message,
+    proposalUrl,
+    trackingUrl,
+    expiresAt,
+    scheduledAt: options.scheduledAt,
+    status: EMAIL_DELIVERY_STATUS.SENDING,
+  })
+
+  let delivered
+  try {
+    delivered = await sendProposalEmail({
+      id: messageId,
+      proposalId: existing.id,
+      to,
+      cc: options.cc,
+      bcc: options.bcc,
+      fromName,
+      fromEmail,
+      subject: options.subject,
+      message: options.message,
+      proposalTitle: existing.title,
+      studioName: kit?.companyName || kit?.contact?.legalName || 'Studio',
+      supportEmail: kit?.contact?.email || fromEmail,
+      logoUrl,
+      accentColor: kit?.colors?.accent || kit?.colors?.primary,
+      proposalUrl,
+      trackingUrl,
+      openPixelUrl,
+      appUrl,
+      expiresAt,
+      scheduledAt: options.scheduledAt,
+    })
+  } catch (error) {
+    const failed = makeEmailMessage({
+      ...draftMessage,
+      status: EMAIL_DELIVERY_STATUS.FAILED,
+      error: error.message,
+      errorCode: error.code || MAIL_ERROR_CODE.REJECTED,
+      updatedAt: new Date().toISOString(),
+    })
+    const stamped = persistIdentity(
+      existing,
+      { lastEmail: makeEmailDeliverySummary(failed) },
+      existing.updatedAt,
+    )
+    await store.replace(id, stamped)
+    await recordEmailFailed(stamped, { message: failed, error })
+    throw error instanceof MailError
+      ? error
+      : new MailError(error.message || 'The proposal email could not be sent.', {
+          code: MAIL_ERROR_CODE.REJECTED,
+          retryable: true,
+        })
+  }
+
+  const alreadySent = existing.status !== PROPOSAL_STATUS.DRAFT
+  const now = new Date().toISOString()
+  const queued = delivered.status === EMAIL_DELIVERY_STATUS.QUEUED
+  const nextStatus = queued ? existing.status : PROPOSAL_STATUS.SENT
+  const sentMessage = makeEmailMessage({
+    ...draftMessage,
+    ...delivered,
+    id: messageId,
+    proposalUrl,
+    trackingUrl,
+    status: delivered.status,
+    sentAt: delivered.sentAt || now,
+  })
+
+  const updated = persistIdentity(
+    existing,
+    {
+      status: nextStatus,
+      clientEmail: sentMessage.to[0] || existing.clientEmail,
+      validUntil: expiresAt || existing.validUntil,
+      lastEmail: makeEmailDeliverySummary(sentMessage),
+      analytics: recordAnalyticsSent(existing.analytics),
+      activity: queued
+        ? existing.activity
+        : recordActivity(existing, {
+            type: CLIENT_ACTIVITY_TYPE.SENT,
+            actor: PORTAL_ACTOR.STUDIO,
+            metadata: {
+              visibility: COMMENT_VISIBILITY.CLIENT,
+              detail: alreadySent
+                ? `Resent to ${sentMessage.to[0] || existing.clientName || 'the client'}.`
+                : `Sent to ${sentMessage.to[0] || existing.clientName || 'the client'}.`,
+            },
+          }),
+      approval: makeProposalApproval(
+        {
+          ...existing.approval,
+          status: nextStatus,
+          locked: false,
+        },
+        { ...existing, status: nextStatus },
+      ),
+    },
+    now,
+  )
+
+  const recorded = queued
+    ? updated
+    : recordMilestoneVersion(updated, {
+        source: alreadySent ? VERSION_SOURCE.RESENT : VERSION_SOURCE.SENT,
+        createdBy: DEFAULT_UPDATED_BY,
+      })
+
+  const saved = present(await store.replace(id, recorded))
+  if (!queued) {
+    await recordEmailSent(saved, { resent: alreadySent, message: sentMessage })
+  }
+  return saved
 }
 
 /**
@@ -337,12 +652,19 @@ export async function restoreProposalVersion(id, versionId) {
 export async function deleteProposal(id) {
   await boot()
 
+  const existing = store.findById(id)
+
+  if (!existing) {
+    throw new NotFoundError(`No proposal found with id "${id}".`)
+  }
+
   const deleted = await store.remove(id)
 
   if (!deleted) {
     throw new NotFoundError(`No proposal found with id "${id}".`)
   }
 
+  recordProposalDeleted(existing)
   return { id }
 }
 
@@ -417,6 +739,27 @@ export async function fetchProposalSummary() {
   }
 }
 
+/**
+ * Operational dashboard queues. Reads every proposal because follow-up and
+ * expiry windows are derived, the same way a summary endpoint would.
+ */
+export async function fetchCommercialOverview() {
+  await boot()
+  await activityStore.ready()
+
+  const records = store.all()
+  const recentActivity = activityStore
+    .all()
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+    .slice(0, 8)
+
+  return {
+    queues: buildCommercialQueues(records),
+    recentActivity,
+    stats: buildOperationalStats(records),
+  }
+}
+
 function persistIdentity(existing, changes, timestamp) {
   return makeProposal({
     ...existing,
@@ -427,6 +770,7 @@ function persistIdentity(existing, changes, timestamp) {
     versions: existing.versions,
     currentVersion: existing.currentVersion,
     updatedAt: timestamp,
+    lastActivityAt: changes.lastActivityAt ?? timestamp,
   })
 }
 
@@ -437,6 +781,7 @@ function recordActivity(existing, input) {
     derived: false,
   })
   scheduleCollaborationNotice(event)
+  recordFromClientActivity(existing, event)
   return appendActivity(existing, event)
 }
 
@@ -516,6 +861,8 @@ function requireById(id) {
 
 function expireIfNeeded(existing) {
   if (
+    existing.status === PROPOSAL_STATUS.ARCHIVED ||
+    existing.status === PROPOSAL_STATUS.CANCELLED ||
     existing.status !== PROPOSAL_STATUS.SENT ||
     !isPastValidUntil(existing.validUntil)
   ) {
@@ -523,10 +870,21 @@ function expireIfNeeded(existing) {
   }
 
   const now = new Date().toISOString()
+  const activity = hasActivityType(existing, CLIENT_ACTIVITY_TYPE.EXPIRED)
+    ? existing.activity
+    : recordActivity(existing, {
+        type: CLIENT_ACTIVITY_TYPE.EXPIRED,
+        actor: PORTAL_ACTOR.STUDIO,
+        metadata: {
+          visibility: COMMENT_VISIBILITY.CLIENT,
+          detail: 'The proposal expired.',
+        },
+      })
   return persistIdentity(
     existing,
     {
       status: PROPOSAL_STATUS.EXPIRED,
+      activity,
       approval: makeProposalApproval(
         {
           ...existing.approval,
@@ -602,7 +960,11 @@ export async function fetchClientProposal(token) {
   const existing = requireByShareToken(token)
   const current = await persistExpired(existing)
   const now = new Date().toISOString()
-  const changes = { lastViewedAt: now }
+  const changes = {
+    lastViewedAt: now,
+    lastActivityAt: now,
+    analytics: recordViewSession(current.analytics, { at: now }),
+  }
   let activity = current.activity
 
   if (
@@ -625,23 +987,22 @@ export async function fetchClientProposal(token) {
     )
   }
 
-  if (!hasActivityType({ ...current, activity }, CLIENT_ACTIVITY_TYPE.VIEWED)) {
-    activity = recordActivity(
-      { ...current, activity },
-      {
-        type: CLIENT_ACTIVITY_TYPE.VIEWED,
-        actor: PORTAL_ACTOR.CLIENT,
-        metadata: {
-          visibility: COMMENT_VISIBILITY.CLIENT,
-          detail: 'Opened from the client link.',
-        },
+  const alreadyViewed = hasActivityType({ ...current, activity }, CLIENT_ACTIVITY_TYPE.VIEWED)
+  activity = recordActivity(
+    { ...current, activity },
+    {
+      type: CLIENT_ACTIVITY_TYPE.VIEWED,
+      actor: PORTAL_ACTOR.CLIENT,
+      metadata: {
+        visibility: COMMENT_VISIBILITY.CLIENT,
+        detail: alreadyViewed
+          ? 'Viewed again from the client link.'
+          : 'Viewed from the client link.',
       },
-    )
-  }
+    },
+  )
 
-  if (activity !== current.activity) {
-    changes.activity = activity
-  }
+  changes.activity = activity
 
   const viewed = persistIdentity(current, changes, current.updatedAt)
 
@@ -708,7 +1069,12 @@ export async function acceptProposal(token) {
     throw new ValidationError('Proposal is not valid.', errors)
   }
 
-  return present(await store.replace(existing.id, updated))
+  const recorded = recordMilestoneVersion(updated, {
+    source: VERSION_SOURCE.APPROVED,
+    createdBy: existing.clientName?.trim() || 'Client',
+  })
+
+  return present(await store.replace(existing.id, recorded))
 }
 
 /**
@@ -792,7 +1158,12 @@ export async function requestProposalChanges(token, comment) {
     throw new ValidationError('Proposal is not valid.', errors)
   }
 
-  return present(await store.replace(existing.id, updated))
+  const recorded = recordMilestoneVersion(updated, {
+    source: VERSION_SOURCE.REQUEST_CHANGES,
+    createdBy: existing.clientName?.trim() || 'Client',
+  })
+
+  return present(await store.replace(existing.id, recorded))
 }
 
 /**
@@ -1049,6 +1420,37 @@ export async function setProposalThreadResolved(id, commentId, resolved) {
 }
 
 /**
+ * Pin or unpin a conversation. Studio only.
+ *
+ * @param {string} id
+ * @param {string} commentId
+ * @param {boolean} pinned
+ */
+export async function setProposalThreadPinned(id, commentId, pinned) {
+  await boot()
+  const existing = store.findById(id)
+
+  if (!existing) {
+    throw new NotFoundError(`No proposal found with id "${id}".`)
+  }
+
+  const root = findThreadRoot(existing.comments, commentId)
+  if (!root) {
+    throw new NotFoundError('That conversation is no longer available.')
+  }
+
+  const comments = (existing.comments ?? []).map((item) =>
+    item.id === root.id ? makeComment({ ...item, pinned: Boolean(pinned) }) : item,
+  )
+  const updated = persistIdentity(
+    existing,
+    { comments },
+    new Date().toISOString(),
+  )
+  return present(await store.replace(existing.id, updated))
+}
+
+/**
  * Client resolve. Cannot reopen.
  *
  * @param {string} token
@@ -1135,7 +1537,12 @@ export async function declineProposal(token, input = {}) {
     throw new ValidationError('Proposal is not valid.', errors)
   }
 
-  return present(await store.replace(existing.id, updated))
+  const recorded = recordMilestoneVersion(updated, {
+    source: VERSION_SOURCE.DECLINED,
+    createdBy: existing.clientName?.trim() || 'Client',
+  })
+
+  return present(await store.replace(existing.id, recorded))
 }
 
 function requireMutableFiles(existing) {
@@ -1303,6 +1710,14 @@ export async function cancelProposal(id) {
     existing,
     {
       status: PROPOSAL_STATUS.CANCELLED,
+      activity: recordActivity(existing, {
+        type: CLIENT_ACTIVITY_TYPE.CANCELLED,
+        actor: PORTAL_ACTOR.STUDIO,
+        metadata: {
+          visibility: COMMENT_VISIBILITY.CLIENT,
+          detail: 'The studio cancelled this proposal.',
+        },
+      }),
       approval: makeProposalApproval(
         {
           ...existing.approval,
@@ -1321,6 +1736,72 @@ export async function cancelProposal(id) {
   if (errors.length > 0) {
     throw new ValidationError('Proposal is not valid.', errors)
   }
+  const saved = present(await store.replace(existing.id, updated))
+  recordProposalArchived(saved)
+  return saved
+}
+
+export async function archiveProposal(id) {
+  await boot()
+  const existing = requireById(id)
+
+  if (existing.status === PROPOSAL_STATUS.ARCHIVED) {
+    return present(existing)
+  }
+
+  const now = new Date().toISOString()
+  const updated = persistIdentity(
+    existing,
+    {
+      status: PROPOSAL_STATUS.ARCHIVED,
+      activity: recordActivity(existing, {
+        type: CLIENT_ACTIVITY_TYPE.ARCHIVED,
+        actor: PORTAL_ACTOR.STUDIO,
+        metadata: {
+          visibility: COMMENT_VISIBILITY.CLIENT,
+          detail: 'The proposal was archived.',
+        },
+      }),
+      approval: makeProposalApproval(
+        {
+          ...existing.approval,
+          status: PROPOSAL_STATUS.ARCHIVED,
+          decidedAt: now,
+          actor: PORTAL_ACTOR.STUDIO,
+          summary: 'The studio archived this proposal.',
+          locked: true,
+        },
+        { ...existing, status: PROPOSAL_STATUS.ARCHIVED },
+      ),
+    },
+    now,
+  )
+  const errors = validateProposal(updated)
+  if (errors.length > 0) {
+    throw new ValidationError('Proposal is not valid.', errors)
+  }
+  const saved = present(await store.replace(existing.id, updated))
+  recordProposalArchived(saved)
+  return saved
+}
+
+export async function recordProposalDownload(id) {
+  await boot()
+  const existing = requireById(id)
+  const updated = persistIdentity(
+    existing,
+    {
+      activity: recordActivity(existing, {
+        type: CLIENT_ACTIVITY_TYPE.DOWNLOADED,
+        actor: PORTAL_ACTOR.STUDIO,
+        metadata: {
+          visibility: COMMENT_VISIBILITY.CLIENT,
+          detail: 'Proposal PDF downloaded.',
+        },
+      }),
+    },
+    new Date().toISOString(),
+  )
   return present(await store.replace(existing.id, updated))
 }
 
@@ -1332,14 +1813,36 @@ export async function requestProposalSignature(id) {
   }
 
   const now = new Date().toISOString()
+  const signature = makeProposalSignature({
+    ...existing.signature,
+    proposalId: existing.id,
+    status: SIGNATURE_STATUS.WAITING,
+    signer: existing.signature?.signer || existing.clientName || '',
+    signerEmail: existing.signature?.signerEmail || existing.clientEmail || '',
+    requestedAt: existing.signature?.requestedAt || now,
+    auditTrail: [
+      ...(existing.signature?.auditTrail ?? []),
+      makeSignatureAuditEvent({
+        at: now,
+        actor: PORTAL_ACTOR.STUDIO,
+        action: 'requested',
+        detail: 'Signature requested. No e-sign vendor is connected.',
+      }),
+    ],
+  })
   const updated = persistIdentity(
     existing,
     {
-      signature: makeProposalSignature({
-        ...existing.signature,
-        proposalId: existing.id,
-        status: SIGNATURE_STATUS.WAITING,
-        signer: existing.signature?.signer || existing.clientName || '',
+      signature,
+      activity: recordActivity(existing, {
+        type: CLIENT_ACTIVITY_TYPE.SIGNATURE_REQUESTED,
+        actor: PORTAL_ACTOR.STUDIO,
+        metadata: {
+          visibility: COMMENT_VISIBILITY.CLIENT,
+          detail: signature.signer
+            ? `Signature requested from ${signature.signer}.`
+            : 'Signature requested.',
+        },
       }),
     },
     now,
@@ -1351,16 +1854,30 @@ export async function updateProposalPayment(id, patch = {}) {
   await boot()
   const existing = requireById(id)
   const now = new Date().toISOString()
+  const payment = makeProposalPayment({
+    ...existing.payment,
+    ...patch,
+    proposalId: existing.id,
+    currency: patch.currency ?? existing.payment?.currency ?? existing.currency,
+    subtotal: patch.subtotal ?? existing.payment?.subtotal ?? existing.amount,
+  })
+  const becamePaid =
+    payment.status === PAYMENT_STATUS.PAID &&
+    existing.payment?.status !== PAYMENT_STATUS.PAID
   const updated = persistIdentity(
     existing,
     {
-      payment: makeProposalPayment({
-        ...existing.payment,
-        ...patch,
-        proposalId: existing.id,
-        currency: patch.currency ?? existing.payment?.currency ?? existing.currency,
-        subtotal: patch.subtotal ?? existing.payment?.subtotal ?? existing.amount,
-      }),
+      payment,
+      activity: becamePaid
+        ? recordActivity(existing, {
+            type: CLIENT_ACTIVITY_TYPE.PAYMENT_COMPLETED,
+            actor: PORTAL_ACTOR.CLIENT,
+            metadata: {
+              visibility: COMMENT_VISIBILITY.CLIENT,
+              detail: 'Payment was recorded. No gateway is connected.',
+            },
+          })
+        : existing.activity,
     },
     now,
   )

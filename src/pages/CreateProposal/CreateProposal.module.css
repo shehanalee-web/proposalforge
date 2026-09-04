@@ -264,6 +264,11 @@
   background: linear-gradient(90deg, var(--type-accent, rgba(20, 184, 166, 0.45)), transparent);
 }
 
+.typeCard {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 11.5rem;
+}
+
 .choice,
 .typeCard {
   transition:

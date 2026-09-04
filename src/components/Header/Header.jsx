@@ -2,6 +2,7 @@ import { useLocation } from 'react-router'
 import { getPageTitle } from '../../navigation.js'
 import { PATH } from '../../workspace/paths.js'
 import { useCreateProposalDialog } from '../../hooks/useCreateProposalDialog.js'
+import NotificationCenter from '../Notifications/NotificationCenter.jsx'
 import styles from './Header.module.css'
 
 function Header() {
@@ -19,6 +20,7 @@ function Header() {
             Create proposal
           </button>
         )}
+        <NotificationCenter />
         <span className={styles.avatar} role="img" aria-label="Account">
           PF
         </span>

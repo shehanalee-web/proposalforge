@@ -3,9 +3,36 @@
  *
  * Versions are stored on the proposal itself. Each snapshot is a deep copy of
  * the document at save time, so later edits cannot mutate past versions.
+ * Restore always appends. Nothing in this log is rewritten.
  */
 
 export const DEFAULT_UPDATED_BY = 'Studio'
+
+export const VERSION_SOURCE = Object.freeze({
+  INITIAL: 'initial',
+  MANUAL: 'manual',
+  SENT: 'sent',
+  RESENT: 'resent',
+  REQUEST_CHANGES: 'request_changes',
+  APPROVED: 'approved',
+  DECLINED: 'declined',
+  CONTENT_EDIT: 'content_edit',
+  RESTORED: 'restored',
+})
+
+export const VERSION_SOURCES = Object.freeze(Object.values(VERSION_SOURCE))
+
+export const VERSION_REASON = Object.freeze({
+  [VERSION_SOURCE.INITIAL]: 'Initial Draft',
+  [VERSION_SOURCE.MANUAL]: 'Manual Save',
+  [VERSION_SOURCE.SENT]: 'Sent',
+  [VERSION_SOURCE.RESENT]: 'Resent',
+  [VERSION_SOURCE.REQUEST_CHANGES]: 'Client Requested Changes',
+  [VERSION_SOURCE.APPROVED]: 'Approved',
+  [VERSION_SOURCE.DECLINED]: 'Declined',
+  [VERSION_SOURCE.CONTENT_EDIT]: 'Revised',
+  [VERSION_SOURCE.RESTORED]: 'Restored',
+})
 
 /**
  * @typedef {object} ProposalSnapshotPricing
@@ -29,23 +56,33 @@ export const DEFAULT_UPDATED_BY = 'Studio'
  * @typedef {object} ProposalSnapshot
  * @property {string} title
  * @property {string} description
- * @property {import('./proposal.js').ProposalSection[]} sections
- * @property {import('./proposal.js').ProposalLineItem[]} items
+ * @property {object[]} sections
+ * @property {object[]} items
  * @property {ProposalSnapshotPricing} pricing
  * @property {string} terms
  * @property {string} notes
  * @property {ProposalSnapshotMetadata} metadata
  * @property {string} layoutId
- * @property {import('../blocks/instance.js').BlockInstance[]} blocks
+ * @property {object[]} blocks
  * @property {object[]} images
+ * @property {object | null} questionnaire
+ * @property {object[]} uploads
+ * @property {object | null} approval
+ * @property {object | null} signature
+ * @property {object | null} payment
  */
 
 /**
  * @typedef {object} ProposalVersion
+ * @property {string} id
  * @property {string} versionId
+ * @property {string} proposalId
  * @property {number} versionNumber
  * @property {string} createdAt
+ * @property {string} createdBy
  * @property {string} updatedBy
+ * @property {string} reason
+ * @property {string} source
  * @property {string} status
  * @property {ProposalSnapshot} snapshot
  * @property {number | null} restoredFrom
@@ -60,11 +97,27 @@ function createId(prefix) {
 }
 
 function cloneDeep(value) {
+  if (value == null) return value
   if (typeof structuredClone === 'function') {
     return structuredClone(value)
   }
 
   return JSON.parse(JSON.stringify(value))
+}
+
+function uploadMetadata(uploads = []) {
+  return (uploads ?? []).map((item) => ({
+    id: item.id,
+    name: item.name,
+    mimeType: item.mimeType,
+    sizeBytes: item.sizeBytes,
+    kind: item.kind,
+    storageKey: item.storageKey,
+    url: item.url,
+    currentVersion: item.currentVersion,
+    uploadedBy: item.uploadedBy,
+    uploadedByName: item.uploadedByName,
+  }))
 }
 
 /**
@@ -96,6 +149,11 @@ export function snapshotFromProposal(proposal) {
     layoutId: proposal.layoutId ?? '',
     blocks: proposal.blocks ?? [],
     images: proposal.images ?? [],
+    questionnaire: proposal.questionnaire ?? null,
+    uploads: uploadMetadata(proposal.uploads),
+    approval: proposal.approval ?? null,
+    signature: proposal.signature ?? null,
+    payment: proposal.payment ?? null,
   })
 }
 
@@ -123,7 +181,7 @@ export function proposalFieldsFromSnapshot(snapshot) {
     projectType: metadata.projectType,
     tags: cloneDeep(metadata.tags ?? []),
     validUntil: metadata.validUntil ?? null,
-    status: metadata.status ?? 'draft',
+    status: metadata.status ?? snapshot.approval?.status ?? 'draft',
   }
 
   if (Array.isArray(metadata.serviceIds)) {
@@ -142,7 +200,49 @@ export function proposalFieldsFromSnapshot(snapshot) {
     fields.images = cloneDeep(snapshot.images)
   }
 
+  if (snapshot.questionnaire) {
+    fields.questionnaire = cloneDeep(snapshot.questionnaire)
+  }
+
+  if (Array.isArray(snapshot.uploads)) {
+    fields.uploads = cloneDeep(snapshot.uploads)
+  }
+
+  if (snapshot.approval) {
+    fields.approval = cloneDeep(snapshot.approval)
+  }
+
+  if (snapshot.signature) {
+    fields.signature = cloneDeep(snapshot.signature)
+  }
+
+  if (snapshot.payment) {
+    fields.payment = cloneDeep(snapshot.payment)
+  }
+
   return fields
+}
+
+function inferSource(input = {}) {
+  if (VERSION_SOURCES.includes(input.source)) return input.source
+  if (input.restoredFrom != null) return VERSION_SOURCE.RESTORED
+  if (Number(input.versionNumber ?? 1) === 1) return VERSION_SOURCE.INITIAL
+  if (input.status === 'accepted') return VERSION_SOURCE.APPROVED
+  if (input.status === 'declined') return VERSION_SOURCE.DECLINED
+  if (input.status === 'revision_requested') return VERSION_SOURCE.REQUEST_CHANGES
+  if (input.status === 'sent') return VERSION_SOURCE.SENT
+  return VERSION_SOURCE.MANUAL
+}
+
+function normalizeSource(value, input = {}) {
+  return VERSION_SOURCES.includes(value) ? value : inferSource(input)
+}
+
+function defaultReason(source, restoredFrom) {
+  if (source === VERSION_SOURCE.RESTORED && restoredFrom != null) {
+    return `Restored from v${restoredFrom}`
+  }
+  return VERSION_REASON[source] ?? VERSION_REASON[VERSION_SOURCE.MANUAL]
 }
 
 /**
@@ -150,17 +250,27 @@ export function proposalFieldsFromSnapshot(snapshot) {
  * @returns {ProposalVersion}
  */
 export function makeVersion(input = {}) {
+  const id = input.id ?? input.versionId ?? createId('ver')
+  const restoredFrom =
+    input.restoredFrom === undefined || input.restoredFrom === null
+      ? null
+      : Number(input.restoredFrom)
+  const source = normalizeSource(input.source, input)
+  const createdBy = input.createdBy ?? input.updatedBy ?? DEFAULT_UPDATED_BY
+
   return {
-    versionId: input.versionId ?? createId('ver'),
+    id,
+    versionId: input.versionId ?? id,
+    proposalId: input.proposalId ?? '',
     versionNumber: Number(input.versionNumber ?? 1),
     createdAt: input.createdAt ?? new Date().toISOString(),
-    updatedBy: input.updatedBy ?? DEFAULT_UPDATED_BY,
+    createdBy,
+    updatedBy: createdBy,
+    reason: String(input.reason ?? '').trim() || defaultReason(source, restoredFrom),
+    source,
     status: input.status ?? 'draft',
     snapshot: cloneDeep(input.snapshot ?? snapshotFromProposal({})),
-    restoredFrom:
-      input.restoredFrom === undefined || input.restoredFrom === null
-        ? null
-        : Number(input.restoredFrom),
+    restoredFrom,
   }
 }
 
@@ -173,10 +283,27 @@ function lastVersion(versions) {
 
 function comparableBlocks(blocks) {
   return (blocks ?? []).map((block) => ({
+    id: block.id ?? '',
     type: block.type ?? '',
     enabled: Boolean(block.enabled),
     data: block.data ?? {},
   }))
+}
+
+function comparableQuestionnaire(questionnaire) {
+  if (!questionnaire) return null
+  return {
+    status: questionnaire.status ?? '',
+    questions: (questionnaire.questions ?? []).map((question) => ({
+      id: question.id,
+      title: question.title,
+      type: question.type,
+    })),
+    responses: (questionnaire.responses ?? []).map((response) => ({
+      questionId: response.questionId,
+      value: response.value ?? null,
+    })),
+  }
 }
 
 function comparableSnapshot(snapshot) {
@@ -209,6 +336,14 @@ function comparableSnapshot(snapshot) {
     },
     layoutId: snapshot.layoutId ?? '',
     blocks: comparableBlocks(snapshot.blocks),
+    questionnaire: comparableQuestionnaire(snapshot.questionnaire),
+    uploads: uploadMetadata(snapshot.uploads),
+    approval: snapshot.approval?.status ?? '',
+    signature: snapshot.signature?.status ?? '',
+    payment: {
+      status: snapshot.payment?.status ?? '',
+      remainingBalance: Number(snapshot.payment?.remainingBalance ?? 0),
+    },
   }
 }
 
@@ -230,13 +365,18 @@ export function snapshotsEqual(left, right) {
  * @returns {T}
  */
 export function ensureProposalVersions(proposal) {
-  const versions = (proposal.versions ?? []).map(makeVersion)
+  const versions = (proposal.versions ?? []).map((item) =>
+    makeVersion({ ...item, proposalId: item.proposalId || proposal.id }),
+  )
 
   if (versions.length === 0) {
     const first = makeVersion({
+      proposalId: proposal.id,
       versionNumber: 1,
       createdAt: proposal.createdAt,
-      updatedBy: DEFAULT_UPDATED_BY,
+      createdBy: DEFAULT_UPDATED_BY,
+      source: VERSION_SOURCE.INITIAL,
+      reason: VERSION_REASON[VERSION_SOURCE.INITIAL],
       status: proposal.status,
       snapshot: snapshotFromProposal(proposal),
     })
@@ -262,14 +402,19 @@ function appendVersion(proposal, options = {}) {
   const latest = lastVersion(versions)
   const versionNumber = (latest?.versionNumber ?? 0) + 1
   const snapshot = snapshotFromProposal(proposal)
+  const source = normalizeSource(options.source)
+  const restoredFrom = options.restoredFrom ?? null
 
   const next = makeVersion({
+    proposalId: proposal.id,
     versionNumber,
-    createdAt: proposal.updatedAt ?? new Date().toISOString(),
-    updatedBy: options.updatedBy ?? DEFAULT_UPDATED_BY,
+    createdAt: options.createdAt ?? proposal.updatedAt ?? new Date().toISOString(),
+    createdBy: options.createdBy ?? options.updatedBy ?? DEFAULT_UPDATED_BY,
+    source,
+    reason: options.reason,
     status: proposal.status,
     snapshot,
-    restoredFrom: options.restoredFrom ?? null,
+    restoredFrom,
   })
 
   return {
@@ -281,10 +426,10 @@ function appendVersion(proposal, options = {}) {
 
 /**
  * Append a version after a save, unless the document is identical to the last
- * snapshot.
+ * snapshot. Typing and local autosaves never reach this function.
  *
  * @param {import('./proposal.js').Proposal} proposal
- * @param {{ updatedBy?: string }} [options]
+ * @param {{ updatedBy?: string, createdBy?: string, source?: string, reason?: string, force?: boolean }} [options]
  * @returns {import('./proposal.js').Proposal}
  */
 export function recordSaveVersion(proposal, options = {}) {
@@ -292,25 +437,46 @@ export function recordSaveVersion(proposal, options = {}) {
   const latest = lastVersion(ensured.versions)
   const snapshot = snapshotFromProposal(ensured)
 
-  if (latest && snapshotsEqual(latest.snapshot, snapshot)) {
+  if (!options.force && latest && snapshotsEqual(latest.snapshot, snapshot)) {
     return ensured
   }
 
-  return appendVersion(ensured, options)
+  return appendVersion(ensured, {
+    ...options,
+    source: options.source ?? VERSION_SOURCE.MANUAL,
+  })
+}
+
+/**
+ * Always append a milestone version (sent, approved, declined, restore, …).
+ *
+ * @param {import('./proposal.js').Proposal} proposal
+ * @param {{ source: string, reason?: string, createdBy?: string, updatedBy?: string, restoredFrom?: number | null }} options
+ */
+export function recordMilestoneVersion(proposal, options) {
+  return appendVersion(ensureProposalVersions(proposal), options)
 }
 
 /**
  * Append a restored snapshot as a new latest version. Older versions stay.
  *
  * @param {import('./proposal.js').Proposal} proposal
- * @param {{ restoredFrom: number, updatedBy?: string }} options
+ * @param {{ restoredFrom: number, updatedBy?: string, createdBy?: string }} options
  * @returns {import('./proposal.js').Proposal}
  */
 export function recordRestoreVersion(proposal, options) {
-  return appendVersion(ensureProposalVersions(proposal), {
-    updatedBy: options.updatedBy,
+  return recordMilestoneVersion(proposal, {
+    source: VERSION_SOURCE.RESTORED,
     restoredFrom: options.restoredFrom,
+    createdBy: options.createdBy ?? options.updatedBy,
+    updatedBy: options.updatedBy,
+    reason: `Restored from v${options.restoredFrom}`,
   })
+}
+
+function addedById(fromList, toList) {
+  const known = new Set((fromList ?? []).map((item) => item.id).filter(Boolean))
+  return (toList ?? []).filter((item) => item.id && !known.has(item.id))
 }
 
 /**
@@ -341,6 +507,13 @@ export function diffSnapshots(current, selected) {
       changed: changed('description'),
     },
     {
+      key: 'status',
+      label: 'Status',
+      current: left.metadata.status,
+      selected: right.metadata.status,
+      changed: left.metadata.status !== right.metadata.status,
+    },
+    {
       key: 'sections',
       label: 'Sections',
       current: left.sections,
@@ -360,6 +533,64 @@ export function diffSnapshots(current, selected) {
       current: left.pricing,
       selected: right.pricing,
       changed: changed('pricing'),
+    },
+    {
+      key: 'blocks',
+      label: 'Content blocks',
+      current: left.blocks,
+      selected: right.blocks,
+      changed: changed('blocks'),
+    },
+    {
+      key: 'blocksAdded',
+      label: 'Added blocks',
+      current: [],
+      selected: addedById(left.blocks, right.blocks),
+      changed: addedById(left.blocks, right.blocks).length > 0,
+    },
+    {
+      key: 'blocksRemoved',
+      label: 'Removed blocks',
+      current: addedById(right.blocks, left.blocks),
+      selected: [],
+      changed: addedById(right.blocks, left.blocks).length > 0,
+    },
+    {
+      key: 'questionnaire',
+      label: 'Questionnaire',
+      current: left.questionnaire,
+      selected: right.questionnaire,
+      changed: changed('questionnaire'),
+    },
+    {
+      key: 'responses',
+      label: 'Client responses',
+      current: left.questionnaire?.responses ?? [],
+      selected: right.questionnaire?.responses ?? [],
+      changed:
+        JSON.stringify(left.questionnaire?.responses ?? []) !==
+        JSON.stringify(right.questionnaire?.responses ?? []),
+    },
+    {
+      key: 'uploads',
+      label: 'Files',
+      current: left.uploads,
+      selected: right.uploads,
+      changed: changed('uploads'),
+    },
+    {
+      key: 'filesAdded',
+      label: 'Files added',
+      current: [],
+      selected: addedById(left.uploads, right.uploads),
+      changed: addedById(left.uploads, right.uploads).length > 0,
+    },
+    {
+      key: 'filesRemoved',
+      label: 'Files removed',
+      current: addedById(right.uploads, left.uploads),
+      selected: [],
+      changed: addedById(right.uploads, left.uploads).length > 0,
     },
     {
       key: 'terms',
@@ -382,13 +613,6 @@ export function diffSnapshots(current, selected) {
       selected: right.layoutId,
       changed: changed('layoutId'),
     },
-    {
-      key: 'blocks',
-      label: 'Content blocks',
-      current: left.blocks,
-      selected: right.blocks,
-      changed: changed('blocks'),
-    },
   ]
 }
 
@@ -398,4 +622,16 @@ export function diffSnapshots(current, selected) {
  */
 export function latestVersionNumber(versions) {
   return lastVersion(versions)?.versionNumber ?? 0
+}
+
+export function versionLabel(version) {
+  const number = version?.versionNumber ?? 0
+  const reason = version?.reason || VERSION_REASON[version?.source] || 'Version'
+  return `v${number} ${reason}`
+}
+
+export function findVersion(versions, versionId) {
+  return (versions ?? []).find(
+    (item) => item.versionId === versionId || item.id === versionId,
+  )
 }

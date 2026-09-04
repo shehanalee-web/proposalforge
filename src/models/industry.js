@@ -1,8 +1,9 @@
 /**
  * Industries used to browse services when creating a proposal.
  *
- * Add a new entry here to extend the Create Proposal industry dropdown.
- * Discovery metadata on each service points at one of these ids.
+ * This is the platform taxonomy. Add entries here as the product expands;
+ * Create Proposal always lists the full set. Services for each industry live
+ * in catalogue seed data, not in this file.
  */
 
 export const INDUSTRY = Object.freeze({
@@ -31,6 +32,14 @@ export const INDUSTRY = Object.freeze({
   HR: 'hr',
   GOVERNMENT: 'government',
   LOGISTICS: 'logistics',
+  ENERGY: 'energy',
+  TELECOMMUNICATIONS: 'telecommunications',
+  AUTOMOTIVE: 'automotive',
+  BEAUTY: 'beauty',
+  NONPROFIT: 'nonprofit',
+  AGRICULTURE: 'agriculture',
+  MEDIA: 'media',
+  TECHNOLOGY: 'technology',
 })
 
 /**
@@ -68,6 +77,14 @@ export const INDUSTRIES = Object.freeze([
   { id: INDUSTRY.HR,            label: 'HR',             color: '#f9a8d4', icon: 'team' },
   { id: INDUSTRY.GOVERNMENT,    label: 'Government',     color: '#93c5fd', icon: 'proposals' },
   { id: INDUSTRY.LOGISTICS,     label: 'Logistics',      color: '#fdba74', icon: 'assets' },
+  { id: INDUSTRY.ENERGY,        label: 'Energy',         color: '#facc15', icon: 'settings' },
+  { id: INDUSTRY.TELECOMMUNICATIONS, label: 'Telecommunications', color: '#22d3ee', icon: 'typeSoftware' },
+  { id: INDUSTRY.AUTOMOTIVE,    label: 'Automotive',     color: '#fb7185', icon: 'assets' },
+  { id: INDUSTRY.BEAUTY,        label: 'Beauty',         color: '#e879f9', icon: 'brand' },
+  { id: INDUSTRY.NONPROFIT,     label: 'Non-profit',     color: '#86efac', icon: 'team' },
+  { id: INDUSTRY.AGRICULTURE,   label: 'Agriculture',    color: '#84cc16', icon: 'content' },
+  { id: INDUSTRY.MEDIA,         label: 'Media',          color: '#c084fc', icon: 'typeMotion' },
+  { id: INDUSTRY.TECHNOLOGY,    label: 'Technology',     color: '#818cf8', icon: 'typeSoftware' },
 ])
 
 const INDUSTRY_BY_ID = new Map(INDUSTRIES.map((industry) => [industry.id, industry]))

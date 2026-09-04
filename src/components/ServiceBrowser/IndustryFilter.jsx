@@ -4,15 +4,27 @@ import { INDUSTRIES } from '../../models/industry.js'
 import styles from './IndustryFilter.module.css'
 
 /**
- * Searchable industry dropdown with colour-coded dots.
+ * Searchable catalogue dropdown with colour-coded dots.
  * Keyboard navigation: Arrow Up/Down moves through options, Enter/Escape close.
+ *
+ * Pass `options` to reuse the same control for categories. Industry usage
+ * always lists the full taxonomy.
  *
  * @param {{
  *   value: string,
  *   onChange: (id: string) => void,
+ *   options?: readonly { id: string, label: string, color?: string }[],
+ *   ariaLabel?: string,
+ *   searchPlaceholder?: string,
  * }} props
  */
-function IndustryFilter({ value, onChange }) {
+function IndustryFilter({
+  value,
+  onChange,
+  options = INDUSTRIES,
+  ariaLabel = 'Industry',
+  searchPlaceholder = 'Filter industries...',
+}) {
   const [open, setOpen] = useState(false)
   const [filterText, setFilterText] = useState('')
   const rootRef = useRef(null)
@@ -20,13 +32,13 @@ function IndustryFilter({ value, onChange }) {
   const inputRef = useRef(null)
   const labelId = useId()
 
-  const selected = INDUSTRIES.find((i) => i.id === value) ?? INDUSTRIES[0]
+  const selected = options.find((item) => item.id === value) ?? options[0]
 
   const filtered = filterText
-    ? INDUSTRIES.filter((i) =>
-        i.label.toLowerCase().includes(filterText.toLowerCase()),
+    ? options.filter((item) =>
+        item.label.toLowerCase().includes(filterText.toLowerCase()),
       )
-    : INDUSTRIES
+    : options
 
   /* Close on outside click / Escape. */
   useEffect(() => {
@@ -110,7 +122,7 @@ function IndustryFilter({ value, onChange }) {
       >
         <span
           className={styles.triggerDot}
-          style={{ background: selected.color }}
+          style={{ background: selected?.color ?? '#71717a' }}
           aria-hidden="true"
         />
         <span className={styles.triggerLabel}>{selected.label}</span>
@@ -118,7 +130,7 @@ function IndustryFilter({ value, onChange }) {
       </button>
 
       {open ? (
-        <div className={styles.dropdown} role="listbox" aria-label="Industry">
+        <div className={styles.dropdown} role="listbox" aria-label={ariaLabel}>
           <div className={styles.searchRow}>
             <Icon name="search" size={14} className={styles.searchIcon} />
             <input
@@ -127,8 +139,8 @@ function IndustryFilter({ value, onChange }) {
               className={styles.searchInput}
               value={filterText}
               onChange={(event) => setFilterText(event.target.value)}
-              placeholder="Filter industries..."
-              aria-label="Filter industries"
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
               autoComplete="off"
               spellCheck={false}
               onKeyDown={(event) => {
@@ -150,23 +162,23 @@ function IndustryFilter({ value, onChange }) {
             {filtered.length === 0 ? (
               <li className={styles.noMatch}>No matches</li>
             ) : (
-              filtered.map((industry) => (
-                <li key={industry.id || 'all'} role="none">
+              filtered.map((item) => (
+                <li key={item.id || 'all'} role="none">
                   <button
                     type="button"
                     role="option"
-                    data-value={industry.id}
-                    aria-selected={industry.id === value}
-                    className={`${styles.option} ${industry.id === value ? styles.optionActive : ''}`}
-                    onClick={() => select(industry.id)}
+                    data-value={item.id}
+                    aria-selected={item.id === value}
+                    className={`${styles.option} ${item.id === value ? styles.optionActive : ''}`}
+                    onClick={() => select(item.id)}
                     tabIndex={-1}
                   >
                     <span
                       className={styles.dot}
-                      style={{ background: industry.color }}
+                      style={{ background: item.color ?? '#71717a' }}
                       aria-hidden="true"
                     />
-                    {industry.label}
+                    {item.label}
                   </button>
                 </li>
               ))

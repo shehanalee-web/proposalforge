@@ -5,6 +5,9 @@ import SearchBar from '../../components/ServiceBrowser/SearchBar.jsx'
 import IndustryFilter from '../../components/ServiceBrowser/IndustryFilter.jsx'
 import EmptyState from '../../components/ServiceBrowser/EmptyState.jsx'
 import ServiceCount from '../../components/ServiceBrowser/ServiceCount.jsx'
+import { getIndustryLabel } from '../../models/industry.js'
+import { categoriesForIndustry, getCategoryLabel } from '../../models/category.js'
+import { CATALOGUE_CATEGORIES } from '../../data/catalogue/index.js'
 import { BRAND_FONTS } from '../../models/brandKit.js'
 import { findTemplateForService } from '../../models/service.js'
 import { MOCK_WORKSPACES } from '../../data/mockWorkspaces.js'
@@ -92,17 +95,28 @@ function CreateProposal() {
   const [creatingServiceId, setCreatingServiceId] = useState(null)
   const [serviceQuery, setServiceQuery] = useState('')
   const [serviceIndustry, setServiceIndustry] = useState('')
+  const [serviceCategory, setServiceCategory] = useState('')
   /* Index of the keyboard-focused service card (-1 = none). */
   const [focusedCard, setFocusedCard] = useState(-1)
   const cardGridRef = useRef(null)
+
+  const categoryOptions = useMemo(() => {
+    const list = categoriesForIndustry(CATALOGUE_CATEGORIES, serviceIndustry)
+    return [
+      { id: '', label: 'All Categories', color: '#71717a' },
+      ...list,
+    ]
+  }, [serviceIndustry])
 
   const visibleServices = useMemo(
     () =>
       filterServices(services, {
         search: serviceQuery,
         industry: serviceIndustry,
+        category: serviceCategory,
+        categories: CATALOGUE_CATEGORIES,
       }),
-    [services, serviceQuery, serviceIndustry],
+    [services, serviceQuery, serviceIndustry, serviceCategory],
   )
 
   /* Reset focused card whenever the visible set changes. */
@@ -115,7 +129,25 @@ function CreateProposal() {
   const clearFilters = useCallback(() => {
     setServiceQuery('')
     setServiceIndustry('')
+    setServiceCategory('')
   }, [])
+
+  const browseAllServices = useCallback(() => {
+    setServiceIndustry('')
+    setServiceCategory('')
+  }, [])
+
+  function handleIndustryChange(id) {
+    setServiceIndustry(id)
+    setServiceCategory((current) => {
+      if (!current) return current
+      const stillValid = CATALOGUE_CATEGORIES.some(
+        (category) =>
+          category.id === current && (!id || category.industryId === id),
+      )
+      return stillValid ? current : ''
+    })
+  }
 
   function handleCardGridKeyDown(event) {
     const count = visibleServices.length
@@ -373,7 +405,7 @@ function CreateProposal() {
                 <ServiceCount count={visibleServices.length} />
               </div>
 
-              {/* Toolbar: search + industry */}
+              {/* Toolbar: search + industry + category */}
               <div className={styles.browserToolbar} role="search">
                 <SearchBar
                   value={serviceQuery}
@@ -381,13 +413,32 @@ function CreateProposal() {
                 />
                 <IndustryFilter
                   value={serviceIndustry}
-                  onChange={setServiceIndustry}
+                  onChange={handleIndustryChange}
+                />
+                <IndustryFilter
+                  value={serviceCategory}
+                  onChange={setServiceCategory}
+                  options={categoryOptions}
+                  ariaLabel="Category"
+                  searchPlaceholder="Filter categories..."
                 />
               </div>
 
               {/* Results */}
               {visibleServices.length === 0 ? (
-                <EmptyState onClear={clearFilters} />
+                <EmptyState
+                  onClear={clearFilters}
+                  onBrowseAll={browseAllServices}
+                  search={serviceQuery}
+                  industryLabel={
+                    serviceIndustry ? getIndustryLabel(serviceIndustry) : ''
+                  }
+                  categoryLabel={
+                    serviceCategory
+                      ? getCategoryLabel(CATALOGUE_CATEGORIES, serviceCategory)
+                      : ''
+                  }
+                />
               ) : (
                 <div
                   className={styles.typeGrid}

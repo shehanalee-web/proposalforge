@@ -17,7 +17,7 @@ import {
   SIGNATURE_STATUS,
   SIGNATURE_STATUS_LABELS,
 } from '../../models/signature.js'
-import { PROPOSAL_STATUS_LABELS } from '../../models/proposal.js'
+import { PROPOSAL_STATUS, PROPOSAL_STATUS_LABELS } from '../../models/proposal.js'
 import { formatCurrency } from '../../utils/format.js'
 import { useProposalClientWorkspace } from '../../hooks/useProposalUploads.js'
 import { isPreviewableUpload, UPLOAD_KIND } from '../../models/upload.js'
@@ -36,7 +36,7 @@ const TABS = [
   { id: 'payment', label: 'Payment' },
 ]
 
-function ClientWorkspacePanel({ proposal, open, onClose, onProposalChange }) {
+function ClientWorkspacePanel({ proposal, open, onClose, onProposalChange, onSend }) {
   const flow = useProposalClientWorkspace({
     proposalId: proposal?.id,
     onProposalChange,
@@ -151,14 +151,35 @@ function ClientWorkspacePanel({ proposal, open, onClose, onProposalChange }) {
               <p className={styles.copy}>{proposal.approval.summary}</p>
             ) : null}
             {!locked ? (
-              <button
-                type="button"
-                className={styles.danger}
-                disabled={flow.busy}
-                onClick={() => flow.cancel()}
-              >
-                Cancel proposal
-              </button>
+              <>
+                {proposal.status === PROPOSAL_STATUS.DRAFT ? (
+                  <button
+                    type="button"
+                    className={styles.primary}
+                    disabled={flow.busy}
+                    onClick={onSend}
+                  >
+                    Send proposal
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className={styles.primary}
+                    disabled={flow.busy}
+                    onClick={onSend}
+                  >
+                    Resend proposal
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={styles.danger}
+                  disabled={flow.busy}
+                  onClick={() => flow.cancel()}
+                >
+                  Cancel proposal
+                </button>
+              </>
             ) : (
               <p className={styles.note}>This proposal is locked.</p>
             )}

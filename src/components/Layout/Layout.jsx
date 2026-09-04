@@ -4,7 +4,11 @@ import Header from '../Header/Header.jsx'
 import { CreateProposalProvider } from '../CreateProposal/CreateProposalContext.jsx'
 import CreateProposalDialog from '../CreateProposal/CreateProposalDialog.jsx'
 import StartProposalDialog from '../CreateProposal/StartProposalDialog.jsx'
+import ActivityToasts from '../Activity/ActivityToasts.jsx'
+import { bindNotificationPersistence } from '../../services/notificationService.js'
 import styles from './Layout.module.css'
+
+bindNotificationPersistence()
 
 function Layout() {
   return (
@@ -20,6 +24,7 @@ function Layout() {
       </div>
       <StartProposalDialog />
       <CreateProposalDialog />
+      <ActivityToasts />
     </CreateProposalProvider>
   )
 }

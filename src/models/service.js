@@ -33,6 +33,13 @@ export const PRICING_MODEL_LABELS = Object.freeze({
  * @property {string} id
  * @property {string} name
  * @property {string} description
+ * @property {string} subtitle
+ * @property {string} industry
+ * @property {string[]} industries
+ * @property {string} categoryId
+ * @property {string[]} keywords
+ * @property {string[]} tags
+ * @property {string[]} proposalSections
  * @property {string} defaultDescription
  * @property {string} pricingModel
  * @property {string[]} deliverables
@@ -56,8 +63,15 @@ export function makeService(input = {}) {
   return {
     id: input.id ?? createRecordId('svc'),
     name: input.name ?? '',
+    subtitle: String(input.subtitle ?? '').trim(),
     description: input.description ?? '',
     defaultDescription: input.defaultDescription ?? '',
+    industry: String(input.industry ?? '').trim(),
+    industries: [...new Set((input.industries ?? []).map((id) => String(id).trim()).filter(Boolean))],
+    categoryId: String(input.categoryId ?? '').trim(),
+    keywords: [...(input.keywords ?? [])],
+    tags: [...(input.tags ?? [])],
+    proposalSections: [...(input.proposalSections ?? [])],
     pricingModel: input.pricingModel ?? PRICING_MODEL.FIXED,
     deliverables: [...(input.deliverables ?? [])],
     typicalDuration: input.typicalDuration ?? '',

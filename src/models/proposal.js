@@ -18,6 +18,10 @@ import { makeProposalApproval, isPastValidUntil } from './approval.js'
 import { makeProposalSignature } from './signature.js'
 import { makeProposalPayment } from './payment.js'
 import { makeProposalUpload, makeUploadFolder } from './upload.js'
+import { makeEmailDeliverySummary } from './emailDelivery.js'
+import { makeViewAnalytics } from './viewAnalytics.js'
+
+export const DEFAULT_OWNER_NAME = 'Studio'
 
 export const PROPOSAL_STATUS = Object.freeze({
   DRAFT: 'draft',
@@ -27,6 +31,7 @@ export const PROPOSAL_STATUS = Object.freeze({
   REVISION_REQUESTED: 'revision_requested',
   EXPIRED: 'expired',
   CANCELLED: 'cancelled',
+  ARCHIVED: 'archived',
 })
 
 export const PROPOSAL_STATUSES = Object.freeze(Object.values(PROPOSAL_STATUS))
@@ -44,6 +49,7 @@ export const PROPOSAL_STATUS_LABELS = Object.freeze({
   [PROPOSAL_STATUS.REVISION_REQUESTED]: 'Needs revision',
   [PROPOSAL_STATUS.EXPIRED]: 'Expired',
   [PROPOSAL_STATUS.CANCELLED]: 'Cancelled',
+  [PROPOSAL_STATUS.ARCHIVED]: 'Archived',
 })
 
 /** Status chips shown in history filters, including display-only Viewed. */
@@ -56,6 +62,7 @@ export const LIST_STATUS_FILTERS = Object.freeze([
   PROPOSAL_STATUS.DECLINED,
   PROPOSAL_STATUS.EXPIRED,
   PROPOSAL_STATUS.CANCELLED,
+  PROPOSAL_STATUS.ARCHIVED,
 ])
 
 export const PROJECT_TYPES = Object.freeze([
@@ -108,6 +115,9 @@ export const DEFAULT_CURRENCY = 'USD'
  * @property {string[]} tags                  Free-form labels.
  * @property {string | null} validUntil       ISO date the offer expires.
  * @property {string} shareToken              Unguessable token for the client portal.
+ * @property {string} ownerName               Studio owner display name.
+ * @property {string | null} lastActivityAt   Latest commercial event timestamp.
+ * @property {import('./viewAnalytics.js').ViewAnalytics} analytics Mock client-view stats.
  * @property {string | null} lastViewedAt     When a client last opened the portal.
  * @property {string | null} acceptedAt       When a client accepted the proposal.
  * @property {string} clientFeedback          Comment from a revision request.
@@ -249,6 +259,10 @@ export function makeProposal(input = {}) {
       currency: input.payment?.currency ?? input.currency ?? DEFAULT_CURRENCY,
       subtotal: input.payment?.subtotal ?? input.amount ?? 0,
     }),
+    lastEmail: makeEmailDeliverySummary(input.lastEmail),
+    ownerName: String(input.ownerName ?? '').trim() || DEFAULT_OWNER_NAME,
+    lastActivityAt: input.lastActivityAt ?? input.updatedAt ?? timestamp,
+    analytics: makeViewAnalytics(input.analytics),
     createdAt: input.createdAt ?? timestamp,
     updatedAt: input.updatedAt ?? timestamp,
     currentVersion: input.currentVersion ?? 0,
@@ -282,6 +296,10 @@ export function getDisplayStatus(proposal) {
     return PROPOSAL_STATUS.CANCELLED
   }
 
+  if (proposal.status === PROPOSAL_STATUS.ARCHIVED) {
+    return PROPOSAL_STATUS.ARCHIVED
+  }
+
   if (proposal.status === PROPOSAL_STATUS.REVISION_REQUESTED) {
     return PROPOSAL_STATUS.REVISION_REQUESTED
   }
@@ -308,7 +326,8 @@ export function canClientRespond(proposal) {
     proposal.status !== PROPOSAL_STATUS.ACCEPTED &&
     proposal.status !== PROPOSAL_STATUS.DECLINED &&
     proposal.status !== PROPOSAL_STATUS.EXPIRED &&
-    proposal.status !== PROPOSAL_STATUS.CANCELLED
+    proposal.status !== PROPOSAL_STATUS.CANCELLED &&
+    proposal.status !== PROPOSAL_STATUS.ARCHIVED
   )
 }
 

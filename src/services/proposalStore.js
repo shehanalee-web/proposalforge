@@ -1,6 +1,7 @@
 import { MOCK_PROPOSALS } from '../data/mockProposals.js'
 import { makeProposal } from '../models/proposal.js'
 import { persistableProposal } from './hydrateAssets.js'
+import { advanceEmailStatus } from '../models/emailDelivery.js'
 
 /**
  * Proposal records. Seeded from mocks, then persisted to `data/proposals.json`
@@ -19,18 +20,59 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value))
 }
 
+function mergeLastEmail(local, remote) {
+  if (!remote) return local ?? null
+  if (!local) return remote
+  if (local.id && remote.id && local.id !== remote.id) {
+    const localTime = Date.parse(local.sentAt || '') || 0
+    const remoteTime = Date.parse(remote.sentAt || '') || 0
+    return remoteTime >= localTime ? remote : local
+  }
+  return {
+    ...local,
+    ...remote,
+    status: advanceEmailStatus(local.status, remote.status),
+    error: remote.error || local.error,
+  }
+}
+
 async function persist() {
   if (!records) return
+
+  let disk = []
+  try {
+    const response = await fetch('/api/proposals')
+    if (response.ok) {
+      const payload = await response.json()
+      if (Array.isArray(payload?.records)) disk = payload.records
+    }
+  } catch {
+    /* local API unavailable */
+  }
+
+  const diskById = new Map(disk.map((row) => [row.id, row]))
+  const merged = records.map((record) => {
+    const payload = persistableProposal(record)
+    const fromDisk = diskById.get(record.id)
+    if (!fromDisk) return payload
+    return {
+      ...payload,
+      lastEmail: mergeLastEmail(payload.lastEmail, fromDisk.lastEmail),
+      lastViewedAt: fromDisk.lastViewedAt || payload.lastViewedAt,
+    }
+  })
 
   const response = await fetch('/api/proposals', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(records.map((record) => persistableProposal(record))),
+    body: JSON.stringify(merged),
   })
 
   if (!response.ok) {
     throw new Error('Could not persist proposals.')
   }
+
+  records = merged.map((record) => persistableProposal(makeProposal(record)))
 }
 
 export async function ready() {

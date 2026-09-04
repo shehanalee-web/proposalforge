@@ -15,6 +15,7 @@ export const APPROVAL_STATUS = Object.freeze({
   DECLINED: 'declined',
   EXPIRED: 'expired',
   CANCELLED: 'cancelled',
+  ARCHIVED: 'archived',
 })
 
 export const APPROVAL_STATUSES = Object.freeze(Object.values(APPROVAL_STATUS))
@@ -28,6 +29,7 @@ export const APPROVAL_STATUS_LABELS = Object.freeze({
   [APPROVAL_STATUS.DECLINED]: 'Declined',
   [APPROVAL_STATUS.EXPIRED]: 'Expired',
   [APPROVAL_STATUS.CANCELLED]: 'Cancelled',
+  [APPROVAL_STATUS.ARCHIVED]: 'Archived',
 })
 
 const LOCKED_STATUSES = new Set([
@@ -35,6 +37,7 @@ const LOCKED_STATUSES = new Set([
   APPROVAL_STATUS.DECLINED,
   APPROVAL_STATUS.EXPIRED,
   APPROVAL_STATUS.CANCELLED,
+  APPROVAL_STATUS.ARCHIVED,
 ])
 
 /**

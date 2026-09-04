@@ -1,6 +1,8 @@
 import { Link } from 'react-router'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
 import { getDisplayStatus } from '../../models/proposal.js'
+import { getViewCount } from '../../models/commercialQueues.js'
+import { EMAIL_DELIVERY_STATUS_LABELS } from '../../models/emailDelivery.js'
 import {
   handleCardClick,
   handleCardLinkKeyDown,
@@ -72,11 +74,15 @@ function RecentProposals({ proposals, loading, error, onRetry }) {
               {formatCurrency(proposal.amount, proposal.currency)}
             </span>
             <span className={styles.date}>
+              {getViewCount(proposal)} views
+              {proposal.lastEmail?.status
+                ? ` · ${EMAIL_DELIVERY_STATUS_LABELS[proposal.lastEmail.status] ?? proposal.lastEmail.status}`
+                : ''}
               {proposal.lastViewedAt
-                ? `Viewed ${formatDateTime(proposal.lastViewedAt)}`
+                ? ` · Viewed ${formatDateTime(proposal.lastViewedAt)}`
                 : proposal.acceptedAt
-                  ? `Accepted ${formatDateTime(proposal.acceptedAt)}`
-                  : formatDateTime(proposal.updatedAt)}
+                  ? ` · Accepted ${formatDateTime(proposal.acceptedAt)}`
+                  : ` · ${formatDateTime(proposal.updatedAt)}`}
             </span>
           </div>
 

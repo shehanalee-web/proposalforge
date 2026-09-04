@@ -27,5 +27,6 @@ export function toDuplicateDraft(proposal) {
     tags: proposal.tags ?? [],
     layoutId: proposal.layoutId,
     blocks: proposal.blocks ?? [],
+    duplicatedFromId: proposal.id,
   }
 }

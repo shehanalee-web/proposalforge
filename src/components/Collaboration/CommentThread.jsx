@@ -101,6 +101,15 @@ function CommentBody({
   return (
     <>
       <p className={styles.message}>{comment.message}</p>
+      {comment.mentions?.length ? (
+        <p className={styles.mentions}>
+          {comment.mentions.map((name) => (
+            <span key={name} className={styles.badge}>
+              @{name}
+            </span>
+          ))}
+        </p>
+      ) : null}
       {canEdit ? (
         <button
           type="button"
@@ -131,6 +140,12 @@ function CommentMeta({ comment, studio }) {
           Internal
         </span>
       ) : null}
+      {comment.pinned ? (
+        <span className={styles.badge}>
+          <Icon name="pin" size={10} />
+          Pinned
+        </span>
+      ) : null}
       <span>
         {formatDateTime(comment.createdAt)}
         {comment.editedAt ? ' · Edited' : ''}
@@ -149,11 +164,13 @@ function CommentThread({
   canReply = false,
   canResolve = false,
   canReopen = false,
+  canPin = false,
   disabled = false,
   onReply,
   onEdit,
   onResolve,
   onReopen,
+  onPin,
   actorType = COMMENT_AUTHOR.CLIENT,
 }) {
   const [replyOpen, setReplyOpen] = useState(false)
@@ -231,6 +248,16 @@ function CommentThread({
             disabled={disabled}
           >
             Reopen
+          </button>
+        ) : null}
+        {canPin ? (
+          <button
+            type="button"
+            className={styles.textBtn}
+            onClick={() => onPin?.(thread.id, !thread.pinned)}
+            disabled={disabled}
+          >
+            {thread.pinned ? 'Unpin' : 'Pin'}
           </button>
         ) : null}
         {thread.resolved ? <span className={styles.resolvedLabel}>Resolved</span> : null}

@@ -101,6 +101,8 @@ export function localUploadsPlugin() {
   const assetsFile = join(dataDir, 'assets.json')
   const proposalsFile = join(dataDir, 'proposals.json')
   const brandKitFile = join(dataDir, 'brand-kit.json')
+  const activityEventsFile = join(dataDir, 'activityEvents.json')
+  const notificationsFile = join(dataDir, 'notifications.json')
 
   function loadAssets() {
     const records = readJson(assetsFile, [])
@@ -246,6 +248,34 @@ export function localUploadsPlugin() {
         const body = JSON.parse((await readBody(req, 4 * 1024 * 1024)).toString('utf8') || 'null')
         writeJson(brandKitFile, body)
         return json(res, 200, { ok: true })
+      }
+
+      if (method === 'GET' && matchRoute(url, '/api/activity-events')) {
+        const records = readJson(activityEventsFile, [])
+        return json(res, 200, { records: Array.isArray(records) ? records : [] })
+      }
+
+      if (method === 'PUT' && matchRoute(url, '/api/activity-events')) {
+        const body = JSON.parse((await readBody(req, 16 * 1024 * 1024)).toString('utf8') || 'null')
+        if (!Array.isArray(body)) {
+          return json(res, 400, { message: 'Expected an array of activity events.' })
+        }
+        writeJson(activityEventsFile, body)
+        return json(res, 200, { ok: true, count: body.length })
+      }
+
+      if (method === 'GET' && matchRoute(url, '/api/notifications')) {
+        const records = readJson(notificationsFile, [])
+        return json(res, 200, { records: Array.isArray(records) ? records : [] })
+      }
+
+      if (method === 'PUT' && matchRoute(url, '/api/notifications')) {
+        const body = JSON.parse((await readBody(req, 8 * 1024 * 1024)).toString('utf8') || 'null')
+        if (!Array.isArray(body)) {
+          return json(res, 400, { message: 'Expected an array of notifications.' })
+        }
+        writeJson(notificationsFile, body)
+        return json(res, 200, { ok: true, count: body.length })
       }
     } catch (error) {
       const status = error.status || (error instanceof SyntaxError ? 400 : 500)

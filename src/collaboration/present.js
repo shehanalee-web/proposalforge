@@ -14,8 +14,24 @@ import {
 export function presentProposalForClient(proposal) {
   if (!proposal) return proposal
 
+  const rest = { ...proposal }
+  delete rest.versions
+  delete rest.currentVersion
+
+  const questionnaire = rest.questionnaire
+    ? {
+        ...rest.questionnaire,
+        questions: (rest.questionnaire.questions ?? []).map((question) => ({
+          ...question,
+          internalNotes: '',
+        })),
+      }
+    : rest.questionnaire
+
   return {
-    ...proposal,
+    ...rest,
+    notes: '',
+    questionnaire,
     comments: listClientVisibleComments(proposal.comments),
     activity: (proposal.activity ?? [])
       .map((item) => makeActivityEvent(item))

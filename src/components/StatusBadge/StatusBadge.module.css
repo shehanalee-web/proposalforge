@@ -10,6 +10,13 @@
   white-space: nowrap;
 }
 
+.compact {
+  padding: 0.05rem 0.4rem;
+  font-size: 0.625rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
 /*
  * Tints are derived from the existing status tokens with color-mix rather than
  * hard-coded, so a change to a status colour flows through automatically.
@@ -52,8 +59,51 @@
 }
 
 .expired,
-.cancelled {
+.cancelled,
+.archived {
   color: var(--color-text-muted);
   background-color: var(--color-surface-active);
   border-color: var(--color-border-strong);
+}
+
+.queued,
+.sending {
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface-active);
+  border-color: var(--color-border-strong);
+}
+
+.delivered {
+  color: var(--color-info);
+  background-color: color-mix(in srgb, var(--color-info) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-info) 32%, transparent);
+}
+
+.opened {
+  color: var(--color-accent);
+  background-color: color-mix(in srgb, var(--color-accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent) 32%, transparent);
+}
+
+.overdue,
+.failed,
+.bounced {
+  color: var(--color-danger);
+  background-color: color-mix(in srgb, var(--color-danger) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-danger) 32%, transparent);
+}
+
+.deposit_due,
+.outstanding,
+.waiting {
+  color: var(--color-warning);
+  background-color: color-mix(in srgb, var(--color-warning) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-warning) 32%, transparent);
+}
+
+.paid,
+.signed {
+  color: var(--color-success);
+  background-color: color-mix(in srgb, var(--color-success) 14%, transparent);
+  border-color: color-mix(in srgb, var(--color-success) 32%, transparent);
 }

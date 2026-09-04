@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import {
   addStudioComment,
+  setProposalThreadPinned,
   setProposalThreadResolved,
 } from '../services/proposalService.js'
 
@@ -41,10 +42,17 @@ export function useProposalCollaboration({ proposalId, onProposalChange }) {
     [run, proposalId],
   )
 
+  const setPinned = useCallback(
+    (commentId, pinned) =>
+      run(() => setProposalThreadPinned(proposalId, commentId, pinned)),
+    [run, proposalId],
+  )
+
   return {
     busy,
     error,
     addComment,
     setResolved,
+    setPinned,
   }
 }

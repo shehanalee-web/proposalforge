@@ -28,6 +28,16 @@ export const COMMENT_EDIT_WINDOW_MS = 15 * 60 * 1000
 export const STUDIO_AUTHOR_NAME = 'Studio'
 
 const MESSAGE_MAX = 4000
+const MENTION_PATTERN = /@([A-Za-z][\w.-]*)/g
+
+/**
+ * @param {string} message
+ * @returns {string[]}
+ */
+export function parseMentions(message) {
+  const found = String(message ?? '').matchAll(MENTION_PATTERN)
+  return [...new Set([...found].map((match) => match[1]))]
+}
 
 /**
  * @typedef {object} ProposalComment
@@ -40,6 +50,8 @@ const MESSAGE_MAX = 4000
  * @property {string} createdAt
  * @property {string | null} editedAt
  * @property {boolean} resolved
+ * @property {boolean} pinned
+ * @property {string[]} mentions
  * @property {'client' | 'internal'} visibility
  * @property {string | null} sectionId
  * @property {string} sectionTitle
@@ -73,6 +85,10 @@ export function makeComment(input = {}) {
     createdAt: input.createdAt ?? new Date().toISOString(),
     editedAt: input.editedAt ?? null,
     resolved: Boolean(input.resolved),
+    pinned: Boolean(input.pinned),
+    mentions: Array.isArray(input.mentions)
+      ? input.mentions.map((item) => String(item).trim()).filter(Boolean)
+      : parseMentions(input.message),
     visibility,
     sectionId: input.sectionId ?? null,
     sectionTitle: String(input.sectionTitle ?? '').trim(),

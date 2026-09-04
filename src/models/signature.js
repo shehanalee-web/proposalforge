@@ -35,7 +35,7 @@ export const SIGNATURE_STATUSES = Object.freeze(Object.values(SIGNATURE_STATUS))
 
 export const SIGNATURE_STATUS_LABELS = Object.freeze({
   [SIGNATURE_STATUS.NOT_REQUESTED]: 'Not requested',
-  [SIGNATURE_STATUS.WAITING]: 'Waiting for signature',
+  [SIGNATURE_STATUS.WAITING]: 'Awaiting signature',
   [SIGNATURE_STATUS.SIGNED]: 'Signed',
   [SIGNATURE_STATUS.DECLINED]: 'Declined',
   [SIGNATURE_STATUS.VOID]: 'Void',
@@ -48,11 +48,28 @@ export const SIGNATURE_STATUS_LABELS = Object.freeze({
  * @property {string} status
  * @property {string} provider
  * @property {string} signer
+ * @property {string} signerEmail
+ * @property {string | null} requestedAt
  * @property {string | null} signedAt
+ * @property {string | null} declinedAt
  * @property {string | null} ipAddress
  * @property {string} browser
  * @property {string} device
+ * @property {object[]} auditTrail
  */
+
+/**
+ * @param {Partial<{ id: string, at: string, actor: string, action: string, detail: string }>} [input]
+ */
+export function makeSignatureAuditEvent(input = {}) {
+  return {
+    id: input.id ?? createRecordId('sae'),
+    at: input.at ?? new Date().toISOString(),
+    actor: String(input.actor ?? 'studio').trim() || 'studio',
+    action: String(input.action ?? 'note').trim() || 'note',
+    detail: String(input.detail ?? '').trim(),
+  }
+}
 
 export function makeProposalSignature(input = {}) {
   const status = SIGNATURE_STATUSES.includes(input.status)
@@ -68,9 +85,15 @@ export function makeProposalSignature(input = {}) {
     status,
     provider,
     signer: String(input.signer ?? '').trim(),
+    signerEmail: String(input.signerEmail ?? '').trim(),
+    requestedAt: input.requestedAt ?? null,
     signedAt: input.signedAt ?? null,
+    declinedAt: input.declinedAt ?? null,
     ipAddress: input.ipAddress ?? null,
     browser: input.browser ?? '',
     device: input.device ?? '',
+    auditTrail: Array.isArray(input.auditTrail)
+      ? input.auditTrail.map((item) => makeSignatureAuditEvent(item))
+      : [],
   }
 }

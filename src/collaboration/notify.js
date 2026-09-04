@@ -1,23 +1,25 @@
 import { createRecordId } from '../models/ids.js'
 import { CLIENT_ACTIVITY_TYPE } from '../models/clientActivity.js'
+import { NOTIFICATION_TYPE } from '../models/notification.js'
 
 /**
- * Notification architecture.
+ * Notification dispatch bus.
  *
- * Events are recorded and can be subscribed to. No email, SMS, or provider
- * is connected in Phase 8D.
+ * Listeners persist in-app notifications. No email, SMS, or push provider
+ * is connected.
  */
 
 export const NOTIFICATION_EVENT = Object.freeze({
-  PROPOSAL_VIEWED: 'proposal_viewed',
-  QUESTIONNAIRE_SUBMITTED: 'questionnaire_submitted',
-  FILES_UPLOADED: 'files_uploaded',
-  COMMENT_ADDED: 'comment_added',
-  REQUEST_CHANGES: 'request_changes',
-  APPROVED: 'approved',
-  DECLINED: 'declined',
-  SIGNATURE_COMPLETED: 'signature_completed',
-  PAYMENT_COMPLETED: 'payment_completed',
+  PROPOSAL_VIEWED: NOTIFICATION_TYPE.PROPOSAL_VIEWED,
+  QUESTIONNAIRE_SUBMITTED: NOTIFICATION_TYPE.QUESTIONNAIRE_SUBMITTED,
+  FILES_UPLOADED: NOTIFICATION_TYPE.FILES_UPLOADED,
+  COMMENT_ADDED: NOTIFICATION_TYPE.COMMENT_RECEIVED,
+  REQUEST_CHANGES: NOTIFICATION_TYPE.REQUEST_CHANGES,
+  APPROVED: NOTIFICATION_TYPE.PROPOSAL_ACCEPTED,
+  DECLINED: NOTIFICATION_TYPE.DECLINED,
+  SIGNATURE_REQUESTED: NOTIFICATION_TYPE.SIGNATURE_REQUESTED,
+  SIGNATURE_COMPLETED: NOTIFICATION_TYPE.SIGNATURE_COMPLETED,
+  PAYMENT_COMPLETED: NOTIFICATION_TYPE.PAYMENT_RECEIVED,
 })
 
 const ACTIVITY_TO_NOTIFICATION = {
@@ -31,6 +33,7 @@ const ACTIVITY_TO_NOTIFICATION = {
   [CLIENT_ACTIVITY_TYPE.ACCEPTED]: NOTIFICATION_EVENT.APPROVED,
   [CLIENT_ACTIVITY_TYPE.APPROVED]: NOTIFICATION_EVENT.APPROVED,
   [CLIENT_ACTIVITY_TYPE.DECLINED]: NOTIFICATION_EVENT.DECLINED,
+  [CLIENT_ACTIVITY_TYPE.SIGNATURE_REQUESTED]: NOTIFICATION_EVENT.SIGNATURE_REQUESTED,
   [CLIENT_ACTIVITY_TYPE.SIGNED]: NOTIFICATION_EVENT.SIGNATURE_COMPLETED,
   [CLIENT_ACTIVITY_TYPE.PAYMENT_COMPLETED]: NOTIFICATION_EVENT.PAYMENT_COMPLETED,
 }
@@ -80,6 +83,11 @@ export function emitNotificationEvent(type, payload = {}) {
  */
 export function scheduleCollaborationNotice(event) {
   const type = ACTIVITY_TO_NOTIFICATION[event?.type]
-  if (type) emitNotificationEvent(type, { activity: event })
+  if (type) {
+    const dispatched = emitNotificationEvent(type, { activity: event })
+    void import('../services/notificationService.js').then((mod) => {
+      mod.ingestDispatchedNotification(dispatched)
+    })
+  }
   return event
 }

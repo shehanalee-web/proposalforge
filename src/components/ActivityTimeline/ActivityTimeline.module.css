@@ -32,6 +32,15 @@
   background: var(--color-border);
 }
 
+.eventIcons {
+  grid-template-columns: 1.35rem minmax(0, 1fr);
+}
+
+.eventIcons:not(:last-child)::before {
+  left: 0.62rem;
+  top: 1.45rem;
+}
+
 .dot {
   width: 0.65rem;
   height: 0.65rem;
@@ -61,6 +70,22 @@
 
 .dot[data-type='commented'],
 .dot[data-type='replied'] {
+  background: var(--color-info);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-info) 18%, transparent);
+}
+
+.dotIcon {
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-top: 0;
+  display: grid;
+  place-items: center;
+  color: var(--color-surface);
+}
+
+.dot[data-type='sent'],
+.dot[data-type='downloaded'],
+.dot[data-type='edited'] {
   background: var(--color-info);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-info) 18%, transparent);
 }

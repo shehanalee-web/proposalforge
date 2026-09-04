@@ -1,5 +1,6 @@
 import { LAYOUT_ID } from '../layouts/ids.js'
 import { PROPOSAL_TYPE } from '../models/proposalType.js'
+import { CATALOGUE_TEMPLATES } from './catalogue/index.js'
 import { seedBrandDiscoveryQuestionnaire } from './seedDiscoveryQuestionnaire.js'
 
 /**
@@ -229,4 +230,5 @@ export const MOCK_TEMPLATES = [
     createdAt: '2026-07-28T10:30:00.000Z',
     updatedAt: '2026-08-14T15:20:00.000Z',
   }),
+  ...CATALOGUE_TEMPLATES,
 ]
