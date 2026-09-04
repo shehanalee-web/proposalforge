@@ -1,19 +1,31 @@
 import { useMemo } from 'react'
 import Icon from '../Icon/Icon.jsx'
-import { RISK_LEVEL, RISK_LEVEL_LABELS } from '../../insights/ids.js'
+import {
+  FINDING_SEVERITY,
+  FINDING_SEVERITY_LABELS,
+  RISK_LEVEL,
+  RISK_LEVEL_LABELS,
+} from '../../insights/ids.js'
 import { useProposalHealth } from '../../hooks/useProposalHealth.js'
 import SidebarSection from './SidebarSection.jsx'
 import styles from './HealthScore.module.css'
 
 /**
  * Live proposal health. Completeness still uses the original checklist;
- * score, risk and suggestions come from the Insights health engine.
+ * diagnostics explain why a gap hurts the document — severity, reason,
+ * and a concrete fix.
  */
+
+function severityClass(severity) {
+  if (severity === FINDING_SEVERITY.CRITICAL) return styles.findingCritical
+  if (severity === FINDING_SEVERITY.WARNING) return styles.findingWarning
+  return styles.findingInfo
+}
 
 function HealthScore({ proposal, blocks }) {
   const report = useProposalHealth(proposal, blocks)
-  const suggestions = useMemo(
-    () => report.suggestions.slice(0, 3),
+  const diagnostics = useMemo(
+    () => report.suggestions.slice(0, 5),
     [report.suggestions],
   )
   const riskClass =
@@ -65,16 +77,31 @@ function HealthScore({ proposal, blocks }) {
           ))}
         </ul>
 
-        {suggestions.length > 0 ? (
-          <ul className={styles.tips}>
-            {suggestions.map((item) => (
-              <li key={item.id} className={styles.tip}>
-                <Icon name="spark" size={12} />
-                <span>{item.suggestion}</span>
+        {diagnostics.length > 0 ? (
+          <ul className={styles.findings}>
+            {diagnostics.map((item) => (
+              <li
+                key={item.id}
+                className={`${styles.finding} ${severityClass(item.severity)}`}
+              >
+                <p className={styles.findingTitle}>{item.title}</p>
+                <p className={styles.findingMeta}>
+                  {FINDING_SEVERITY_LABELS[item.severity]}
+                </p>
+                <p className={styles.findingReason}>
+                  <span className={styles.findingLabel}>Why</span>
+                  {item.message}
+                </p>
+                <p className={styles.findingFix}>
+                  <span className={styles.findingLabel}>Improve</span>
+                  {item.suggestion}
+                </p>
               </li>
             ))}
           </ul>
-        ) : null}
+        ) : (
+          <p className={styles.meta}>No diagnostic issues on this draft.</p>
+        )}
       </div>
     </SidebarSection>
   )

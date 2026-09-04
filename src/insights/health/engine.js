@@ -13,6 +13,8 @@ import {
   resolveBlocks,
 } from '../document.js'
 import { runHealthRules } from './rules.js'
+import { runDiagnostics } from './diagnostics.js'
+import { mergeHealthFindings, weightedQualityScore } from './rank.js'
 
 const COMPLETENESS_WEIGHT = 70
 const QUALITY_WEIGHT = 30
@@ -62,11 +64,6 @@ function completenessScore(checks) {
   return total > 0 ? (earned / total) * 100 : 0
 }
 
-function qualityScore(findings) {
-  const penalty = findings.reduce((sum, finding) => sum + finding.impact, 0)
-  return clampScore(100 - penalty)
-}
-
 /**
  * Analyse a proposal the way a sales director would skim it: completeness,
  * commercial gaps, structure, and copy risk. Pure and synchronous — nothing
@@ -114,7 +111,7 @@ export function analyzeProposalHealth(input = {}) {
   const facts = pricingFacts(pricingBlock, source)
   const placement = blockPlacement(blocks, BLOCK_TYPE.PRICING)
   const text = collectDocumentText(blocks)
-  const findings = runHealthRules({
+  const context = {
     blocks,
     proposal: source,
     text,
@@ -129,12 +126,13 @@ export function analyzeProposalHealth(input = {}) {
     hasSummary: Boolean(summaryBlock),
     placement,
     hasMilestoneSchedule: facts.hasMilestones,
-  })
+  }
+  const findings = mergeHealthFindings(runHealthRules(context), runDiagnostics(context))
 
   const passed = checks.filter((check) => check.pass).length
   const overallScore = blendScores([
     { score: completenessScore(checks), weight: COMPLETENESS_WEIGHT },
-    { score: qualityScore(findings), weight: QUALITY_WEIGHT },
+    { score: weightedQualityScore(findings), weight: QUALITY_WEIGHT },
   ])
   const readingScore = readingScoreFromText(text)
   const warnings = findings.filter(

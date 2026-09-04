@@ -28,6 +28,12 @@ export const FINDING_SEVERITY = Object.freeze({
 
 export const FINDING_SEVERITIES = Object.freeze(Object.values(FINDING_SEVERITY))
 
+export const FINDING_SEVERITY_LABELS = Object.freeze({
+  [FINDING_SEVERITY.INFO]: 'Info',
+  [FINDING_SEVERITY.WARNING]: 'Warning',
+  [FINDING_SEVERITY.CRITICAL]: 'Critical',
+})
+
 export const FINDING_CATEGORY = Object.freeze({
   COMPLETENESS: 'completeness',
   STRUCTURE: 'structure',
@@ -74,4 +80,6 @@ export const FINDING_CODE = Object.freeze({
   LONG_SUMMARY: 'long_summary',
   LONG_PROPOSAL: 'long_proposal',
   PRICING_TOO_EARLY: 'pricing_too_early',
+  MISSING_OBJECTIVES: 'missing_objectives',
+  WEAK_VALUE_PROPOSITION: 'weak_value_proposition',
 })
