@@ -1,0 +1,16 @@
+.wrap {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.title {
+  font-size: var(--text-xl);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+}
+
+.list {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0;
+}

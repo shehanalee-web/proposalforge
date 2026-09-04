@@ -1,52 +1,15 @@
 /**
  * Resolve the document a client should see.
  *
- * Live proposal fields are the current working copy. When version history is
- * present, the current (or latest) snapshot is applied so the portal always
- * shows the newest active version without rewriting stored history.
+ * The live proposal is the current working copy. Version history is studio-only
+ * and is stripped before a record reaches the portal, so this returns the
+ * proposal as presented — never a draft overlay, restore, or compare payload.
  *
  * @param {import('../models/proposal.js').Proposal} proposal
  * @returns {import('../models/proposal.js').Proposal}
  */
 export function getActiveProposal(proposal) {
-  const versions = proposal.versions
-
-  if (!Array.isArray(versions) || versions.length === 0) {
-    return proposal
-  }
-
-  const current =
-    versions.find((version) => version.versionNumber === proposal.currentVersion) ??
-    versions.reduce((latest, version) =>
-      version.versionNumber > latest.versionNumber ? version : latest,
-    )
-
-  const snapshot = current?.snapshot
-
-  if (!snapshot) return proposal
-
-  const metadata = snapshot.metadata ?? {}
-
-  return {
-    ...proposal,
-    title: snapshot.title ?? proposal.title,
-    summary: snapshot.summary ?? snapshot.description ?? proposal.summary,
-    sections: snapshot.sections ?? proposal.sections,
-    items: snapshot.items ?? proposal.items,
-    amount: snapshot.amount ?? snapshot.pricing?.amount ?? proposal.amount,
-    currency: snapshot.currency ?? snapshot.pricing?.currency ?? proposal.currency,
-    terms: snapshot.terms ?? proposal.terms,
-    notes: snapshot.notes ?? proposal.notes,
-    clientName: snapshot.clientName ?? metadata.clientName ?? proposal.clientName,
-    clientEmail:
-      snapshot.clientEmail ?? metadata.clientEmail ?? proposal.clientEmail,
-    company: snapshot.company ?? metadata.company ?? proposal.company,
-    projectType:
-      snapshot.projectType ?? metadata.projectType ?? proposal.projectType,
-    tags: snapshot.tags ?? metadata.tags ?? proposal.tags,
-    validUntil: snapshot.validUntil ?? metadata.validUntil ?? proposal.validUntil,
-    layoutId: snapshot.layoutId ?? metadata.layoutId ?? proposal.layoutId,
-  }
+  return proposal
 }
 
 /**
@@ -54,7 +17,7 @@ export function getActiveProposal(proposal) {
  * @returns {string}
  */
 export function getClientPortalPath(shareToken) {
-  return `/p/${shareToken}`
+  return `/p/share/${shareToken}`
 }
 
 /**
@@ -69,4 +32,47 @@ export function getClientPortalUrl(shareToken) {
   }
 
   return `${window.location.origin}${path}`
+}
+
+function shareGateKey(token) {
+  return `proposalforge.shareGate.${token}`
+}
+
+/**
+ * Session unlock for a gated client link. Cleared when the tab closes.
+ *
+ * @param {string} token
+ * @returns {{ password: string, email: string }}
+ */
+export function readShareGate(token) {
+  if (!token || typeof sessionStorage === 'undefined') {
+    return { password: '', email: '' }
+  }
+  try {
+    const raw = sessionStorage.getItem(shareGateKey(token))
+    if (!raw) return { password: '', email: '' }
+    const parsed = JSON.parse(raw)
+    return {
+      password: String(parsed?.password ?? ''),
+      email: String(parsed?.email ?? ''),
+    }
+  } catch {
+    return { password: '', email: '' }
+  }
+}
+
+export function writeShareGate(token, credentials = {}) {
+  if (!token || typeof sessionStorage === 'undefined') return
+  sessionStorage.setItem(
+    shareGateKey(token),
+    JSON.stringify({
+      password: String(credentials.password ?? ''),
+      email: String(credentials.email ?? ''),
+    }),
+  )
+}
+
+export function clearShareGate(token) {
+  if (!token || typeof sessionStorage === 'undefined') return
+  sessionStorage.removeItem(shareGateKey(token))
 }

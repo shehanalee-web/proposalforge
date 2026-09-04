@@ -1,12 +1,59 @@
 .compare {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-3) var(--space-4);
+  gap: 0.75rem 0.9rem;
+  animation: reveal 180ms ease;
+}
+
+.toggle {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.empty {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.35rem;
+  justify-items: center;
+  padding: 1.35rem 1.15rem;
+  border: 1px dashed color-mix(in srgb, var(--color-border) 80%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface-raised) 70%, transparent);
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.emptyHint {
+  margin: 0;
+  max-width: 42ch;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.fields {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem 0.9rem;
+  animation: reveal 180ms ease;
 }
 
 .heading {
-  font-size: var(--text-xs);
-  font-weight: 600;
+  font-size: 0.65rem;
+  font-weight: 650;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-text-muted);
@@ -16,47 +63,136 @@
   grid-column: 1 / -1;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
-  padding: var(--space-3);
+  gap: 0.5rem 0.75rem;
+  padding: 0.7rem 0.75rem;
   border: 1px solid var(--color-border);
+  border-left-width: 3px;
   border-radius: var(--radius-md);
-  background-color: var(--color-surface);
+  background-color: var(--color-surface-raised);
+  transition:
+    border-color var(--transition-base),
+    background-color var(--transition-base);
 }
 
 .label {
   grid-column: 1 / -1;
-  font-size: var(--text-sm);
-  font-weight: 600;
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: 650;
 }
 
 .value {
   margin: 0;
-  padding: var(--space-3);
+  padding: 0.5rem 0.6rem;
   border-radius: var(--radius-sm);
   background-color: var(--color-bg);
   color: var(--color-text-secondary);
   font-family: var(--font-sans);
-  font-size: var(--text-sm);
+  font-size: 0.75rem;
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
+.same {
+  border-left-color: color-mix(in srgb, var(--color-border) 80%, transparent);
+  background-color: color-mix(in srgb, var(--color-surface-raised) 55%, transparent);
+}
+
+.same .label {
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
 .changed {
-  border-color: color-mix(in srgb, var(--color-warning) 40%, transparent);
+  border-left-color: var(--color-warning);
 }
 
 .changed .label {
   color: var(--color-warning);
 }
 
+.added {
+  border-left-color: var(--color-success);
+}
+
+.added .label {
+  color: var(--color-success);
+}
+
+.added .selected {
+  background-color: color-mix(in srgb, var(--color-success) 12%, var(--color-bg));
+}
+
+.removed {
+  border-left-color: var(--color-danger);
+}
+
+.removed .label {
+  color: var(--color-danger);
+}
+
+.removed .current {
+  background-color: color-mix(in srgb, var(--color-danger) 12%, var(--color-bg));
+}
+
+.inlineWrap {
+  grid-column: 1 / -1;
+}
+
+.inline {
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.inline .added {
+  color: var(--color-success);
+  background-color: color-mix(in srgb, var(--color-success) 16%, transparent);
+  border-radius: 0.15rem;
+}
+
+.inline .removed {
+  color: var(--color-danger);
+  background-color: color-mix(in srgb, var(--color-danger) 16%, transparent);
+  border-radius: 0.15rem;
+  text-decoration: line-through;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 720px) {
   .compare,
+  .fields,
   .row {
     grid-template-columns: 1fr;
   }
 
   .heading.selected {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .compare,
+  .fields,
+  .row {
+    animation: none;
+    transition: none;
   }
 }

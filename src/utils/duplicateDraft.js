@@ -16,6 +16,7 @@ export function toDuplicateDraft(proposal) {
     clientEmail: proposal.clientEmail ?? '',
     company: proposal.company ?? '',
     projectType: proposal.projectType ?? PROJECT_TYPES[0],
+    serviceIds: [...(proposal.serviceIds ?? [])],
     amount: proposal.amount ? String(proposal.amount) : '',
     summary: proposal.summary ?? '',
     validUntil: proposal.validUntil ?? '',
@@ -26,5 +27,6 @@ export function toDuplicateDraft(proposal) {
     tags: proposal.tags ?? [],
     layoutId: proposal.layoutId,
     blocks: proposal.blocks ?? [],
+    duplicatedFromId: proposal.id,
   }
 }

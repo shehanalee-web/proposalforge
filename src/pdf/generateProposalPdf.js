@@ -50,6 +50,8 @@ export async function loadProposalPdfContext(proposal, options = {}) {
 
 export async function downloadProposalPdf(proposal, options = {}) {
   const { blob, filename } = await loadProposalPdfContext(proposal, options)
+  const { recordPdfDownloaded } = await import('../services/activityService.js')
+  recordPdfDownloaded(proposal, options)
   const url = URL.createObjectURL(blob)
 
   try {

@@ -4,6 +4,7 @@ import { useTemplate } from '../../hooks/useTemplate.js'
 import { useCreateTemplate } from '../../hooks/useCreateTemplate.js'
 import { useUpdateTemplate } from '../../hooks/useUpdateTemplate.js'
 import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
+import { makeQuestionnaire } from '../../models/questionnaire.js'
 import TemplateForm from './TemplateForm.jsx'
 import styles from './TemplateEditor.module.css'
 
@@ -17,6 +18,7 @@ const EMPTY_FORM = {
   terms: '',
   notes: '',
   defaultLayoutId: DEFAULT_LAYOUT_ID,
+  questionnaire: makeQuestionnaire(),
 }
 
 function valuesFromTemplate(template) {
@@ -36,6 +38,7 @@ function valuesFromTemplate(template) {
     terms: template.terms ?? '',
     notes: template.notes ?? '',
     defaultLayoutId: template.defaultLayoutId ?? DEFAULT_LAYOUT_ID,
+    questionnaire: template.questionnaire ?? makeQuestionnaire(),
   }
 }
 
@@ -64,6 +67,7 @@ function toPayload(values) {
     terms: values.terms,
     notes: values.notes,
     defaultLayoutId: values.defaultLayoutId ?? DEFAULT_LAYOUT_ID,
+    questionnaire: values.questionnaire ?? makeQuestionnaire(),
   }
 }
 

@@ -15,7 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * @param {{ enabled?: boolean, initialData?: T }} [options]
  * @param {boolean} [options.enabled] Skip the request when false.
  * @param {T} [options.initialData] Value held before the first result arrives.
- * @returns {{ data: T, loading: boolean, error: Error | null, refetch: () => Promise<void> }}
+ * @returns {{ data: T, loading: boolean, error: Error | null, refetch: () => Promise<void>, setData: (value: T) => void }}
  */
 export function useAsyncData(task, options = {}) {
   const { enabled = true, initialData = null } = options
@@ -72,5 +72,5 @@ export function useAsyncData(task, options = {}) {
     }
   }, [run])
 
-  return { data, loading, error, refetch: run }
+  return { data, loading, error, refetch: run, setData }
 }

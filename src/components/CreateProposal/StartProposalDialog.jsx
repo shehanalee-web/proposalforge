@@ -46,7 +46,7 @@ function StartProposalDialog() {
             Create a proposal
           </h2>
           <p className={styles.lede}>
-            Draft with AI, or start from a template you already trust.
+            Draft with AI, or start from a service in the library.
           </p>
         </header>
 
@@ -82,11 +82,11 @@ function StartProposalDialog() {
               <span className={styles.choiceKicker}>Library</span>
               <span className={styles.choiceTitle}>Start from Template</span>
               <span className={styles.choiceText}>
-                Pick a workspace, brand and proposal type. We copy that type’s
+                Pick a workspace, brand and service. We copy that service’s
                 template into a new document.
               </span>
             </span>
-            <span className={styles.choiceHint}>Choose type</span>
+            <span className={styles.choiceHint}>Choose service</span>
           </button>
         </div>
 

@@ -6,6 +6,7 @@ import {
   makeLineItem,
   makeSection,
 } from '../models/proposal.js'
+import { findServiceForName } from '../models/service.js'
 import {
   matchProjectType,
   suggestTitle,
@@ -20,12 +21,15 @@ const DEFAULT_TERMS = `Payment is due according to the schedule in this proposal
  * with a complete, editable draft.
  *
  * @param {import('../models/proposalDraft.js').ProposalDraft} draft
+ * @param {import('../models/service.js').Service[]} [services]
  * @returns {Partial<import('../models/proposal.js').Proposal>}
  */
-export function proposalFromDraft(draft) {
+export function proposalFromDraft(draft, services = []) {
   const clientName = draft.client?.trim() || draft.company?.trim() || 'New client'
   const company = draft.company?.trim() || clientName
-  const projectType = matchProjectType(draft.projectType) || 'Consulting'
+  const matchedService = findServiceForName(services, draft.projectType)
+  const projectType =
+    matchedService?.name || matchProjectType(draft.projectType) || 'Consulting'
   const title = draft.title?.trim() || suggestTitle(draft) || `${projectType} proposal`
   const amount = Number(draft.pricing?.amount ?? 0) || 0
   const feeLabel = draft.pricing?.notes?.trim() || `${projectType} fee`
@@ -41,6 +45,7 @@ export function proposalFromDraft(draft) {
     clientName,
     company,
     projectType,
+    serviceIds: matchedService ? [matchedService.id] : [],
     amount,
     currency: draft.pricing?.currency || DEFAULT_CURRENCY,
     summary,

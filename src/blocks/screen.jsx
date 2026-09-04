@@ -1,5 +1,6 @@
 import Icon from '../components/Icon/Icon.jsx'
 import StatusBadge from '../components/StatusBadge/StatusBadge.jsx'
+import { useProposalTheme } from '../theme/ProposalThemeContext.jsx'
 import { formatDate } from '../utils/format.js'
 import { LAYOUT_ID } from '../layouts/ids.js'
 import {
@@ -41,11 +42,24 @@ function MetaItem({ label, children }) {
 
 export function CoverScreen({ instance, proposal, brand, settings, layout, status }) {
   const data = instance.data
+  const { tokens } = useProposalTheme()
   const studioName = studioNameFromBrand(brand, settings)
   const landscape = layout?.id === LAYOUT_ID.LANDSCAPE
-  const coverClass = landscape
-    ? `${styles.cover} ${styles.coverLandscape}`
-    : styles.cover
+  const cover = tokens.cover
+  const coverClass = [
+    styles.cover,
+    landscape && styles.coverLandscape,
+    cover.layout === 'split' && styles.coverSplit,
+    cover.layout === 'full-bleed' && styles.coverBleed,
+    cover.layout === 'minimal' && styles.coverMinimal,
+    cover.imagePosition === 'top' && styles.coverImageTop,
+    cover.imagePosition === 'background' && styles.coverImageBg,
+    cover.gradient && styles.coverGradient,
+    cover.pattern === 'dots' && styles.coverDots,
+    cover.pattern === 'grid' && styles.coverGrid,
+  ]
+    .filter(Boolean)
+    .join(' ')
   const heading = data.heading?.trim() || proposal.title
   const kicker = data.kicker?.trim() || proposal.projectType
   const logoUrl = resolveLogoUrl(brand, 'light')

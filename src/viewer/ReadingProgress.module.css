@@ -1,0 +1,15 @@
+.track {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  height: 3px;
+  background: color-mix(in srgb, var(--color-border) 80%, transparent);
+}
+
+@media print {
+  .track {
+    display: none;
+  }
+}

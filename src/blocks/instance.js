@@ -1,5 +1,5 @@
 import { createRecordId } from '../models/ids.js'
-import { CONTENT_BLOCK_TYPE_LABELS } from '../models/contentBlock.js'
+import { CONTENT_BLOCK_TYPE_LABELS, defaultBlockSettings } from '../models/contentBlock.js'
 import { BLOCK_TYPE, BUILTIN_BLOCK_TYPES } from './ids.js'
 import { makeBlockData } from './schemas.js'
 
@@ -15,6 +15,8 @@ import { makeBlockData } from './schemas.js'
  * @property {string} type
  * @property {boolean} enabled
  * @property {object} data
+ * @property {string | null} libraryId
+ * @property {object} settings
  */
 
 export function getBlockLabel(type) {
@@ -35,6 +37,8 @@ export function makeBlock(input = {}) {
     type,
     enabled: input.enabled !== false,
     data: makeBlockData(type, input.data ?? {}),
+    libraryId: input.libraryId ?? null,
+    settings: defaultBlockSettings(input.settings ?? {}),
   }
 }
 
@@ -89,4 +93,74 @@ export function updateBlocksByType(blocks, type, data) {
 
 export function addBlock(blocks, type = BLOCK_TYPE.CUSTOM) {
   return [...(blocks ?? []), makeBlock({ type, enabled: true })]
+}
+
+export function duplicateBlock(blocks, id) {
+  const list = blocks ?? []
+  const index = list.findIndex((block) => block.id === id)
+  if (index < 0) return list
+
+  const source = list[index]
+  const copy = makeBlock({
+    type: source.type,
+    enabled: source.enabled,
+    data: JSON.parse(JSON.stringify(source.data)),
+    libraryId: source.libraryId ?? null,
+    settings: source.settings,
+  })
+
+  const next = [...list]
+  next.splice(index + 1, 0, copy)
+  return next
+}
+
+export function removeBlock(blocks, id) {
+  return (blocks ?? []).filter((block) => block.id !== id)
+}
+
+export function reorderBlocks(blocks, fromIndex, toIndex) {
+  if (fromIndex === toIndex) return blocks
+  const list = [...(blocks ?? [])]
+  const [item] = list.splice(fromIndex, 1)
+  list.splice(toIndex, 0, item)
+  return list
+}
+
+export function insertLibraryBlock(blocks, libraryBlock, index = null) {
+  const created = makeBlock({
+    type: libraryBlock.type,
+    enabled: true,
+    data: JSON.parse(JSON.stringify(libraryBlock.data ?? {})),
+    libraryId: libraryBlock.id,
+    settings: libraryBlock.settings,
+  })
+  const list = [...(blocks ?? [])]
+  const at = index == null ? list.length : Math.max(0, Math.min(index, list.length))
+  list.splice(at, 0, created)
+  return { blocks: list, created }
+}
+
+export function updateBlockSettings(blocks, id, settings) {
+  return (blocks ?? []).map((block) => {
+    if (block.id !== id) return block
+    return {
+      ...block,
+      settings: defaultBlockSettings({ ...block.settings, ...settings }),
+    }
+  })
+}
+
+export function pasteBlock(blocks, source, index = null) {
+  if (!source) return { blocks, created: null }
+  const created = makeBlock({
+    type: source.type,
+    enabled: source.enabled !== false,
+    data: JSON.parse(JSON.stringify(source.data ?? {})),
+    libraryId: source.libraryId ?? null,
+    settings: source.settings,
+  })
+  const list = [...(blocks ?? [])]
+  const at = index == null ? list.length : Math.max(0, Math.min(index, list.length))
+  list.splice(at, 0, created)
+  return { blocks: list, created }
 }

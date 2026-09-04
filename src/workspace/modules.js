@@ -44,9 +44,9 @@ export const WORKSPACE_MODULES = Object.freeze([
     group: WORKSPACE_GROUP.WORKSPACE,
     inNav: true,
     status: 'live',
-    summary: 'Start a new proposal from workspace, brand and type.',
+    summary: 'Start a new proposal from workspace, brand and service.',
     description:
-      'A dedicated creation journey. Generate with AI or copy a type’s template into a new document.',
+      'A dedicated creation journey. Generate with AI or copy a service’s template into a new document.',
     capabilities: [],
   },
   {
@@ -72,7 +72,7 @@ export const WORKSPACE_MODULES = Object.freeze([
     status: 'live',
     summary: 'Reusable starting points managed as a library.',
     description:
-      'Edit, duplicate and organise templates here. Creating a proposal happens from Create Proposal, which copies a type’s template into a new document.',
+      'Edit, duplicate and organise templates here. Creating a proposal happens from Create Proposal, which copies a service’s template into a new document.',
     capabilities: [],
   },
   {
@@ -103,7 +103,7 @@ export const WORKSPACE_MODULES = Object.freeze([
     status: 'live',
     summary: 'Company-defined offerings. Replaces hardcoded project types.',
     description:
-      'Each service is something the company sells — architecture scale models, 3D printing, legal work, software, campaigns. Proposals will reference services instead of a fixed project-type list. The Proposal Engine stays universal.',
+      'Each service is something the company sells — architecture scale models, 3D printing, legal work, software, campaigns. Create Proposal offers these instead of a fixed project-type list. The Proposal Engine stays universal.',
     capabilities: [
       'Name, description and default scope language',
       'Pricing models (fixed, unit, hourly, milestone, retainer)',
@@ -131,17 +131,18 @@ export const WORKSPACE_MODULES = Object.freeze([
   {
     id: WORKSPACE_MODULE.CONTENT_LIBRARY,
     path: PATH.CONTENT_LIBRARY,
-    label: 'Content Library',
+    label: 'Proposal Blocks',
     icon: 'content',
     group: WORKSPACE_GROUP.LIBRARIES,
     inNav: true,
     status: 'live',
     summary: 'Reusable proposal blocks — the Component Library.',
     description:
-      'Executive summaries, galleries, pricing, timelines, FAQs and every other block type. Layouts place these blocks; they do not define their schemas. Custom industry sections are new block types, not new proposal engines.',
+      'Create unlimited reusable blocks. Proposals assemble from these records; layouts place them. Variables, conditions and theme tokens apply at render time.',
     capabilities: [
-      'Registered block types used by the proposal editor, portal and PDF',
-      'Used by templates as default assemblies',
+      'Reusable blocks with categories, tags and favorites',
+      'Variables such as {{client_name}} resolve live in preview, portal and PDF',
+      'Insert into any proposal without rewriting sent documents',
     ],
   },
   {

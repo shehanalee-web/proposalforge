@@ -1,4 +1,4 @@
-import { createWriteStream, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { createWriteStream, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { Readable } from 'node:stream'
@@ -15,6 +15,28 @@ function json(res, status, body) {
   res.end(payload)
 }
 
+function parseRotateShareTokenIds(req) {
+  const raw = req.headers['x-rotate-share-token-ids']
+  if (!raw) return new Set()
+  return new Set(
+    String(raw)
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean),
+  )
+}
+
+function preserveLiveShareTokens(incoming, existing, rotateIds) {
+  const existingById = new Map(
+    (Array.isArray(existing) ? existing : []).map((row) => [row.id, row]),
+  )
+  return incoming.map((row) => {
+    const prev = existingById.get(row.id)
+    if (!prev || rotateIds.has(row.id)) return row
+    return { ...row, shareToken: prev.shareToken }
+  })
+}
+
 function readJson(file, fallback) {
   try {
     return JSON.parse(readFileSync(file, 'utf8'))
@@ -26,6 +48,12 @@ function readJson(file, fallback) {
 function writeJson(file, value) {
   mkdirSync(dirname(file), { recursive: true })
   writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
+}
+
+function safeId(value) {
+  return String(value || '')
+    .replace(/[^\w.-]+/g, '_')
+    .trim()
 }
 
 function safeFileName(name) {
@@ -95,6 +123,8 @@ export function localUploadsPlugin() {
   const assetsFile = join(dataDir, 'assets.json')
   const proposalsFile = join(dataDir, 'proposals.json')
   const brandKitFile = join(dataDir, 'brand-kit.json')
+  const activityEventsFile = join(dataDir, 'activityEvents.json')
+  const notificationsFile = join(dataDir, 'notifications.json')
 
   function loadAssets() {
     const records = readJson(assetsFile, [])
@@ -178,6 +208,46 @@ export function localUploadsPlugin() {
         return json(res, 200, updated)
       }
 
+      if (method === 'POST' && matchRoute(url, '/api/proposal-files')) {
+        const proposalId = safeId(req.headers['x-proposal-id'])
+        const uploadId = safeId(req.headers['x-upload-id']) || `upl-${crypto.randomUUID()}`
+        if (!proposalId) return json(res, 400, { message: 'A proposal id is required.' })
+
+        const name = safeFileName(
+          decodeURIComponent(req.headers['x-file-name'] || 'file'),
+        )
+        const mimeType = String(req.headers['content-type'] || 'application/octet-stream')
+        const body = await readBody(req, 48 * 1024 * 1024)
+        const folder = join(uploadsDir, 'proposals', proposalId, uploadId)
+        mkdirSync(folder, { recursive: true })
+        await pipeline(Readable.from(body), createWriteStream(join(folder, name)))
+
+        const publicPath = `/uploads/proposals/${proposalId}/${uploadId}/${name}`
+        return json(res, 201, {
+          id: uploadId,
+          proposalId,
+          name,
+          mimeType,
+          sizeBytes: body.length,
+          storageKey: `proposals/${proposalId}/${uploadId}/${name}`,
+          url: publicPath,
+        })
+      }
+
+      const proposalFile = matchRoute(url, '/api/proposal-files/:id')
+      if (method === 'DELETE' && proposalFile) {
+        const proposalId = safeId(new URL(url, 'http://local').searchParams.get('proposalId'))
+        const uploadId = safeId(proposalFile.id)
+        if (!proposalId || !uploadId) return json(res, 400, { message: 'A proposal id is required.' })
+        const folder = join(uploadsDir, 'proposals', proposalId, uploadId)
+        try {
+          rmSync(folder, { recursive: true, force: true })
+        } catch {
+          /* missing folder is fine */
+        }
+        return json(res, 200, { ok: true })
+      }
+
       if (method === 'GET' && matchRoute(url, '/api/proposals')) {
         const records = readJson(proposalsFile, null)
         return json(res, 200, { records })
@@ -188,8 +258,14 @@ export function localUploadsPlugin() {
         if (!Array.isArray(body)) {
           return json(res, 400, { message: 'Expected an array of proposals.' })
         }
-        writeJson(proposalsFile, body)
-        return json(res, 200, { ok: true, count: body.length })
+        const existing = readJson(proposalsFile, [])
+        const next = preserveLiveShareTokens(
+          body,
+          existing,
+          parseRotateShareTokenIds(req),
+        )
+        writeJson(proposalsFile, next)
+        return json(res, 200, { ok: true, count: next.length })
       }
 
       if (method === 'GET' && matchRoute(url, '/api/brand-kit')) {
@@ -200,6 +276,34 @@ export function localUploadsPlugin() {
         const body = JSON.parse((await readBody(req, 4 * 1024 * 1024)).toString('utf8') || 'null')
         writeJson(brandKitFile, body)
         return json(res, 200, { ok: true })
+      }
+
+      if (method === 'GET' && matchRoute(url, '/api/activity-events')) {
+        const records = readJson(activityEventsFile, [])
+        return json(res, 200, { records: Array.isArray(records) ? records : [] })
+      }
+
+      if (method === 'PUT' && matchRoute(url, '/api/activity-events')) {
+        const body = JSON.parse((await readBody(req, 16 * 1024 * 1024)).toString('utf8') || 'null')
+        if (!Array.isArray(body)) {
+          return json(res, 400, { message: 'Expected an array of activity events.' })
+        }
+        writeJson(activityEventsFile, body)
+        return json(res, 200, { ok: true, count: body.length })
+      }
+
+      if (method === 'GET' && matchRoute(url, '/api/notifications')) {
+        const records = readJson(notificationsFile, [])
+        return json(res, 200, { records: Array.isArray(records) ? records : [] })
+      }
+
+      if (method === 'PUT' && matchRoute(url, '/api/notifications')) {
+        const body = JSON.parse((await readBody(req, 8 * 1024 * 1024)).toString('utf8') || 'null')
+        if (!Array.isArray(body)) {
+          return json(res, 400, { message: 'Expected an array of notifications.' })
+        }
+        writeJson(notificationsFile, body)
+        return json(res, 200, { ok: true, count: body.length })
       }
     } catch (error) {
       const status = error.status || (error instanceof SyntaxError ? 400 : 500)

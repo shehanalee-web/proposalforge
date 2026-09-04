@@ -14,6 +14,13 @@ export class NotFoundError extends Error {
   }
 }
 
+export class ForbiddenError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = 'ForbiddenError'
+  }
+}
+
 export class ValidationError extends Error {
   /**
    * @param {string} message
@@ -23,5 +30,20 @@ export class ValidationError extends Error {
     super(message)
     this.name = 'ValidationError'
     this.errors = errors
+  }
+}
+
+export class MailError extends Error {
+  /**
+   * @param {string} message
+   * @param {{ code?: string, retryable?: boolean, status?: number, errors?: { field: string, message: string }[] }} [options]
+   */
+  constructor(message, options = {}) {
+    super(message)
+    this.name = 'MailError'
+    this.code = options.code ?? 'rejected'
+    this.retryable = options.retryable !== false
+    this.status = options.status ?? 0
+    this.errors = options.errors ?? []
   }
 }

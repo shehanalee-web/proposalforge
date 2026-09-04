@@ -1,0 +1,52 @@
+.document {
+  display: grid;
+  gap: var(--pf-section-gap, var(--space-12));
+  width: min(var(--pf-container, 52rem), 100%);
+  margin-inline: auto;
+  font-size: calc(1.0625rem * var(--pf-type-scale, 1));
+  line-height: var(--pf-line-height, 1.7);
+  letter-spacing: var(--pf-letter-spacing, -0.011em);
+}
+
+.document :global(h1) {
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  font-weight: 680;
+  letter-spacing: var(--pf-letter-spacing, -0.045em);
+  line-height: 1.12;
+}
+
+.document :global(h3) {
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: var(--pf-letter-spacing, -0.03em);
+}
+
+.document :global(p) {
+  max-width: var(--pf-measure, 68ch);
+  margin-bottom: var(--pf-paragraph, 0);
+}
+
+.region {
+  display: grid;
+  gap: var(--pf-section-gap, var(--space-12));
+  min-width: 0;
+}
+
+.split {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: start;
+}
+
+@media (max-width: 800px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+
+  .document {
+    gap: var(--space-8);
+  }
+
+  .region {
+    gap: var(--space-8);
+  }
+}

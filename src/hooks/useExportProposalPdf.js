@@ -27,7 +27,7 @@ export function useExportProposalPdf() {
   const inflight = useRef(false)
 
   const runExport = useCallback(async (proposal, action, options = {}) => {
-    if (!proposal || inflight.current) return
+    if (!proposal || inflight.current) return false
 
     inflight.current = true
     setError(null)
@@ -43,8 +43,11 @@ export function useExportProposalPdf() {
       } else {
         await printProposalPdf(proposal, options)
       }
+
+      return true
     } catch (caught) {
       setError(caught)
+      return false
     } finally {
       inflight.current = false
       setExporting(null)

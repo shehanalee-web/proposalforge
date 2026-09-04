@@ -1,23 +1,29 @@
-import { useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import Icon from '../../components/Icon/Icon.jsx'
+import SearchBar from '../../components/ServiceBrowser/SearchBar.jsx'
+import IndustryFilter from '../../components/ServiceBrowser/IndustryFilter.jsx'
+import EmptyState from '../../components/ServiceBrowser/EmptyState.jsx'
+import ServiceCount from '../../components/ServiceBrowser/ServiceCount.jsx'
+import { getIndustryLabel } from '../../models/industry.js'
+import { categoriesForIndustry, getCategoryLabel } from '../../models/category.js'
+import { CATALOGUE_CATEGORIES } from '../../data/catalogue/index.js'
 import { BRAND_FONTS } from '../../models/brandKit.js'
-import {
-  findTemplateForType,
-  PROPOSAL_TYPES,
-} from '../../models/proposalType.js'
+import { findTemplateForService } from '../../models/service.js'
 import { MOCK_WORKSPACES } from '../../data/mockWorkspaces.js'
 import { useBrandKit } from '../../hooks/useBrandKit.js'
 import { useCreateProposal } from '../../hooks/useCreateProposal.js'
+import { useServices } from '../../hooks/useServices.js'
 import { useTemplates } from '../../hooks/useTemplates.js'
 import { proposalFromTemplate } from '../../utils/proposalFromTemplate.js'
+import { filterServices } from '../../utils/serviceDiscovery.js'
 import { PATH, proposalEditPath } from '../../workspace/paths.js'
 import styles from './CreateProposal.module.css'
 
 const STEPS = [
   { id: 1, label: 'Workspace' },
   { id: 2, label: 'Brand Kit' },
-  { id: 3, label: 'Proposal type' },
+  { id: 3, label: 'Service' },
 ]
 
 const DEFAULT_CLIENT_NAME = 'New client'
@@ -80,11 +86,85 @@ function CreateProposal() {
   const navigate = useNavigate()
   const { kit, loading: kitLoading, error: kitError, refetch } = useBrandKit()
   const { templates, loading: templatesLoading } = useTemplates()
+  const { services, loading: servicesLoading, error: servicesError, refetch: refetchServices } =
+    useServices()
   const { create, submitting, error } = useCreateProposal()
 
   const [step, setStep] = useState(1)
   const [workspaceId, setWorkspaceId] = useState(null)
-  const [creatingTypeId, setCreatingTypeId] = useState(null)
+  const [creatingServiceId, setCreatingServiceId] = useState(null)
+  const [serviceQuery, setServiceQuery] = useState('')
+  const [serviceIndustry, setServiceIndustry] = useState('')
+  const [serviceCategory, setServiceCategory] = useState('')
+  /* Index of the keyboard-focused service card (-1 = none). */
+  const [focusedCard, setFocusedCard] = useState(-1)
+  const cardGridRef = useRef(null)
+
+  const categoryOptions = useMemo(() => {
+    const list = categoriesForIndustry(CATALOGUE_CATEGORIES, serviceIndustry)
+    return [
+      { id: '', label: 'All Categories', color: '#71717a' },
+      ...list,
+    ]
+  }, [serviceIndustry])
+
+  const visibleServices = useMemo(
+    () =>
+      filterServices(services, {
+        search: serviceQuery,
+        industry: serviceIndustry,
+        category: serviceCategory,
+        categories: CATALOGUE_CATEGORIES,
+      }),
+    [services, serviceQuery, serviceIndustry, serviceCategory],
+  )
+
+  /* Reset focused card whenever the visible set changes. */
+  const prevVisibleLen = useRef(visibleServices.length)
+  if (prevVisibleLen.current !== visibleServices.length) {
+    prevVisibleLen.current = visibleServices.length
+    setFocusedCard(-1)
+  }
+
+  const clearFilters = useCallback(() => {
+    setServiceQuery('')
+    setServiceIndustry('')
+    setServiceCategory('')
+  }, [])
+
+  const browseAllServices = useCallback(() => {
+    setServiceIndustry('')
+    setServiceCategory('')
+  }, [])
+
+  function handleIndustryChange(id) {
+    setServiceIndustry(id)
+    setServiceCategory((current) => {
+      if (!current) return current
+      const stillValid = CATALOGUE_CATEGORIES.some(
+        (category) =>
+          category.id === current && (!id || category.industryId === id),
+      )
+      return stillValid ? current : ''
+    })
+  }
+
+  function handleCardGridKeyDown(event) {
+    const count = visibleServices.length
+    if (count === 0) return
+
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+      event.preventDefault()
+      const next = focusedCard < count - 1 ? focusedCard + 1 : 0
+      setFocusedCard(next)
+      cardGridRef.current?.querySelectorAll('[data-service-card]')[next]?.focus()
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      const prev = focusedCard > 0 ? focusedCard - 1 : count - 1
+      setFocusedCard(prev)
+      cardGridRef.current?.querySelectorAll('[data-service-card]')[prev]?.focus()
+    }
+  }
 
   const workspace = MOCK_WORKSPACES[0]
   const workspaceName = kit?.companyName?.trim() || workspace.name
@@ -100,19 +180,23 @@ function CreateProposal() {
     setStep(3)
   }
 
-  async function selectType(type) {
+  async function selectService(service) {
     if (submitting) return
 
-    setCreatingTypeId(type.id)
+    setCreatingServiceId(service.id)
 
-    const template = findTemplateForType(templates, type)
-    const extras = template ? proposalFromTemplate(template) : {}
+    const template = findTemplateForService(templates, service)
+    const extras = template ? proposalFromTemplate(template, service) : {}
     const created = await create({
       ...extras,
-      title: extras.title || `${type.label} proposal`,
+      title: extras.title || `${service.name} proposal`,
       clientName: extras.clientName?.trim() || DEFAULT_CLIENT_NAME,
-      projectType: type.projectType,
-      summary: extras.summary || type.description,
+      projectType: service.name,
+      serviceIds: [service.id],
+      summary:
+        extras.summary ||
+        service.defaultDescription ||
+        service.description,
     })
 
     if (created) {
@@ -120,7 +204,7 @@ function CreateProposal() {
       return
     }
 
-    setCreatingTypeId(null)
+    setCreatingServiceId(null)
   }
 
   return (
@@ -130,7 +214,7 @@ function CreateProposal() {
           <p className={styles.kicker}>New document</p>
           <p className={styles.lede}>
             Choose the workspace and company identity, then generate a draft
-            with AI or pick a proposal type.
+            with AI or pick a service.
           </p>
         </div>
         <div className={styles.heroActions}>
@@ -257,57 +341,146 @@ function CreateProposal() {
       ) : null}
 
       {step === 3 ? (
-        templatesLoading && templates.length === 0 ? (
+        servicesError ? (
+          <div className={styles.state}>
+            <p className={styles.stateTitle}>Could not load services</p>
+            <p className={styles.stateText}>
+              {servicesError.message ||
+                'The Service Library is required to start a proposal.'}
+            </p>
+            <button type="button" className={styles.retry} onClick={refetchServices}>
+              Try again
+            </button>
+          </div>
+        ) : (servicesLoading && services.length === 0) ||
+          (templatesLoading && templates.length === 0) ? (
           <div className={styles.typeGrid} aria-hidden="true">
             {Array.from({ length: 6 }, (_, index) => (
               <div key={index} className={styles.skeletonCard} />
             ))}
           </div>
+        ) : services.length === 0 ? (
+          <div className={styles.state}>
+            <p className={styles.stateTitle}>No services yet</p>
+            <p className={styles.stateText}>
+              Add an offering in the Service Library, then come back to create
+              a proposal from it.
+            </p>
+            <Link to={PATH.SERVICES} className={styles.retry}>
+              Open services
+            </Link>
+          </div>
         ) : (
-          <div className={styles.typeGrid}>
-            <button
-              type="button"
-              className={`${styles.choice} ${styles.choiceWide} ${styles.aiChoice}`}
-              onClick={() => navigate(PATH.PROPOSAL_AI)}
-            >
-              <span className={styles.choiceMark} aria-hidden="true">
-                <Icon name="spark" size={22} />
-              </span>
-              <span className={styles.choiceBody}>
-                <span className={styles.choiceKicker}>AI wizard</span>
-                <span className={styles.choiceTitle}>Generate with AI</span>
-                <span className={styles.choiceText}>
-                  Answer a few questions. We’ll draft the proposal, then open
-                  the editor with it filled in.
+          <div className={styles.serviceStep}>
+            <div className={styles.typeGrid}>
+              <button
+                type="button"
+                className={`${styles.choice} ${styles.choiceWide} ${styles.aiChoice}`}
+                onClick={() => navigate(PATH.PROPOSAL_AI)}
+              >
+                <span className={styles.choiceMark} aria-hidden="true">
+                  <Icon name="spark" size={22} />
                 </span>
-              </span>
-              <span className={styles.choiceHint}>Start chat</span>
-            </button>
-            {PROPOSAL_TYPES.map((type) => {
-              const creating = creatingTypeId === type.id
-              const busy = submitting && creating
+                <span className={styles.choiceBody}>
+                  <span className={styles.choiceKicker}>AI wizard</span>
+                  <span className={styles.choiceTitle}>Generate with AI</span>
+                  <span className={styles.choiceText}>
+                    Answer a few questions. We’ll draft the proposal, then open
+                    the editor with it filled in.
+                  </span>
+                </span>
+                <span className={styles.choiceHint}>Start chat</span>
+              </button>
+            </div>
 
-              return (
-                <button
-                  key={type.id}
-                  type="button"
-                  className={styles.typeCard}
-                  style={{ '--type-accent': type.accent }}
-                  onClick={() => selectType(type)}
-                  disabled={submitting}
-                  aria-busy={busy || undefined}
+            <div className={styles.browser}>
+              {/* Section header */}
+              <div className={styles.browserHeader}>
+                <div className={styles.browserHeading}>
+                  <p className={styles.browserTitle}>Browse Services</p>
+                  <p className={styles.browserDesc}>
+                    Choose a proposal template or search by industry.
+                  </p>
+                </div>
+                <ServiceCount count={visibleServices.length} />
+              </div>
+
+              {/* Toolbar: search + industry + category */}
+              <div className={styles.browserToolbar} role="search">
+                <SearchBar
+                  value={serviceQuery}
+                  onChange={setServiceQuery}
+                />
+                <IndustryFilter
+                  value={serviceIndustry}
+                  onChange={handleIndustryChange}
+                />
+                <IndustryFilter
+                  value={serviceCategory}
+                  onChange={setServiceCategory}
+                  options={categoryOptions}
+                  ariaLabel="Category"
+                  searchPlaceholder="Filter categories..."
+                />
+              </div>
+
+              {/* Results */}
+              {visibleServices.length === 0 ? (
+                <EmptyState
+                  onClear={clearFilters}
+                  onBrowseAll={browseAllServices}
+                  search={serviceQuery}
+                  industryLabel={
+                    serviceIndustry ? getIndustryLabel(serviceIndustry) : ''
+                  }
+                  categoryLabel={
+                    serviceCategory
+                      ? getCategoryLabel(CATALOGUE_CATEGORIES, serviceCategory)
+                      : ''
+                  }
+                />
+              ) : (
+                <div
+                  className={styles.typeGrid}
+                  ref={cardGridRef}
+                  onKeyDown={handleCardGridKeyDown}
                 >
-                  <span className={styles.typeIcon} aria-hidden="true">
-                    <Icon name={type.icon} size={22} />
-                  </span>
-                  <span className={styles.typeTitle}>{type.label}</span>
-                  <span className={styles.typeText}>{type.description}</span>
-                  <span className={styles.typeHint}>
-                    {busy ? 'Creating…' : 'Create proposal'}
-                  </span>
-                </button>
-              )
-            })}
+                  {visibleServices.map((service, index) => {
+                    const creating = creatingServiceId === service.id
+                    const busy = submitting && creating
+
+                    return (
+                      <button
+                        key={service.id}
+                        type="button"
+                        data-service-card
+                        className={styles.typeCard}
+                        style={
+                          service.accent
+                            ? { '--type-accent': service.accent }
+                            : undefined
+                        }
+                        onClick={() => selectService(service)}
+                        onFocus={() => setFocusedCard(index)}
+                        disabled={submitting}
+                        aria-busy={busy || undefined}
+                      >
+                        <span className={styles.typeIcon} aria-hidden="true">
+                          <Icon name={service.icon || 'services'} size={22} />
+                        </span>
+                        <span className={styles.typeTitle}>{service.name}</span>
+                        <span className={styles.typeText}>
+                          {service.description}
+                        </span>
+                        <span className={styles.typeHint}>
+                          {busy ? 'Creating…' : 'Create proposal'}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )
       ) : null}

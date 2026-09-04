@@ -1,6 +1,12 @@
 import { Link } from 'react-router'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
 import { getDisplayStatus } from '../../models/proposal.js'
+import { getViewCount } from '../../models/commercialQueues.js'
+import { EMAIL_DELIVERY_STATUS_LABELS } from '../../models/emailDelivery.js'
+import {
+  handleCardClick,
+  handleCardLinkKeyDown,
+} from '../../utils/cardNavigation.js'
 import { formatCurrency, formatDateTime } from '../../utils/format.js'
 import { proposalPath } from '../../workspace/paths.js'
 import styles from './RecentProposals.module.css'
@@ -43,11 +49,20 @@ function RecentProposals({ proposals, loading, error, onRetry }) {
   return (
     <ul className={styles.list}>
       {proposals.map((proposal) => (
-        <li key={proposal.id} className={styles.row}>
+        <li
+          key={proposal.id}
+          className={styles.row}
+          onClick={handleCardClick}
+        >
+          <Link
+            to={proposalPath(proposal.id)}
+            className={styles.cardLink}
+            data-card-link
+            aria-label={proposal.title}
+            onKeyDown={handleCardLinkKeyDown}
+          />
           <div className={styles.main}>
-            <Link to={proposalPath(proposal.id)} className={styles.title}>
-              {proposal.title}
-            </Link>
+            <span className={styles.title}>{proposal.title}</span>
             <span className={styles.client}>
               {proposal.clientName}
               {proposal.company ? ` · ${proposal.company}` : ''}
@@ -59,11 +74,15 @@ function RecentProposals({ proposals, loading, error, onRetry }) {
               {formatCurrency(proposal.amount, proposal.currency)}
             </span>
             <span className={styles.date}>
+              {getViewCount(proposal)} views
+              {proposal.lastEmail?.status
+                ? ` · ${EMAIL_DELIVERY_STATUS_LABELS[proposal.lastEmail.status] ?? proposal.lastEmail.status}`
+                : ''}
               {proposal.lastViewedAt
-                ? `Viewed ${formatDateTime(proposal.lastViewedAt)}`
+                ? ` · Viewed ${formatDateTime(proposal.lastViewedAt)}`
                 : proposal.acceptedAt
-                  ? `Accepted ${formatDateTime(proposal.acceptedAt)}`
-                  : formatDateTime(proposal.updatedAt)}
+                  ? ` · Accepted ${formatDateTime(proposal.acceptedAt)}`
+                  : ` · ${formatDateTime(proposal.updatedAt)}`}
             </span>
           </div>
 

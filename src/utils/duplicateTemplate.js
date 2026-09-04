@@ -1,4 +1,5 @@
 import { makeLineItem, makeSection } from '../models/proposal.js'
+import { cloneQuestionnaireForTemplate } from '../models/questionnaire.js'
 
 /**
  * Copy a template into create-payload shape.
@@ -25,5 +26,6 @@ export function toDuplicateTemplate(template) {
     defaultLayoutId: template.defaultLayoutId,
     proposalType: template.proposalType ?? '',
     isDefault: false,
+    questionnaire: cloneQuestionnaireForTemplate(template.questionnaire),
   }
 }

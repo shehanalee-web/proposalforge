@@ -92,6 +92,36 @@ export function hydrateProposalAssets(proposal) {
   return { ...proposal, blocks, images }
 }
 
+function persistSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object') return snapshot
+
+  const next = {
+    ...snapshot,
+    blocks: (snapshot.blocks ?? []).map((block) => {
+      const data = stripItem(block.data ?? {})
+      if (Array.isArray(data.items)) data.items = data.items.map(stripItem)
+      if (Array.isArray(data.members)) data.members = data.members.map(stripItem)
+      if (Array.isArray(data.rows)) data.rows = data.rows.map(stripItem)
+      return { ...block, data }
+    }),
+    images: (snapshot.images ?? []).map(stripItem),
+    uploads: uploadMetadataList(snapshot.uploads),
+  }
+  delete next.shareToken
+  return next
+}
+
+function uploadMetadataList(uploads = []) {
+  return (uploads ?? []).map((item) => ({
+    ...item,
+    url: persistableUrl(item.url),
+    versions: (item.versions ?? []).map((version) => ({
+      ...version,
+      url: persistableUrl(version.url),
+    })),
+  }))
+}
+
 /**
  * Drop blob/data URLs so saved JSON never stores a session object URL.
  *
@@ -108,7 +138,16 @@ export function persistableProposal(proposal) {
     return { ...block, data }
   })
 
-  return { ...proposal, blocks, images: (proposal.images ?? []).map(stripItem) }
+  return {
+    ...proposal,
+    blocks,
+    images: (proposal.images ?? []).map(stripItem),
+    uploads: uploadMetadataList(proposal.uploads),
+    versions: (proposal.versions ?? []).map((version) => ({
+      ...version,
+      snapshot: persistSnapshot(version.snapshot),
+    })),
+  }
 }
 
 export async function prepareProposalAssets(proposal) {

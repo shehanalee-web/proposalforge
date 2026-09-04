@@ -1,61 +1,93 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'react-router'
-import ProposalContent from '../../components/ProposalContent/ProposalContent.jsx'
 import { useAcceptProposal } from '../../hooks/useAcceptProposal.js'
 import { useClientProposal } from '../../hooks/useClientProposal.js'
-import { useRequestProposalChanges } from '../../hooks/useRequestProposalChanges.js'
 import { useExportProposalPdf, PDF_AUDIENCE } from '../../hooks/useExportProposalPdf.js'
-import { canClientRespond, PROPOSAL_STATUS } from '../../models/proposal.js'
-import { getActiveProposal } from '../../utils/clientProposal.js'
-import { getLayout } from '../../layouts/registry.js'
+import { PROPOSAL_STATUS } from '../../models/proposal.js'
+import { SHARE_ACCESS_STATE } from '../../models/shareAccess.js'
+import { inspectPortalShare } from '../../services/portalService.js'
+import { NotFoundError } from '../../services/errors.js'
+import {
+  getActiveProposal,
+  readShareGate,
+  writeShareGate,
+} from '../../utils/clientProposal.js'
 import { formatDateTime } from '../../utils/format.js'
+import { ProposalThemeProvider } from '../../theme/ProposalThemeContext.jsx'
+import { PortalProvider } from '../../portal/PortalContext.jsx'
+import PortalApp from '../../portal/PortalApp.jsx'
+import PortalShareGate from '../../portal/PortalShareGate.jsx'
 import styles from './ClientPortal.module.css'
 
 function ClientPortal() {
   const { token } = useParams()
-  const { proposal, loading, error, notFound, refetch } = useClientProposal(token)
-  const { accept, submitting: accepting, error: acceptError } = useAcceptProposal()
-  const {
-    requestChanges,
-    submitting: requesting,
-    error: changeError,
-    fieldErrors,
-    reset: resetChangeForm,
-  } = useRequestProposalChanges()
+  const [inspect, setInspect] = useState(null)
+  const [inspectError, setInspectError] = useState(null)
+  const [credentials, setCredentials] = useState(() => readShareGate(token))
+  const [unlocked, setUnlocked] = useState(false)
 
-  const [comment, setComment] = useState('')
-  const [showChangeForm, setShowChangeForm] = useState(false)
-  const [justAccepted, setJustAccepted] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+
+    async function load() {
+      setInspect(null)
+      setInspectError(null)
+      setCredentials(readShareGate(token))
+      setUnlocked(false)
+      try {
+        const next = await inspectPortalShare(token)
+        if (cancelled) return
+        setInspect(next)
+        if (next.state === SHARE_ACCESS_STATE.OPEN) {
+          setUnlocked(true)
+        } else if (next.state === SHARE_ACCESS_STATE.GATED) {
+          const saved = readShareGate(token)
+          if (
+            (next.requirePassword ? saved.password : true) &&
+            (next.requireEmail ? saved.email : true) &&
+            (saved.password || saved.email)
+          ) {
+            setUnlocked(true)
+          }
+        }
+      } catch (caught) {
+        if (!cancelled) setInspectError(caught)
+      }
+    }
+
+    if (token) void load()
+    return () => {
+      cancelled = true
+    }
+  }, [token])
+
+  const expired = inspect?.state === SHARE_ACCESS_STATE.EXPIRED
+  const needsGate =
+    inspect?.state === SHARE_ACCESS_STATE.GATED && !unlocked && !expired
+  const loadEnabled = Boolean(inspect) && !expired && !needsGate
+
+  const { proposal, loading, error, notFound, refetch, setProposal } =
+    useClientProposal(token, credentials, loadEnabled)
+  const { accept, submitting: accepting, error: acceptError } = useAcceptProposal()
   const { runExport, exporting, error: exportError } = useExportProposalPdf()
+  const [justAccepted, setJustAccepted] = useState(false)
+  const [justDeclined, setJustDeclined] = useState(false)
 
   const document = proposal ? getActiveProposal(proposal) : null
-  const layout = getLayout(document?.layoutId)
-  const busy = accepting || requesting || Boolean(exporting)
-  const canRespond = proposal ? canClientRespond(proposal) : false
+  const busy = accepting || Boolean(exporting)
 
   async function handleAccept() {
     if (!token || busy) return
-
     const next = await accept(token)
-
     if (next) {
       setJustAccepted(true)
-      setShowChangeForm(false)
-      await refetch()
+      setProposal(next)
     }
   }
 
-  async function handleRequestChanges(event) {
-    event.preventDefault()
-    if (!token || busy) return
-
-    const next = await requestChanges(token, comment)
-
-    if (next) {
-      setShowChangeForm(false)
-      setComment('')
-      await refetch()
-    }
+  function handleDeclined(next) {
+    setJustDeclined(true)
+    if (next) setProposal(next)
   }
 
   async function handleExport(action) {
@@ -63,15 +95,27 @@ function ClientPortal() {
     await runExport(document, action, { audience: PDF_AUDIENCE.CLIENT })
   }
 
-  if (notFound) {
+  function handleUnlock(nextCredentials) {
+    writeShareGate(token, nextCredentials)
+    setCredentials(nextCredentials)
+    setUnlocked(true)
+  }
+
+  if (inspectError || notFound) {
+    const missing = inspectError instanceof NotFoundError || notFound
     return (
-      <div className={styles.shell}>
+      <div className={styles.shell} data-surface="client-portal">
         <main className={styles.main}>
           <div className={styles.state}>
-            <p className={styles.stateTitle}>Proposal not found</p>
+            <p className={styles.stateTitle}>
+              {missing ? 'Proposal not found' : 'Could not load this proposal'}
+            </p>
             <p className={styles.stateText}>
-              This client link is invalid, or the proposal is no longer
-              available.
+              {missing
+                ? 'This client link is invalid, revoked, or the proposal is no longer available.'
+                : inspectError?.message ||
+                  error?.message ||
+                  'Something went wrong while fetching the proposal.'}
             </p>
           </div>
         </main>
@@ -79,9 +123,31 @@ function ClientPortal() {
     )
   }
 
-  if (error) {
+  if (expired || needsGate) {
     return (
-      <div className={styles.shell}>
+      <PortalShareGate
+        inspect={inspect}
+        error={needsGate ? error : null}
+        submitting={needsGate && loading}
+        onSubmit={handleUnlock}
+      />
+    )
+  }
+
+  if (error && inspect?.state === SHARE_ACCESS_STATE.GATED && !proposal) {
+    return (
+      <PortalShareGate
+        inspect={inspect}
+        error={error}
+        submitting={loading}
+        onSubmit={handleUnlock}
+      />
+    )
+  }
+
+  if (error && !loading && !proposal) {
+    return (
+      <div className={styles.shell} data-surface="client-portal">
         <main className={styles.main}>
           <div className={styles.state}>
             <p className={styles.stateTitle}>Could not load this proposal</p>
@@ -97,15 +163,23 @@ function ClientPortal() {
     )
   }
 
-  if (loading || !proposal || !document) {
+  if (!inspect || loading || !proposal || !document) {
     return (
-      <div className={styles.shell}>
+      <div className={styles.shell} data-surface="client-portal">
         <main className={styles.main}>
           <p className={styles.loading}>Loading proposal…</p>
-          <div className={styles.skeleton} aria-hidden="true">
-            <div className={styles.skeletonRow} />
-            <div className={styles.skeletonRow} />
-            <div className={styles.skeletonRow} />
+          <div className={styles.skeletonLayout} aria-hidden="true">
+            <div className={styles.skeletonDoc}>
+              <div className={styles.skeletonRow} />
+              <div className={styles.skeletonRow} />
+              <div className={styles.skeletonRow} />
+              <div className={styles.skeletonRow} />
+            </div>
+            <div className={styles.skeletonAside}>
+              <div className={styles.skeletonCard} />
+              <div className={styles.skeletonCard} />
+              <div className={styles.skeletonCard} />
+            </div>
           </div>
         </main>
       </div>
@@ -113,142 +187,69 @@ function ClientPortal() {
   }
 
   const accepted = proposal.status === PROPOSAL_STATUS.ACCEPTED
+  const declined = proposal.status === PROPOSAL_STATUS.DECLINED
   const revisionRequested = proposal.status === PROPOSAL_STATUS.REVISION_REQUESTED
+  const notices = []
+
+  if (justAccepted || accepted) {
+    notices.push({
+      id: 'accepted',
+      tone: 'banner',
+      title: 'Proposal approved',
+      body: proposal.acceptedAt
+        ? `Thank you. This proposal was approved on ${formatDateTime(proposal.acceptedAt)}.`
+        : 'Thank you. This proposal is approved and locked.',
+    })
+  }
+
+  if (justDeclined || declined) {
+    notices.push({
+      id: 'declined',
+      tone: 'dangerBanner',
+      title: 'Proposal declined',
+      body: proposal.clientFeedback || 'This proposal has been declined and locked.',
+    })
+  }
+
+  if (revisionRequested && proposal.clientFeedback) {
+    notices.push({
+      id: 'revision',
+      tone: 'warning',
+      title: 'Needs revision',
+      body: proposal.clientFeedback,
+    })
+  }
+
+  if (acceptError) {
+    notices.push({
+      id: 'accept-error',
+      tone: 'dangerBanner',
+      title: acceptError.message,
+    })
+  }
+
+  if (exportError) {
+    notices.push({
+      id: 'export-error',
+      tone: 'dangerBanner',
+      title: exportError.message || 'Could not generate the PDF. Please try again.',
+    })
+  }
 
   return (
-    <div className={styles.shell}>
-      <main
-        className={styles.main}
-        style={{ width: `min(${layout.screen.maxWidth}, 100%)` }}
-      >
-        <article className={styles.document}>
-          {justAccepted || accepted ? (
-            <section className={styles.confirmation} aria-live="polite">
-              <p className={styles.confirmationTitle}>Proposal accepted</p>
-              <p className={styles.confirmationText}>
-                Thank you. This proposal was accepted
-                {proposal.acceptedAt
-                  ? ` on ${formatDateTime(proposal.acceptedAt)}`
-                  : ''}
-                .
-              </p>
-            </section>
-          ) : null}
-
-          {revisionRequested && proposal.clientFeedback ? (
-            <section className={styles.feedback} aria-live="polite">
-              <p className={styles.confirmationTitle}>Revision requested</p>
-              <p className={styles.confirmationText}>{proposal.clientFeedback}</p>
-            </section>
-          ) : null}
-
-          {acceptError ? (
-            <p className={styles.alert} role="alert">
-              {acceptError.message}
-            </p>
-          ) : null}
-
-          {exportError ? (
-            <p className={styles.alert} role="alert">
-              {exportError.message ||
-                'Could not generate the PDF. Please try again.'}
-            </p>
-          ) : null}
-
-          <ProposalContent
-            proposal={document}
-            includeCover
-            showNotes={false}
-            showTags={false}
-            showSignature
-            status={proposal.status}
-          />
-
-          <section className={styles.actions}>
-            {canRespond ? (
-              <>
-                <button
-                  type="button"
-                  className={styles.primary}
-                  onClick={handleAccept}
-                  disabled={busy}
-                >
-                  {accepting ? 'Accepting…' : 'Accept proposal'}
-                </button>
-                <button
-                  type="button"
-                  className={styles.secondary}
-                  onClick={() => {
-                    setShowChangeForm((open) => !open)
-                    resetChangeForm()
-                  }}
-                  disabled={busy}
-                >
-                  Request changes
-                </button>
-              </>
-            ) : null}
-
-            <button
-              type="button"
-              className={styles.secondary}
-              onClick={() => handleExport('download')}
-              disabled={busy}
-            >
-              {exporting === 'download' ? 'Preparing PDF…' : 'Download PDF'}
-            </button>
-            <button
-              type="button"
-              className={styles.ghost}
-              onClick={() => handleExport('print')}
-              disabled={busy}
-            >
-              {exporting === 'print' ? 'Preparing print…' : 'Print'}
-            </button>
-          </section>
-
-          {canRespond && showChangeForm ? (
-            <form className={styles.changeForm} onSubmit={handleRequestChanges}>
-              <label className={styles.changeLabel} htmlFor="client-feedback">
-                What would you like changed?
-              </label>
-              <textarea
-                id="client-feedback"
-                className={styles.comment}
-                value={comment}
-                onChange={(event) => setComment(event.target.value)}
-                rows={5}
-                required
-                disabled={busy}
-              />
-              {fieldErrors.clientFeedback ? (
-                <p className={styles.alert} role="alert">
-                  {fieldErrors.clientFeedback}
-                </p>
-              ) : null}
-              {changeError && !fieldErrors.clientFeedback ? (
-                <p className={styles.alert} role="alert">
-                  {changeError.message}
-                </p>
-              ) : null}
-              <div className={styles.changeActions}>
-                <button type="submit" className={styles.primary} disabled={busy}>
-                  {requesting ? 'Sending…' : 'Send request'}
-                </button>
-                <button
-                  type="button"
-                  className={styles.ghost}
-                  onClick={() => setShowChangeForm(false)}
-                  disabled={busy}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          ) : null}
-        </article>
-      </main>
-    </div>
+    <ProposalThemeProvider proposalId={proposal.id} proposal={document}>
+      <PortalProvider proposal={document} token={token}>
+        <PortalApp
+          notices={notices}
+          busy={busy}
+          onAccept={handleAccept}
+          onDownload={() => handleExport('download')}
+          onPrint={() => handleExport('print')}
+          onProposalChange={setProposal}
+          onDeclined={handleDeclined}
+        />
+      </PortalProvider>
+    </ProposalThemeProvider>
   )
 }
 

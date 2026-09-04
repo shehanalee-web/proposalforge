@@ -1,6 +1,7 @@
 import { MOCK_PROPOSALS } from '../data/mockProposals.js'
 import { makeProposal } from '../models/proposal.js'
 import { persistableProposal } from './hydrateAssets.js'
+import { advanceEmailStatus } from '../models/emailDelivery.js'
 
 /**
  * Proposal records. Seeded from mocks, then persisted to `data/proposals.json`
@@ -10,6 +11,9 @@ import { persistableProposal } from './hydrateAssets.js'
 /** @type {import('../models/proposal.js').Proposal[] | null} */
 let records = null
 let pending = null
+let persistChain = Promise.resolve()
+/** @type {Set<string>} */
+let pendingShareTokenRotations = new Set()
 
 function clone(value) {
   if (typeof structuredClone === 'function') {
@@ -19,18 +23,89 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value))
 }
 
+function mergeLastEmail(local, remote) {
+  if (!remote) return local ?? null
+  if (!local) return remote
+  if (local.id && remote.id && local.id !== remote.id) {
+    const localTime = Date.parse(local.sentAt || '') || 0
+    const remoteTime = Date.parse(remote.sentAt || '') || 0
+    return remoteTime >= localTime ? remote : local
+  }
+  return {
+    ...local,
+    ...remote,
+    status: advanceEmailStatus(local.status, remote.status),
+    error: remote.error || local.error,
+  }
+}
+
 async function persist() {
+  persistChain = persistChain.then(flushRecords, flushRecords)
+  await persistChain
+}
+
+async function flushRecords() {
   if (!records) return
+
+  const rotateIds = new Set(pendingShareTokenRotations)
+  pendingShareTokenRotations = new Set()
+
+  let disk = []
+  try {
+    const response = await fetch('/api/proposals')
+    if (response.ok) {
+      const payload = await response.json()
+      if (Array.isArray(payload?.records)) disk = payload.records
+    }
+  } catch {
+    /* local API unavailable */
+  }
+
+  const diskById = new Map(disk.map((row) => [row.id, row]))
+  const merged = records.map((record) => {
+    const payload = persistableProposal(record)
+    const fromDisk = diskById.get(record.id)
+    const shareToken = rotateIds.has(record.id)
+      ? record.shareToken
+      : fromDisk?.shareToken || record.shareToken
+    if (!fromDisk) return { ...payload, shareToken }
+    return {
+      ...payload,
+      shareToken,
+      lastEmail: mergeLastEmail(payload.lastEmail, fromDisk.lastEmail),
+      lastViewedAt: fromDisk.lastViewedAt || payload.lastViewedAt,
+    }
+  })
+
+  const headers = { 'Content-Type': 'application/json' }
+  if (rotateIds.size > 0) {
+    headers['X-Rotate-Share-Token-Ids'] = [...rotateIds].join(',')
+  }
 
   const response = await fetch('/api/proposals', {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(records.map((record) => persistableProposal(record))),
+    headers,
+    body: JSON.stringify(merged),
   })
 
   if (!response.ok) {
     throw new Error('Could not persist proposals.')
   }
+
+  if (!records) return
+
+  const writtenById = new Map(merged.map((row) => [row.id, row]))
+  records = records.map((record) => {
+    const written = writtenById.get(record.id)
+    if (!written) return record
+    return persistableProposal(
+      makeProposal({
+        ...written,
+        shareToken: written.shareToken,
+        lastEmail: mergeLastEmail(record.lastEmail, written.lastEmail),
+      }),
+    )
+  })
 }
 
 export async function ready() {
@@ -71,7 +146,9 @@ export function findById(id) {
 }
 
 export function findByShareToken(token) {
-  const found = (records ?? []).find((record) => record.shareToken === token)
+  const value = String(token ?? '').trim()
+  if (!value) return undefined
+  const found = (records ?? []).find((record) => record.shareToken === value)
   return found ? clone(found) : undefined
 }
 
@@ -82,13 +159,24 @@ export async function insert(record) {
   return clone(saved)
 }
 
-export async function replace(id, record) {
+export async function replace(id, record, options = {}) {
   const list = records ?? []
   const index = list.findIndex((entry) => entry.id === id)
 
   if (index === -1) return undefined
 
-  const saved = persistableProposal(clone(record))
+  const current = list[index]
+  const shareToken = options.rotateShareToken
+    ? String(record.shareToken ?? '').trim()
+    : current.shareToken
+  if (options.rotateShareToken && !shareToken) {
+    throw new Error('A share token is required to rotate a client link.')
+  }
+  if (options.rotateShareToken) {
+    pendingShareTokenRotations.add(id)
+  }
+
+  const saved = persistableProposal(clone({ ...record, shareToken }))
   const next = [...list]
   next[index] = saved
   records = next

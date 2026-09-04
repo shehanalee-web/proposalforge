@@ -174,10 +174,55 @@
   gap: var(--space-3);
 }
 
+.skeletonLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+  gap: var(--space-6);
+  margin-top: var(--space-5);
+}
+
+.skeletonDoc,
+.skeletonAside {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.skeletonCard,
 .skeletonRow {
   height: var(--space-10);
   border-radius: var(--radius-sm);
-  background-color: var(--color-surface-raised);
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-raised) 0%,
+    var(--color-surface-active) 45%,
+    var(--color-surface-raised) 100%
+  );
+  background-size: 200% 100%;
+  animation: portalSkeleton 1.4s ease infinite;
+}
+
+.skeletonCard {
+  height: 7.5rem;
+  border-radius: var(--radius-lg);
+}
+
+@keyframes portalSkeleton {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (max-width: 1100px) {
+  .skeletonLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .skeletonAside {
+    display: none;
+  }
 }
 
 @media (max-width: 640px) {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import Icon from '../../components/Icon/Icon.jsx'
 import { useCreateProposal } from '../../hooks/useCreateProposal.js'
+import { useServices } from '../../hooks/useServices.js'
 import {
   collectedSections,
   hasPricing,
@@ -45,7 +46,7 @@ function PreviewCard({ draft, ready, generating, complete, error, onGenerate }) 
             <dd>{displayValue(client)}</dd>
           </div>
           <div className={styles.fact}>
-            <dt>Project type</dt>
+            <dt>Service</dt>
             <dd>{displayValue(draft.projectType)}</dd>
           </div>
           <div className={styles.fact}>
@@ -104,6 +105,7 @@ function PreviewCard({ draft, ready, generating, complete, error, onGenerate }) 
 function ProposalAi() {
   const navigate = useNavigate()
   const { create, submitting, error } = useCreateProposal()
+  const { services } = useServices()
   const [session, setSession] = useState(createWizardSession)
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
@@ -111,6 +113,7 @@ function ProposalAi() {
   const timerRef = useRef(0)
   const autoRef = useRef(false)
   const draftRef = useRef(session.draft)
+  const servicesRef = useRef(services)
 
   const ready = isDraftReady(session.draft)
   const complete = isConversationComplete(session)
@@ -122,6 +125,10 @@ function ProposalAi() {
   }, [session.draft])
 
   useEffect(() => {
+    servicesRef.current = services
+  }, [services])
+
+  useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' })
   }, [session.messages, thinking])
 
@@ -130,7 +137,7 @@ function ProposalAi() {
   }, [])
 
   async function createFromDraft(draft = draftRef.current) {
-    const created = await create(proposalFromDraft(draft))
+    const created = await create(proposalFromDraft(draft, servicesRef.current))
 
     if (created) {
       navigate(proposalEditPath(created.id), { replace: true })

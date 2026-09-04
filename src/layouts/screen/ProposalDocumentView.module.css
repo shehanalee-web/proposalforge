@@ -1,15 +1,18 @@
 .document {
-  display: grid;
-  gap: var(--space-6);
-  width: min(var(--doc-max-width, 100%), 100%);
+  width: min(var(--doc-max-width, var(--pf-container, 52rem)), 100%);
   margin-inline: auto;
+}
+
+.documentInner {
+  display: grid;
+  gap: var(--pf-section-gap, var(--space-6));
   font-family: var(--doc-body-font, inherit);
   color: var(--color-text);
 }
 
 .region {
   display: grid;
-  gap: var(--space-6);
+  gap: var(--pf-content-gap, var(--space-6));
   min-width: 0;
 }
 
