@@ -1,8 +1,8 @@
-import { useState } from 'react'
 import Icon from '../Icon/Icon.jsx'
 import { useEditorLayout } from '../Editor/EditorLayoutContext.jsx'
 import { useEditorWorkspace } from '../Editor/EditorWorkspaceContext.jsx'
 import HealthScore from './HealthScore.jsx'
+import AiImprovements from './AiImprovements.jsx'
 import AiSuggestions from './AiSuggestions.jsx'
 import QuickActions from './QuickActions.jsx'
 import WorkspaceMemory from './WorkspaceMemory.jsx'
@@ -19,9 +19,10 @@ import styles from './AiSidebar.module.css'
  *   proposal?: object,
  *   blocks?: import('../../blocks/instance.js').BlockInstance[],
  *   onAction?: (action: string, payload?: unknown) => void,
+ *   onApplyImprovement?: (next: { blocks: object[], summary?: string | null }) => void,
  * }} props
  */
-function AiSidebar({ proposal, blocks, onAction }) {
+function AiSidebar({ proposal, blocks, onAction, onApplyImprovement }) {
   const { sidebarOpen, setSidebarOpen } = useEditorLayout()
   const { previewMode } = useEditorWorkspace()
 
@@ -60,6 +61,11 @@ function AiSidebar({ proposal, blocks, onAction }) {
           {/* Sections */}
           <div className={styles.sections}>
             <HealthScore proposal={proposal} blocks={blocks} />
+            <AiImprovements
+              proposal={proposal}
+              blocks={blocks}
+              onApply={onApplyImprovement}
+            />
             <AiSuggestions />
             <QuickActions onAction={onAction} />
             <WorkspaceMemory />
