@@ -220,6 +220,18 @@ function ProposalEditContent() {
     })
   }
 
+  function handleImproveApply(next) {
+    if (!next?.blocks) return
+    handleBlocksChange(next.blocks)
+    if (next.summary == null) return
+
+    setDraft((current) => {
+      const base = current ?? (proposal ? valuesFromProposal(proposal) : null)
+      if (!base) return current
+      return { ...base, summary: next.summary }
+    })
+  }
+
   const activeBlock = documentBlocks.find((block) => block.id === activeBlockId) ?? null
 
   function handlePasteAt(index = null) {
@@ -438,6 +450,7 @@ function ProposalEditContent() {
         proposal={proposal}
         blocks={documentBlocks}
         onAction={() => {}}
+        onApplyImprovement={handleImproveApply}
       />
       <ProposalSettingsPanel
         open={settingsOpen}

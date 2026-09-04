@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useSettings } from '../../hooks/useSettings.js'
 import { useUpdateSettings } from '../../hooks/useUpdateSettings.js'
 import SettingsForm from './SettingsForm.jsx'
+import AiSettings from '../../components/AiSettings/AiSettings.jsx'
 import styles from './Settings.module.css'
 
 const SKELETON_ROWS = 4
@@ -136,6 +137,8 @@ function Settings() {
           fieldErrors={fieldErrors}
         />
       </div>
+
+      <AiSettings />
     </section>
   )
 }
