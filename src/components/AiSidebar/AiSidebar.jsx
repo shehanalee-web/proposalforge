@@ -3,6 +3,7 @@ import { useEditorLayout } from '../Editor/EditorLayoutContext.jsx'
 import { useEditorWorkspace } from '../Editor/EditorWorkspaceContext.jsx'
 import HealthScore from './HealthScore.jsx'
 import ProposalIntelligence from './ProposalIntelligence.jsx'
+import ProposalIntegrity from './ProposalIntegrity.jsx'
 import ProposalInsights from './ProposalInsights.jsx'
 import AiImprovements from './AiImprovements.jsx'
 import AiSuggestions from './AiSuggestions.jsx'
@@ -64,6 +65,7 @@ function AiSidebar({ proposal, blocks, onAction, onApplyImprovement }) {
           <div className={styles.sections}>
             <HealthScore proposal={proposal} blocks={blocks} />
             <ProposalIntelligence proposal={proposal} blocks={blocks} />
+            <ProposalIntegrity proposal={proposal} blocks={blocks} />
             <ProposalInsights proposal={proposal} blocks={blocks} />
             <AiImprovements
               proposal={proposal}

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useProposalHealth } from './useProposalHealth.js'
 import { analyzeProposal } from '../intelligence/index.js'
+import { analyzeConsistency } from '../consistency/index.js'
 import { applyImprovement, draftPlainText } from '../improve/apply.js'
 import { makeImprovementDraft } from '../improve/draft.js'
 import { generateImprovement } from '../improve/client.js'
@@ -37,7 +38,21 @@ export function useProposalImprovements({ proposal, blocks, onApply } = {}) {
     [proposal, report],
   )
 
-  const findings = intelligence.repairOrder.diagnostics
+  const consistency = useMemo(
+    () =>
+      analyzeConsistency({
+        proposal,
+        blocks,
+        diagnostics: report.suggestions,
+        health: report,
+      }),
+    [proposal, blocks, report],
+  )
+
+  const findings = [
+    ...intelligence.repairOrder.diagnostics,
+    ...consistency.improvementFindings,
+  ]
 
   const previewDraft = useMemo(
     () => (previewCode ? drafts[previewCode] ?? null : null),
