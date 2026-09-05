@@ -1,13 +1,11 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { loadEnv } from 'vite'
+import { dirname, join } from 'node:path'
+import { ensureRuntimeData, projectRoot } from './dataPaths.js'
 import { describeAiEngine, generateImprovement, loadAiProvider } from '../src/improve/engine.js'
 import { generateCoachAdvice } from '../src/coach/ai.js'
 import { generateProposal } from '../src/generate/ai.js'
 import { ImproveError, IMPROVE_ERROR_CODE, isImproveAbort } from '../src/improve/errors.js'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
 const ACTIVITY_LIMIT = 400
 
 function json(res, status, body) {
@@ -59,8 +57,8 @@ function publicError() {
 }
 
 export function aiPlugin() {
-  const root = resolve(__dirname, '..')
-  const activityFile = join(root, 'data', 'aiActivity.json')
+  const root = projectRoot()
+  const activityFile = join(ensureRuntimeData(), 'aiActivity.json')
 
   function loadActivity() {
     const records = readJson(activityFile, [])
@@ -270,14 +268,18 @@ export function aiPlugin() {
   }
 
   function attach(server) {
-    mkdirSync(join(root, 'data'), { recursive: true })
-    const env = loadEnv(server.config.mode, root, '')
-    server.middlewares.use((req, res, next) => handle(req, res, next, env))
+    mkdirSync(ensureRuntimeData(), { recursive: true })
+    server.middlewares.use((req, res, next) => {
+      import('vite')
+        .then(({ loadEnv }) => handle(req, res, next, loadEnv(server.config.mode, root, '')))
+        .catch(next)
+    })
   }
 
   return {
     name: 'proposalforge-ai',
     configureServer: attach,
     configurePreviewServer: attach,
+    handle: (req, res, next) => handle(req, res, next, process.env),
   }
 }

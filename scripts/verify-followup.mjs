@@ -477,7 +477,7 @@ const resolverSource = sourceOf('src', 'followup', 'resolver.js')
 assert(
   'Test 19 — No proposal writes',
   pluginSource.includes('Never writes `data/proposals.json`') &&
-    pluginSource.includes("join(root, 'data', 'followups.json')") &&
+    pluginSource.includes("join(dataDir, 'followups.json')") &&
     !repoSource.includes('writeFileSync') &&
     !repoSource.includes('proposalStore') &&
     !pluginSource.includes('writeJson(proposalsFile'),

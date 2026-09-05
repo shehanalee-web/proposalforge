@@ -1,7 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { loadEnv } from 'vite'
+import { dirname, join } from 'node:path'
+import { ensureRuntimeData, projectRoot } from './dataPaths.js'
 import { ACTIVITY_EVENT_TYPE, ACTIVITY_USER, makeActivityEventRow } from '../src/models/activityEvent.js'
 import {
   EMAIL_DELIVERY_STATUS,
@@ -14,7 +13,6 @@ import {
 import { createMailProvider } from '../src/services/email/mailProvider.js'
 import { MailError } from '../src/services/errors.js'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
 const PIXEL = Buffer.from(
   'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
   'base64',
@@ -106,8 +104,8 @@ function resolveRedirect(url, req) {
 }
 
 export function emailPlugin() {
-  const root = resolve(__dirname, '..')
-  const dataDir = join(root, 'data')
+  const root = projectRoot()
+  const dataDir = ensureRuntimeData()
   const messagesFile = join(dataDir, 'emailMessages.json')
   const activityFile = join(dataDir, 'activityEvents.json')
   const proposalsFile = join(dataDir, 'proposals.json')
@@ -343,13 +341,17 @@ export function emailPlugin() {
 
   function attach(server) {
     mkdirSync(dataDir, { recursive: true })
-    const env = loadEnv(server.config.mode, root, '')
-    server.middlewares.use((req, res, next) => handle(req, res, next, env))
+    server.middlewares.use((req, res, next) => {
+      import('vite')
+        .then(({ loadEnv }) => handle(req, res, next, loadEnv(server.config.mode, root, '')))
+        .catch(next)
+    })
   }
 
   return {
     name: 'proposalforge-email',
     configureServer: attach,
     configurePreviewServer: attach,
+    handle: (req, res, next) => handle(req, res, next, process.env),
   }
 }

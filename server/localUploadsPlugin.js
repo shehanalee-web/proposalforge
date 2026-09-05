@@ -1,11 +1,10 @@
 import { createWriteStream, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { dirname, join } from 'node:path'
 import { pipeline } from 'node:stream/promises'
 import { Readable } from 'node:stream'
-import { fileURLToPath } from 'node:url'
+import { ensureRuntimeData, resolveUploadsDir } from './dataPaths.js'
 
 const MAX_UPLOAD_BYTES = 12 * 1024 * 1024
-const __dirname = dirname(fileURLToPath(import.meta.url))
 
 function json(res, status, body) {
   const payload = JSON.stringify(body)
@@ -117,9 +116,8 @@ function matchRoute(url, pattern) {
  * Vite serves `/uploads/...` as stable public URLs across refresh and restart.
  */
 export function localUploadsPlugin() {
-  const root = resolve(__dirname, '..')
-  const uploadsDir = join(root, 'public', 'uploads')
-  const dataDir = join(root, 'data')
+  const uploadsDir = resolveUploadsDir()
+  const dataDir = ensureRuntimeData()
   const assetsFile = join(dataDir, 'assets.json')
   const proposalsFile = join(dataDir, 'proposals.json')
   const brandKitFile = join(dataDir, 'brand-kit.json')
@@ -325,5 +323,6 @@ export function localUploadsPlugin() {
       mkdirSync(dataDir, { recursive: true })
       server.middlewares.use(handle)
     },
+    handle,
   }
 }
