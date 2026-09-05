@@ -15,11 +15,13 @@ import {
 } from '../instance.js'
 import { touchLibraryBlock } from '../../services/libraryBlockService.js'
 import { DEFAULT_CURRENCY } from '../../models/proposal.js'
+import { DEFAULT_COMPANY_ID } from '../../knowledge/types.js'
 import AddBlockPicker from './AddBlockPicker.jsx'
 import BlockFields from './BlockFields.jsx'
 import BlockHeader from './BlockHeader.jsx'
 import BlockInsertSlot from './BlockInsertSlot.jsx'
 import BlockMiniToolbar from './BlockMiniToolbar.jsx'
+import SaveToKnowledgeDialog from '../../components/Knowledge/SaveToKnowledgeDialog.jsx'
 import styles from './BlockEditor.module.css'
 
 const DRAG_TYPE = 'application/x-pf-block'
@@ -38,6 +40,8 @@ function BlockEditor({
   onChange,
   disabled = false,
   currency = DEFAULT_CURRENCY,
+  proposalId = '',
+  knowledgeCompanyId = DEFAULT_COMPANY_ID,
 }) {
   const list = blocks ?? []
   const {
@@ -56,6 +60,7 @@ function BlockEditor({
 
   const [dragId, setDragId] = useState(null)
   const [dropTarget, setDropTarget] = useState(null)
+  const [knowledgeBlock, setKnowledgeBlock] = useState(null)
 
   const listRef = useRef(null)
   const seededExpand = useRef(false)
@@ -295,6 +300,7 @@ function BlockEditor({
                   }}
                   onHide={() => handleToggleEnabled(block.id, !block.enabled)}
                   onDelete={() => handleRemove(block.id)}
+                  onSaveKnowledge={() => setKnowledgeBlock(block)}
                 />
 
                 <BlockHeader
@@ -344,6 +350,14 @@ function BlockEditor({
           />
         ) : null}
       </ol>
+
+      <SaveToKnowledgeDialog
+        open={Boolean(knowledgeBlock)}
+        block={knowledgeBlock}
+        proposalId={proposalId}
+        companyId={knowledgeCompanyId}
+        onClose={() => setKnowledgeBlock(null)}
+      />
 
       {list.length === 0 ? (
         <div className={styles.empty}>

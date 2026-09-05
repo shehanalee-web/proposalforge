@@ -17,6 +17,8 @@ import Assets from './pages/Assets/Assets.jsx'
 import ContentLibrary from './pages/ContentLibrary/ContentLibrary.jsx'
 import ContentLibraryEditor from './pages/ContentLibrary/ContentLibraryEditor.jsx'
 import CaseStudies from './pages/CaseStudies/CaseStudies.jsx'
+import Knowledge from './pages/Knowledge/Knowledge.jsx'
+import KnowledgeEditor from './pages/Knowledge/KnowledgeEditor.jsx'
 import Testimonials from './pages/Testimonials/Testimonials.jsx'
 import Team from './pages/Team/Team.jsx'
 import ProposalAi from './pages/ProposalAi/ProposalAi.jsx'
@@ -53,6 +55,10 @@ function App() {
         <Route path="content-library/new" element={<ContentLibraryEditor />} />
         <Route path="content-library/:id/edit" element={<ContentLibraryEditor />} />
         <Route path="case-studies" element={<CaseStudies />} />
+        <Route path="knowledge" element={<Knowledge />} />
+        <Route path="knowledge/new" element={<KnowledgeEditor />} />
+        <Route path="knowledge/:id/edit" element={<KnowledgeEditor />} />
+        <Route path="knowledge/:id" element={<Knowledge />} />
         <Route path="testimonials" element={<Testimonials />} />
         <Route path="team" element={<Team />} />
         <Route path="settings" element={<Settings />} />

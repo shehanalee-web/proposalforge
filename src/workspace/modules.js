@@ -163,6 +163,23 @@ export const WORKSPACE_MODULES = Object.freeze([
     ],
   },
   {
+    id: WORKSPACE_MODULE.KNOWLEDGE,
+    path: PATH.KNOWLEDGE,
+    label: 'Company Knowledge',
+    icon: 'knowledge',
+    group: WORKSPACE_GROUP.LIBRARIES,
+    inNav: true,
+    status: 'live',
+    summary: 'Approved reusable company knowledge for future proposals and AI.',
+    description:
+      'Company-scoped profiles, services, legal language, and approved wording. Drafts never enter AI context until they are approved.',
+    capabilities: [
+      'Searchable, approval-aware records',
+      'Save proposal content as a draft',
+      'Deterministic context for later AI',
+    ],
+  },
+  {
     id: WORKSPACE_MODULE.TESTIMONIALS,
     path: PATH.TESTIMONIALS,
     label: 'Testimonials',

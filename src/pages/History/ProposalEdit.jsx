@@ -616,6 +616,7 @@ function ProposalEditContent() {
                 onChange={handleBlocksChange}
                 disabled={submitting}
                 currency={proposal.currency}
+                proposalId={proposal.id}
               />
             </ProposalForm>
           )}
