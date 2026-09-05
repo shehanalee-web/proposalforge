@@ -382,14 +382,14 @@ function CreateProposal() {
                   <Icon name="spark" size={22} />
                 </span>
                 <span className={styles.choiceBody}>
-                  <span className={styles.choiceKicker}>AI wizard</span>
+                  <span className={styles.choiceKicker}>Proposal generator</span>
                   <span className={styles.choiceTitle}>Generate with AI</span>
                   <span className={styles.choiceText}>
-                    Answer a few questions. We’ll draft the proposal, then open
-                    the editor with it filled in.
+                    Enter structured facts. We retrieve approved knowledge and
+                    draft a reviewable proposal.
                   </span>
                 </span>
-                <span className={styles.choiceHint}>Start chat</span>
+                <span className={styles.choiceHint}>Generate proposal</span>
               </button>
             </div>
 

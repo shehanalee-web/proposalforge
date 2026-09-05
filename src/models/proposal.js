@@ -21,6 +21,7 @@ import { makeProposalUpload, makeUploadFolder } from './upload.js'
 import { makeEmailDeliverySummary } from './emailDelivery.js'
 import { makeViewAnalytics } from './viewAnalytics.js'
 import { makeShareAccess } from './shareAccess.js'
+import { sanitizeGenerationMetadata } from '../generate/metadata.js'
 
 export const DEFAULT_OWNER_NAME = 'Studio'
 
@@ -134,6 +135,7 @@ export const DEFAULT_CURRENCY = 'USD'
  * @property {import('../blocks/instance.js').BlockInstance[]} blocks Ordered Block Engine instances.
  * @property {string[]} serviceIds            Service Library ids referenced by this document.
  * @property {object[]} [images]              Gallery fallback mirrored from blocks.
+ * @property {object | null} [generation]     Sanitized AI generation metadata when created by Horizon 9.
  * @property {string} createdAt               ISO timestamp.
  * @property {string} updatedAt               ISO timestamp.
  * @property {number} currentVersion          Version number currently applied.
@@ -266,6 +268,7 @@ export function makeProposal(input = {}) {
     ownerName: String(input.ownerName ?? '').trim() || DEFAULT_OWNER_NAME,
     lastActivityAt: input.lastActivityAt ?? input.updatedAt ?? timestamp,
     analytics: makeViewAnalytics(input.analytics),
+    generation: sanitizeGenerationMetadata(input.generation),
     createdAt: input.createdAt ?? timestamp,
     updatedAt: input.updatedAt ?? timestamp,
     currentVersion: input.currentVersion ?? 0,

@@ -48,5 +48,10 @@ export function makeAiActivityRecord(input = {}) {
     findingCode: input.findingCode ?? null,
     status: String(input.status ?? 'ok'),
     streamed: Boolean(input.streamed),
+    capability: input.capability ? String(input.capability) : null,
+    knowledgeIds: Array.isArray(input.knowledgeIds)
+      ? input.knowledgeIds.map((id) => String(id)).filter(Boolean)
+      : [],
+    result: input.result ? String(input.result) : null,
   }
 }

@@ -2,8 +2,8 @@
  * Canonical studio routes.
  *
  * `/new` is the Create Proposal journey. Generate with AI continues at
- * `/proposal-ai`. The editor at `/proposals/:id/edit` owns document editing
- * after a proposal exists.
+ * `/proposal-ai` as the structured Proposal Generator. The editor at
+ * `/proposals/:id/edit` owns document editing after a proposal exists.
  */
 
 export const PATH = Object.freeze({

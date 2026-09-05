@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { loadEnv } from 'vite'
 import { describeAiEngine, generateImprovement, loadAiProvider } from '../src/improve/engine.js'
 import { generateCoachAdvice } from '../src/coach/ai.js'
+import { generateProposal } from '../src/generate/ai.js'
 import { ImproveError, IMPROVE_ERROR_CODE, isImproveAbort } from '../src/improve/errors.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -113,6 +114,79 @@ export function aiPlugin() {
                 ? 429
                 : 502
           return json(res, status, publicError())
+        } finally {
+          req.off('close', onClose)
+        }
+      }
+
+      if (method === 'POST' && matchRoute(url, '/api/ai/generate-proposal')) {
+        const query = new URL(url, 'http://local').searchParams
+        const wantStream = query.get('stream') === '1'
+        const payload = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        const { provider, settings } = await loadAiProvider(env)
+        const stream = wantStream && settings.streaming && provider.supportsStreaming
+        const controller = new AbortController()
+        const onClose = () => controller.abort()
+        req.on('close', onClose)
+
+        try {
+          if (!stream) {
+            const result = await generateProposal(payload, env, {
+              signal: controller.signal,
+              onActivity: saveActivity,
+            })
+            return json(res, 200, result)
+          }
+
+          res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache, no-transform',
+            Connection: 'keep-alive',
+          })
+
+          const result = await generateProposal(payload, env, {
+            signal: controller.signal,
+            onActivity: saveActivity,
+            onStatus(status) {
+              res.write(`data: ${JSON.stringify({ type: 'status', status })}\n\n`)
+            },
+            onDelta(text) {
+              res.write(`data: ${JSON.stringify({ type: 'delta', text })}\n\n`)
+            },
+          })
+
+          res.write(`data: ${JSON.stringify({ type: 'done', result })}\n\n`)
+          res.end()
+          return
+        } catch (error) {
+          if (isImproveAbort(error) || controller.signal.aborted) {
+            if (!res.headersSent) return json(res, 499, publicError())
+            res.write(`data: ${JSON.stringify({ type: 'error', ...publicError() })}\n\n`)
+            res.end()
+            return
+          }
+          const failed = error instanceof ImproveError ? error : null
+          const status =
+            error?.name === 'ValidationError'
+              ? 400
+              : failed?.code === IMPROVE_ERROR_CODE.INVALID_KEY
+                ? 401
+                : failed?.code === IMPROVE_ERROR_CODE.RATE_LIMIT
+                  ? 429
+                  : 502
+          if (!res.headersSent) {
+            if (error?.name === 'ValidationError') {
+              return json(res, 400, {
+                message: error.message || 'Generation setup is incomplete.',
+                retryable: false,
+                errors: error.errors ?? [],
+              })
+            }
+            return json(res, status, publicError())
+          }
+          res.write(`data: ${JSON.stringify({ type: 'error', ...publicError() })}\n\n`)
+          res.end()
+          return
         } finally {
           req.off('close', onClose)
         }
