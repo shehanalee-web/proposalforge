@@ -36,6 +36,8 @@ function EditorCommandBar({
     setClientOpen,
     workflowOpen,
     setWorkflowOpen,
+    portalOpen,
+    setPortalOpen,
   } = useEditorWorkspace()
 
   return (
@@ -105,6 +107,7 @@ function EditorCommandBar({
               setCollaborationOpen(false)
               setClientOpen(false)
               setWorkflowOpen(false)
+              setPortalOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -126,6 +129,7 @@ function EditorCommandBar({
                 setCollaborationOpen(false)
                 setClientOpen(false)
                 setWorkflowOpen(false)
+              setPortalOpen(false)
                 if (historyOpen) onToggleHistory?.()
                 if (activityOpen) onToggleActivity?.()
               }
@@ -147,6 +151,7 @@ function EditorCommandBar({
               setResponsesOpen(false)
               setClientOpen(false)
               setWorkflowOpen(false)
+              setPortalOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -167,6 +172,7 @@ function EditorCommandBar({
               setResponsesOpen(false)
               setCollaborationOpen(false)
               setWorkflowOpen(false)
+              setPortalOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -187,6 +193,7 @@ function EditorCommandBar({
               setResponsesOpen(false)
               setCollaborationOpen(false)
               setClientOpen(false)
+              setPortalOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -199,6 +206,27 @@ function EditorCommandBar({
         </button>
         <button
           type="button"
+          className={`${styles.tool} ${portalOpen ? styles.toolOn : ''}`}
+          onClick={() => {
+            setPortalOpen(!portalOpen)
+            if (!portalOpen) {
+              setSettingsOpen(false)
+              setResponsesOpen(false)
+              setCollaborationOpen(false)
+              setClientOpen(false)
+              setWorkflowOpen(false)
+              if (historyOpen) onToggleHistory?.()
+              if (activityOpen) onToggleActivity?.()
+            }
+          }}
+          aria-pressed={portalOpen}
+          title="Client portal"
+        >
+          <Icon name="eye" size={15} />
+          <span className={styles.toolLabel}>Portal</span>
+        </button>
+        <button
+          type="button"
           className={`${styles.tool} ${historyOpen ? styles.toolOn : ''}`}
           onClick={() => {
             if (!historyOpen) {
@@ -207,6 +235,7 @@ function EditorCommandBar({
               setCollaborationOpen(false)
               setClientOpen(false)
               setWorkflowOpen(false)
+              setPortalOpen(false)
               if (activityOpen) onToggleActivity?.()
             }
             onToggleHistory?.()
@@ -227,6 +256,7 @@ function EditorCommandBar({
               setCollaborationOpen(false)
               setClientOpen(false)
               setWorkflowOpen(false)
+              setPortalOpen(false)
               if (historyOpen) onToggleHistory?.()
             }
             onToggleActivity?.()

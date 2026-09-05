@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
 import WorkflowStatusBadge from '../../components/Workflow/WorkflowStatusBadge.jsx'
+import PortalStatusBadge from '../../components/ProposalPortal/PortalStatusBadge.jsx'
 import { getDisplayStatus } from '../../models/proposal.js'
 import { getViewCount } from '../../models/commercialQueues.js'
 import { EMAIL_DELIVERY_STATUS_LABELS } from '../../models/emailDelivery.js'
@@ -11,12 +12,14 @@ import {
 import { formatCurrency, formatDateTime } from '../../utils/format.js'
 import { proposalPath } from '../../workspace/paths.js'
 import { useWorkflowMap } from '../../hooks/useWorkflowMap.js'
+import { usePortalMap } from '../../hooks/usePortalMap.js'
 import styles from './RecentProposals.module.css'
 
 const SKELETON_ROWS = 4
 
 function RecentProposals({ proposals = [], loading, error, onRetry }) {
   const { statusOf } = useWorkflowMap(proposals.map((item) => item.id))
+  const { statusOf: portalStatusOf } = usePortalMap(proposals.map((item) => item.id))
   if (error) {
     return (
       <div className={styles.state}>
@@ -90,6 +93,9 @@ function RecentProposals({ proposals = [], loading, error, onRetry }) {
           </div>
 
           <div className={styles.badges}>
+            {portalStatusOf(proposal.id) ? (
+              <PortalStatusBadge status={portalStatusOf(proposal.id)} compact />
+            ) : null}
             <WorkflowStatusBadge status={statusOf(proposal.id)} compact />
             <StatusBadge status={getDisplayStatus(proposal)} />
           </div>

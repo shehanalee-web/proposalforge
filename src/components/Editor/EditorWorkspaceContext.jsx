@@ -15,6 +15,7 @@ export function EditorWorkspaceProvider({ children }) {
   const [collaborationOpen, setCollaborationOpen] = useState(false)
   const [clientOpen, setClientOpen] = useState(false)
   const [workflowOpen, setWorkflowOpen] = useState(false)
+  const [portalOpen, setPortalOpen] = useState(false)
   const clipboardRef = useRef(null)
   const searchRef = useRef(null)
 
@@ -79,6 +80,8 @@ export function EditorWorkspaceProvider({ children }) {
       setClientOpen,
       workflowOpen,
       setWorkflowOpen,
+      portalOpen,
+      setPortalOpen,
       copyBlock,
       takeClipboard,
       searchRef,
@@ -98,6 +101,7 @@ export function EditorWorkspaceProvider({ children }) {
       collaborationOpen,
       clientOpen,
       workflowOpen,
+      portalOpen,
       copyBlock,
       takeClipboard,
       focusSearch,
