@@ -8,6 +8,7 @@ import {
   modulesFromLegacyItems,
   roundMoney,
 } from '../models/commercial.js'
+import { makeOfferGroups } from '../models/offer.js'
 import { TAX_MODE } from '../models/brandKit.js'
 import { BLOCK_TYPE } from '../blocks/ids.js'
 
@@ -237,5 +238,6 @@ export function getProposalCommercials(proposal = {}) {
     notes: pricing?.data?.notes ?? '',
     totals: computeCommercials(modules),
     items: flattenCommercialItems(modules),
+    offers: makeOfferGroups(pricing?.data?.offers),
   }
 }

@@ -1,7 +1,9 @@
 import { presentProposalForClient } from '../collaboration/present.js'
 import { getLivingPublication } from './publication.js'
 import { listLivingSections } from './sections.js'
+import { presentAuthoredOffers } from './offers.js'
 import { LIVING_CAPABILITIES } from './types.js'
+import { emptyOfferGroups } from '../models/offer.js'
 
 const STUDIO_ONLY_KEYS = Object.freeze([
   'followups',
@@ -28,6 +30,7 @@ function withoutStudioDomains(proposal) {
  *
  * Reuses the client presentation strip. Does not clone blocks, invent a
  * second document schema, or merge follow-up / workflow / interaction state.
+ * Authored offers are projected separately from future client session state.
  *
  * @param {import('../models/proposal.js').Proposal | null | undefined} proposal
  */
@@ -39,6 +42,7 @@ export function presentLivingProposal(proposal) {
       sections: [],
       publication: getLivingPublication(presented),
       capabilities: LIVING_CAPABILITIES,
+      authoredOffers: emptyOfferGroups(),
       interactionState: null,
       commercialState: null,
     }
@@ -49,6 +53,7 @@ export function presentLivingProposal(proposal) {
     sections: listLivingSections(presented),
     publication: getLivingPublication(presented),
     capabilities: LIVING_CAPABILITIES,
+    authoredOffers: presentAuthoredOffers(presented),
     interactionState: null,
     commercialState: null,
   }

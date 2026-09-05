@@ -10,6 +10,7 @@ function PricingTable({ proposal }) {
       <h3 className={styles.blockTitle}>Investment</h3>
       <CommercialDocument
         modules={commercials.modules}
+        offers={commercials.offers}
         notes={commercials.notes}
         currency={proposal.currency}
       />

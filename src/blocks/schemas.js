@@ -5,6 +5,7 @@ import {
   makeCommercialModule,
   modulesFromLegacyItems,
 } from '../models/commercial.js'
+import { hasAuthoredOffers, makeOfferGroups } from '../models/offer.js'
 
 function items(list, makeItem) {
   return Array.isArray(list) ? list.map(makeItem) : []
@@ -61,6 +62,7 @@ export function makePricingData(input = {}) {
     notes: input.notes ?? '',
     modules,
     items: flattenCommercialItems(modules),
+    offers: makeOfferGroups(input.offers),
   }
 }
 
@@ -238,7 +240,7 @@ export function isBlockDataEmpty(type, data = {}) {
         }
         return Number(module.value) > 0 || Number(module.rate) > 0
       })
-      return !hasModules && !hasText(data.notes)
+      return !hasModules && !hasText(data.notes) && !hasAuthoredOffers(data.offers)
     }
     case BLOCK_TYPE.SPECIFICATIONS:
       return !data.rows?.some((row) => hasText(row.label, row.value))
