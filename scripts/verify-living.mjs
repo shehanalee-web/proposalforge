@@ -156,12 +156,23 @@ assert(
 )
 
 const publication = getLivingPublication(proposal)
+const ignoredPointers = getLivingPublication({
+  ...proposal,
+  publishedRevision: 'rev-published',
+  livingRevision: 'rev-living',
+})
 assert(
   'Test 10 — Publication is authored, not a fake snapshot',
-  publication.source === LIVING_PUBLICATION_SOURCE.AUTHORED &&
+  publication.source === 'authored' &&
     publication.snapshot === false &&
     publication.revision === null &&
-    living.publication.snapshot === false,
+    living.publication.source === 'authored' &&
+    living.publication.snapshot === false &&
+    living.publication.revision === null &&
+    ignoredPointers.source === 'authored' &&
+    ignoredPointers.snapshot === false &&
+    ignoredPointers.revision === null &&
+    publication.source === LIVING_PUBLICATION_SOURCE.AUTHORED,
 )
 
 assert(
