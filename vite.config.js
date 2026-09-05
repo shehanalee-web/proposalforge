@@ -6,6 +6,7 @@ import { aiPlugin } from './server/aiPlugin.js'
 import { knowledgePlugin } from './server/knowledgePlugin.js'
 import { workflowPlugin } from './server/workflowPlugin.js'
 import { portalPlugin } from './server/portalPlugin.js'
+import { interactionsPlugin } from './server/interactionsPlugin.js'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -17,5 +18,6 @@ export default defineConfig({
     knowledgePlugin(),
     workflowPlugin(),
     portalPlugin(),
+    interactionsPlugin(),
   ],
 })

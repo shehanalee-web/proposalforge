@@ -38,6 +38,8 @@ function EditorCommandBar({
     setWorkflowOpen,
     portalOpen,
     setPortalOpen,
+    interactionsOpen,
+    setInteractionsOpen,
   } = useEditorWorkspace()
 
   return (
@@ -108,6 +110,7 @@ function EditorCommandBar({
               setClientOpen(false)
               setWorkflowOpen(false)
               setPortalOpen(false)
+              setInteractionsOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -130,6 +133,7 @@ function EditorCommandBar({
                 setClientOpen(false)
                 setWorkflowOpen(false)
               setPortalOpen(false)
+              setInteractionsOpen(false)
                 if (historyOpen) onToggleHistory?.()
                 if (activityOpen) onToggleActivity?.()
               }
@@ -152,6 +156,7 @@ function EditorCommandBar({
               setClientOpen(false)
               setWorkflowOpen(false)
               setPortalOpen(false)
+              setInteractionsOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -173,6 +178,7 @@ function EditorCommandBar({
               setCollaborationOpen(false)
               setWorkflowOpen(false)
               setPortalOpen(false)
+              setInteractionsOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -194,6 +200,7 @@ function EditorCommandBar({
               setCollaborationOpen(false)
               setClientOpen(false)
               setPortalOpen(false)
+              setInteractionsOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -215,6 +222,7 @@ function EditorCommandBar({
               setCollaborationOpen(false)
               setClientOpen(false)
               setWorkflowOpen(false)
+              setInteractionsOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -227,6 +235,28 @@ function EditorCommandBar({
         </button>
         <button
           type="button"
+          className={`${styles.tool} ${interactionsOpen ? styles.toolOn : ''}`}
+          onClick={() => {
+            setInteractionsOpen(!interactionsOpen)
+            if (!interactionsOpen) {
+              setSettingsOpen(false)
+              setResponsesOpen(false)
+              setCollaborationOpen(false)
+              setClientOpen(false)
+              setWorkflowOpen(false)
+              setPortalOpen(false)
+              if (historyOpen) onToggleHistory?.()
+              if (activityOpen) onToggleActivity?.()
+            }
+          }}
+          aria-pressed={interactionsOpen}
+          title="Client interactions"
+        >
+          <Icon name="message" size={15} />
+          <span className={styles.toolLabel}>Feedback</span>
+        </button>
+        <button
+          type="button"
           className={`${styles.tool} ${historyOpen ? styles.toolOn : ''}`}
           onClick={() => {
             if (!historyOpen) {
@@ -236,6 +266,7 @@ function EditorCommandBar({
               setClientOpen(false)
               setWorkflowOpen(false)
               setPortalOpen(false)
+              setInteractionsOpen(false)
               if (activityOpen) onToggleActivity?.()
             }
             onToggleHistory?.()
@@ -257,6 +288,7 @@ function EditorCommandBar({
               setClientOpen(false)
               setWorkflowOpen(false)
               setPortalOpen(false)
+              setInteractionsOpen(false)
               if (historyOpen) onToggleHistory?.()
             }
             onToggleActivity?.()
