@@ -513,7 +513,7 @@ const domainSource = sourceOf('src', 'interactions', 'index.js')
 assert(
   'Test 24b — Persistence and capability boundary',
   pluginSource.includes('Never writes `data/proposals.json`') &&
-    pluginSource.includes("join(root, 'data', 'interactions.json')") &&
+    pluginSource.includes("join(dataDir, 'interactions.json')") &&
     !pluginSource.includes('whatsapp') &&
     !pluginSource.includes('nodemailer') &&
     !repoSource.includes('sendMail') &&

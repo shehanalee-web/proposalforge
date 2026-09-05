@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+import { ensureRuntimeData } from './dataPaths.js'
 import { NotFoundError, ValidationError } from '../src/services/errors.js'
 import {
   approveKnowledgeItem,
@@ -26,8 +26,6 @@ import {
   replaceKnowledgeRecords,
   seedKnowledgeRecords,
 } from '../src/knowledge/store.js'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
 
 function json(res, status, body) {
   const payload = JSON.stringify(body)
@@ -105,8 +103,7 @@ function fail(res, error) {
  * Never writes `data/proposals.json`.
  */
 export function knowledgePlugin() {
-  const root = resolve(__dirname, '..')
-  const knowledgeFile = join(root, 'data', 'knowledge.json')
+  const knowledgeFile = join(ensureRuntimeData(), 'knowledge.json')
   let ready = false
 
   function persist(records) {
@@ -282,5 +279,6 @@ export function knowledgePlugin() {
     name: 'proposalforge-knowledge',
     configureServer: attach,
     configurePreviewServer: attach,
+    handle,
   }
 }

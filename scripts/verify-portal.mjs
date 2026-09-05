@@ -501,7 +501,7 @@ assert(
     !pluginSource.includes('nodemailer') &&
     !repoSource.includes('sendMail') &&
     pluginSource.includes('Never writes `data/proposals.json`') &&
-    pluginSource.includes("join(root, 'data', 'portal.json')") &&
+    pluginSource.includes("join(dataDir, 'portal.json')") &&
     PORTAL_CAPABILITIES.digitalSignature === false &&
     PORTAL_CAPABILITIES.paymentProcessing === false &&
     PORTAL_CAPABILITIES.crm === false,

@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+import { ensureRuntimeData } from './dataPaths.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import {
   addComment,
@@ -30,8 +30,6 @@ import {
 } from '../src/workflow/store.js'
 import { DEFAULT_ACTOR_ID } from '../src/workflow/actors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
 
 function json(res, status, body) {
   const payload = JSON.stringify(body)
@@ -122,8 +120,7 @@ function companyFrom(body, query) {
  * Never writes `data/proposals.json`.
  */
 export function workflowPlugin() {
-  const root = resolve(__dirname, '..')
-  const workflowFile = join(root, 'data', 'workflow.json')
+  const workflowFile = join(ensureRuntimeData(), 'workflow.json')
   let ready = false
 
   function persist(records) {
@@ -323,5 +320,6 @@ export function workflowPlugin() {
     name: 'proposalforge-workflow',
     configureServer: attach,
     configurePreviewServer: attach,
+    handle,
   }
 }

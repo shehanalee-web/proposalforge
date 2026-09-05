@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+import { ensureRuntimeData } from './dataPaths.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import { DEFAULT_ACTOR_ID } from '../src/workflow/actors.js'
@@ -18,8 +18,6 @@ import {
   replaceInteractionRecords,
   resolveInteraction,
 } from '../src/interactions/index.js'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
 
 function json(res, status, body) {
   const payload = JSON.stringify(body)
@@ -118,9 +116,9 @@ function companyFrom(body, query) {
  * Never writes `data/proposals.json`.
  */
 export function interactionsPlugin() {
-  const root = resolve(__dirname, '..')
-  const interactionsFile = join(root, 'data', 'interactions.json')
-  const proposalsFile = join(root, 'data', 'proposals.json')
+  const dataDir = ensureRuntimeData()
+  const interactionsFile = join(dataDir, 'interactions.json')
+  const proposalsFile = join(dataDir, 'proposals.json')
   let ready = false
 
   function persist(records) {
@@ -258,5 +256,6 @@ export function interactionsPlugin() {
     name: 'proposalforge-interactions',
     configureServer: attach,
     configurePreviewServer: attach,
+    handle,
   }
 }
