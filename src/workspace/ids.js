@@ -14,6 +14,7 @@ export const WORKSPACE_MODULE = Object.freeze({
   SERVICES: 'services',
   ASSETS: 'assets',
   CONTENT_LIBRARY: 'content-library',
+  KNOWLEDGE: 'knowledge',
   CASE_STUDIES: 'case-studies',
   TESTIMONIALS: 'testimonials',
   TEAM: 'team',

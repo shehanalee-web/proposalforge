@@ -3,8 +3,9 @@ import { defineConfig } from 'vite'
 import { localUploadsPlugin } from './server/localUploadsPlugin.js'
 import { emailPlugin } from './server/emailPlugin.js'
 import { aiPlugin } from './server/aiPlugin.js'
+import { knowledgePlugin } from './server/knowledgePlugin.js'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), localUploadsPlugin(), emailPlugin(), aiPlugin()],
+  plugins: [react(), localUploadsPlugin(), emailPlugin(), aiPlugin(), knowledgePlugin()],
 })

@@ -19,6 +19,8 @@ export const PATH = Object.freeze({
   ASSETS: '/assets',
   CONTENT_LIBRARY: '/content-library',
   NEW_CONTENT_BLOCK: '/content-library/new',
+  KNOWLEDGE: '/knowledge',
+  NEW_KNOWLEDGE: '/knowledge/new',
   CASE_STUDIES: '/case-studies',
   TESTIMONIALS: '/testimonials',
   TEAM: '/team',
@@ -39,6 +41,14 @@ export function templateEditPath(id) {
 
 export function contentBlockEditPath(id) {
   return `${PATH.CONTENT_LIBRARY}/${id}/edit`
+}
+
+export function knowledgePath(id) {
+  return `${PATH.KNOWLEDGE}/${id}`
+}
+
+export function knowledgeEditPath(id) {
+  return `${PATH.KNOWLEDGE}/${id}/edit`
 }
 
 export function serviceEditPath(id) {

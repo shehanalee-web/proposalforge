@@ -28,6 +28,7 @@ function BlockMiniToolbar({
   onPaste,
   onHide,
   onDelete,
+  onSaveKnowledge,
   onAi,
 }) {
   const meta = getBlockMeta(block.type)
@@ -56,6 +57,12 @@ function BlockMiniToolbar({
         onClick={onHide}
       />
       <Tool label="Delete" icon="trash" danger disabled={disabled} onClick={onDelete} />
+      <Tool
+        label="Save to Company Knowledge"
+        icon="bookmark"
+        disabled={disabled}
+        onClick={onSaveKnowledge}
+      />
       <Tool
         label="AI (coming later)"
         icon="spark"
