@@ -9,6 +9,7 @@
 export const PATH = Object.freeze({
   DASHBOARD: '/',
   PROPOSALS: '/proposals',
+  FOLLOWUPS: '/followups',
   NEW_PROPOSAL: '/new',
   PROPOSAL_AI: '/proposal-ai',
   TEMPLATES: '/templates',

@@ -107,7 +107,7 @@ export const WORKFLOW_CAPABILITIES = Object.freeze({
   clientComments: false,
   clientApprovals: false,
   slaTracking: false,
-  automatedReminders: false,
+  automatedReminders: true,
   multiStageApprovals: false,
   conditionalApprovals: false,
   departmentWorkflows: false,

@@ -43,6 +43,8 @@ import WorkflowStrip from '../../components/Workflow/WorkflowStrip.jsx'
 import PortalPanel from '../../components/ProposalPortal/PortalPanel.jsx'
 import PortalStrip from '../../components/ProposalPortal/PortalStrip.jsx'
 import InteractionsPanel from '../../components/Interactions/InteractionsPanel.jsx'
+import FollowupPanel from '../../components/Followup/FollowupPanel.jsx'
+import FollowupStrip from '../../components/Followup/FollowupStrip.jsx'
 import SendProposalDialog from '../../components/SendProposal/SendProposalDialog.jsx'
 import { ProposalThemeProvider } from '../../theme/ProposalThemeContext.jsx'
 import { hasQuestionnaire } from '../../models/questionnaire.js'
@@ -55,6 +57,7 @@ import styles from './ProposalEdit.module.css'
 import { useProposalWorkflow } from '../../hooks/useProposalWorkflow.js'
 import { useProposalPortal } from '../../hooks/useProposalPortal.js'
 import { useProposalInteractions } from '../../hooks/useProposalInteractions.js'
+import { useProposalFollowups } from '../../hooks/useProposalFollowups.js'
 import { DEFAULT_ACTOR_ID } from '../../workflow/actors.js'
 
 const SKELETON_ROWS = 4
@@ -118,6 +121,8 @@ function ProposalEditContent() {
     setPortalOpen,
     interactionsOpen,
     setInteractionsOpen,
+    followupOpen,
+    setFollowupOpen,
     copyBlock,
     takeClipboard,
     activeBlockId,
@@ -131,6 +136,7 @@ function ProposalEditContent() {
   const workflowFlow = useProposalWorkflow(id, workflowActorId)
   const portalFlow = useProposalPortal(id, workflowActorId)
   const interactionFlow = useProposalInteractions(id, workflowActorId)
+  const followupFlow = useProposalFollowups(id, workflowActorId)
   const {
     update,
     submitting,
@@ -449,13 +455,14 @@ function ProposalEditContent() {
     styles.page,
     sidebarOpen && styles.pageSidebarOpen,
     settingsOpen && styles.pageSettingsOpen,
-    inspectorOpen && !settingsOpen && !responsesOpen && !collaborationOpen && !clientOpen && !workflowOpen && !portalOpen && !interactionsOpen && styles.pageInspectorOpen,
+    inspectorOpen && !settingsOpen && !responsesOpen && !collaborationOpen && !clientOpen && !workflowOpen && !portalOpen && !interactionsOpen && !followupOpen && styles.pageInspectorOpen,
     responsesOpen && styles.pageResponsesOpen,
     collaborationOpen && styles.pageCollaborationOpen,
     clientOpen && styles.pageClientOpen,
     workflowOpen && styles.pageCollaborationOpen,
     portalOpen && styles.pageCollaborationOpen,
     interactionsOpen && styles.pageCollaborationOpen,
+    followupOpen && styles.pageCollaborationOpen,
     outlineOpen && !previewMode && styles.pageOutlineOpen,
     previewMode && styles.pagePreview,
   ]
@@ -529,6 +536,16 @@ function ProposalEditContent() {
         error={interactionFlow.error}
         actions={interactionFlow}
       />
+      <FollowupPanel
+        proposal={proposal}
+        open={followupOpen}
+        onClose={() => setFollowupOpen(false)}
+        followups={followupFlow.followups}
+        nextAction={followupFlow.nextAction}
+        loading={followupFlow.loading}
+        error={followupFlow.error}
+        actions={followupFlow}
+      />
       {historyOpen && proposal ? (
         <VersionHistoryPanel
           proposal={proposal}
@@ -561,7 +578,7 @@ function ProposalEditContent() {
       />
       <BlockInspector
         block={activeBlock}
-        open={inspectorOpen && !settingsOpen && !responsesOpen && !collaborationOpen && !clientOpen && !workflowOpen && !portalOpen && !interactionsOpen && !previewMode}
+        open={inspectorOpen && !settingsOpen && !responsesOpen && !collaborationOpen && !clientOpen && !workflowOpen && !portalOpen && !interactionsOpen && !followupOpen && !previewMode}
         onClose={() => setInspectorOpen(false)}
         onEnabled={(value) =>
           handleBlocksChange(setBlockEnabled(documentBlocks, activeBlockId, value))
@@ -598,6 +615,7 @@ function ProposalEditContent() {
           setWorkflowOpen(false)
           setPortalOpen(false)
           setInteractionsOpen(false)
+          setFollowupOpen(false)
           setHistoryOpen(false)
           setActivityOpen(false)
           setSendOpen(true)
@@ -620,6 +638,7 @@ function ProposalEditContent() {
           setActivityOpen(false)
           setPortalOpen(false)
           setInteractionsOpen(false)
+          setFollowupOpen(false)
           setWorkflowOpen(true)
         }}
       />
@@ -635,7 +654,24 @@ function ProposalEditContent() {
           setActivityOpen(false)
           setWorkflowOpen(false)
           setInteractionsOpen(false)
+          setFollowupOpen(false)
           setPortalOpen(true)
+        }}
+      />
+
+      <FollowupStrip
+        nextAction={followupFlow.nextAction}
+        onOpen={() => {
+          setSettingsOpen(false)
+          setResponsesOpen(false)
+          setCollaborationOpen(false)
+          setClientOpen(false)
+          setHistoryOpen(false)
+          setActivityOpen(false)
+          setWorkflowOpen(false)
+          setPortalOpen(false)
+          setInteractionsOpen(false)
+          setFollowupOpen(true)
         }}
       />
 

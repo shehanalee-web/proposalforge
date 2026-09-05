@@ -40,6 +40,8 @@ function EditorCommandBar({
     setPortalOpen,
     interactionsOpen,
     setInteractionsOpen,
+    followupOpen,
+    setFollowupOpen,
   } = useEditorWorkspace()
 
   return (
@@ -111,6 +113,7 @@ function EditorCommandBar({
               setWorkflowOpen(false)
               setPortalOpen(false)
               setInteractionsOpen(false)
+              setFollowupOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -134,6 +137,7 @@ function EditorCommandBar({
                 setWorkflowOpen(false)
               setPortalOpen(false)
               setInteractionsOpen(false)
+              setFollowupOpen(false)
                 if (historyOpen) onToggleHistory?.()
                 if (activityOpen) onToggleActivity?.()
               }
@@ -157,6 +161,7 @@ function EditorCommandBar({
               setWorkflowOpen(false)
               setPortalOpen(false)
               setInteractionsOpen(false)
+              setFollowupOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -179,6 +184,7 @@ function EditorCommandBar({
               setWorkflowOpen(false)
               setPortalOpen(false)
               setInteractionsOpen(false)
+              setFollowupOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -201,6 +207,7 @@ function EditorCommandBar({
               setClientOpen(false)
               setPortalOpen(false)
               setInteractionsOpen(false)
+              setFollowupOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -223,6 +230,7 @@ function EditorCommandBar({
               setClientOpen(false)
               setWorkflowOpen(false)
               setInteractionsOpen(false)
+              setFollowupOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -245,6 +253,7 @@ function EditorCommandBar({
               setClientOpen(false)
               setWorkflowOpen(false)
               setPortalOpen(false)
+              setFollowupOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -254,6 +263,29 @@ function EditorCommandBar({
         >
           <Icon name="message" size={15} />
           <span className={styles.toolLabel}>Feedback</span>
+        </button>
+        <button
+          type="button"
+          className={`${styles.tool} ${followupOpen ? styles.toolOn : ''}`}
+          onClick={() => {
+            setFollowupOpen(!followupOpen)
+            if (!followupOpen) {
+              setSettingsOpen(false)
+              setResponsesOpen(false)
+              setCollaborationOpen(false)
+              setClientOpen(false)
+              setWorkflowOpen(false)
+              setPortalOpen(false)
+              setInteractionsOpen(false)
+              if (historyOpen) onToggleHistory?.()
+              if (activityOpen) onToggleActivity?.()
+            }
+          }}
+          aria-pressed={followupOpen}
+          title="Proposal follow-up"
+        >
+          <Icon name="activity" size={15} />
+          <span className={styles.toolLabel}>Follow-up</span>
         </button>
         <button
           type="button"
@@ -267,6 +299,7 @@ function EditorCommandBar({
               setWorkflowOpen(false)
               setPortalOpen(false)
               setInteractionsOpen(false)
+              setFollowupOpen(false)
               if (activityOpen) onToggleActivity?.()
             }
             onToggleHistory?.()
@@ -289,6 +322,7 @@ function EditorCommandBar({
               setWorkflowOpen(false)
               setPortalOpen(false)
               setInteractionsOpen(false)
+              setFollowupOpen(false)
               if (historyOpen) onToggleHistory?.()
             }
             onToggleActivity?.()
