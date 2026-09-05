@@ -10,6 +10,7 @@ import Templates from './pages/Templates/Templates.jsx'
 import TemplateEditor from './pages/Templates/TemplateEditor.jsx'
 import ClientPortal from './pages/ClientPortal/ClientPortal.jsx'
 import ClientShareRedirect from './portal/ClientShareRedirect.jsx'
+import ProposalPortal from './pages/ProposalPortal/ProposalPortal.jsx'
 import BrandKit from './pages/BrandKit/BrandKit.jsx'
 import Services from './pages/Services/Services.jsx'
 import ServiceEditor from './pages/Services/ServiceEditor.jsx'
@@ -31,6 +32,7 @@ import {
 function App() {
   return (
     <Routes>
+      <Route path="/portal/:portalId" element={<ProposalPortal />} />
       <Route path="/p/share/:token" element={<ClientPortal />} />
       <Route path="/p/:token" element={<ClientShareRedirect />} />
       <Route path="/proposal-ai" element={<ProposalAi />} />

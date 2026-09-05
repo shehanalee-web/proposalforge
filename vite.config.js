@@ -5,6 +5,7 @@ import { emailPlugin } from './server/emailPlugin.js'
 import { aiPlugin } from './server/aiPlugin.js'
 import { knowledgePlugin } from './server/knowledgePlugin.js'
 import { workflowPlugin } from './server/workflowPlugin.js'
+import { portalPlugin } from './server/portalPlugin.js'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -15,5 +16,6 @@ export default defineConfig({
     aiPlugin(),
     knowledgePlugin(),
     workflowPlugin(),
+    portalPlugin(),
   ],
 })

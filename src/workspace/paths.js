@@ -27,6 +27,10 @@ export const PATH = Object.freeze({
   SETTINGS: '/settings',
 })
 
+export function portalPath(portalId) {
+  return `/portal/${encodeURIComponent(String(portalId ?? '').trim())}`
+}
+
 export function proposalPath(id) {
   return `${PATH.PROPOSALS}/${id}`
 }
