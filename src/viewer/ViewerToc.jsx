@@ -3,7 +3,7 @@ import { useViewer } from './ViewerContext.jsx'
 import { scrollToSection } from './useScrollSpy.js'
 import styles from './ViewerToc.module.css'
 
-function ViewerToc({ sections, activeId }) {
+function ViewerToc({ sections, activeId, living = false }) {
   const { drawerOpen, setDrawerOpen } = useViewer()
 
   function jump(id) {
@@ -27,17 +27,36 @@ function ViewerToc({ sections, activeId }) {
     </ol>
   )
 
+  const chips = living ? (
+    <div className={styles.chips} role="navigation" aria-label="Proposal sections">
+      {sections.map((section) => (
+        <button
+          key={section.id}
+          type="button"
+          className={`${styles.chip} ${activeId === section.id ? styles.chipActive : ''}`}
+          data-block-id={section.blockId ?? section.id}
+          onClick={() => jump(section.id)}
+        >
+          {section.title}
+        </button>
+      ))}
+    </div>
+  ) : null
+
   return (
     <>
-      <button
-        type="button"
-        className={styles.menu}
-        onClick={() => setDrawerOpen(true)}
-        aria-label="Open sections"
-      >
-        <Icon name="menu" size={16} />
-        Contents
-      </button>
+      <div className={living ? styles.mobileNav : undefined}>
+        <button
+          type="button"
+          className={styles.menu}
+          onClick={() => setDrawerOpen(true)}
+          aria-label="Open sections"
+        >
+          <Icon name="menu" size={16} />
+          Contents
+        </button>
+        {chips}
+      </div>
 
       <nav className={styles.rail} aria-label="Proposal sections">
         <p className={styles.kicker}>Contents</p>

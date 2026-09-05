@@ -1,3 +1,5 @@
+import { clientProposalPath } from '../workspace/paths.js'
+
 /**
  * Resolve the document a client should see.
  *
@@ -17,7 +19,7 @@ export function getActiveProposal(proposal) {
  * @returns {string}
  */
 export function getClientPortalPath(shareToken) {
-  return `/p/share/${shareToken}`
+  return clientProposalPath(shareToken)
 }
 
 /**

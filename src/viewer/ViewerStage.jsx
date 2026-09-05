@@ -18,16 +18,19 @@ import styles from './ProposalViewer.module.css'
  */
 function ViewerStage({
   proposal,
+  sections: livingSections,
   status,
   notices = [],
   embedded = false,
+  living = false,
   onFullscreen,
   children,
 }) {
   const articleRef = useRef(null)
   const sections = useMemo(
-    () => listViewerSections(proposal.blocks ?? [], proposal),
-    [proposal],
+    () =>
+      livingSections ?? listViewerSections(proposal.blocks ?? [], proposal),
+    [livingSections, proposal],
   )
   const sectionIds = sections.map((section) => section.id)
   const activeId = useScrollSpy(sectionIds)
@@ -89,7 +92,7 @@ function ViewerStage({
       <ViewerToast message={notice} />
 
       <div className={styles.frame} ref={articleRef}>
-        <ViewerToc sections={sections} activeId={activeId} />
+        <ViewerToc sections={sections} activeId={activeId} living={living} />
 
         <div className={styles.main}>
           {notices.map((item) => (

@@ -1,5 +1,7 @@
 .stage {
   min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .stageEmbedded .frame {
