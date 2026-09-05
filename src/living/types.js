@@ -1,8 +1,8 @@
 /**
  * Living Proposal contracts.
  *
- * Phase 1 defines names and capability flags only. Packages, add-ons,
- * selections, snapshots, and Forge actions stay off until later H14 phases.
+ * Phase 2 enables authored offer presentation only. Selections, snapshots,
+ * Forge actions, and commercial engagement events stay off.
  * Event names match the H14 brief so later phases emit through one pipe.
  */
 
@@ -34,12 +34,13 @@ export const LIVING_SECTION_KIND = Object.freeze({
 })
 
 /**
- * Later H14 phases flip these on. Phase 1 rendering must not pretend they exist.
+ * Later H14 phases flip the remaining flags. Phase 2 only presents authored
+ * packages, add-ons, and alternatives — it does not persist selections.
  */
 export const LIVING_CAPABILITIES = Object.freeze({
-  packages: false,
-  addons: false,
-  alternatives: false,
+  packages: true,
+  addons: true,
+  alternatives: true,
   selections: false,
   commercialEvents: false,
   livingSession: false,

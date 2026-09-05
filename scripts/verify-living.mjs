@@ -176,9 +176,10 @@ assert(
 )
 
 assert(
-  'Test 11 — Later H14 capabilities stay off',
-  LIVING_CAPABILITIES.packages === false &&
-    LIVING_CAPABILITIES.addons === false &&
+  'Test 11 — Phase 2 presents authored offers; later capabilities stay off',
+  LIVING_CAPABILITIES.packages === true &&
+    LIVING_CAPABILITIES.addons === true &&
+    LIVING_CAPABILITIES.alternatives === true &&
     LIVING_CAPABILITIES.selections === false &&
     LIVING_CAPABILITIES.commercialEvents === false &&
     LIVING_CAPABILITIES.livingSession === false &&
@@ -211,7 +212,7 @@ assert(
 const productionApi = sourceOf('server', 'productionApi.js')
 const livingIndex = sourceOf('src', 'living', 'index.js')
 assert(
-  'Test 13 — Phase 1 adds no living API plugin or persistence',
+  'Test 13 — Phase 1/2 add no living API plugin or persistence',
   !productionApi.includes('livingPlugin') &&
     !livingIndex.includes('fetch(') &&
     !sourceOf('src', 'living', 'events.js').includes('localStorage') &&
@@ -262,6 +263,15 @@ assert(
   'Test 18 — Follow-up domain is not imported by living renderer files',
   !sourceOf('src', 'living', 'projection.js').includes("from '../followup") &&
     !sourceOf('src', 'portal', 'PortalApp.jsx').includes('followup'),
+)
+
+assert(
+  'Test 19 — Empty authored offers project without selection state',
+  Array.isArray(living.authoredOffers.packages) &&
+    living.authoredOffers.packages.length === 0 &&
+    living.authoredOffers.addons.length === 0 &&
+    living.authoredOffers.alternatives.length === 0 &&
+    living.commercialState === null,
 )
 
 console.log('')

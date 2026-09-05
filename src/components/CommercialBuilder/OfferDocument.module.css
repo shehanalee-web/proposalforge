@@ -1,0 +1,122 @@
+.stack {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.banner {
+  margin: 0;
+  color: var(--doc-muted, var(--color-text-muted));
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.group {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.groupHead {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.groupTitle {
+  margin: 0;
+  color: var(--doc-primary, var(--color-text));
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.hint {
+  margin: 0;
+  color: var(--doc-muted, var(--color-text-muted));
+  font-size: var(--text-xs);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.card {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--doc-border, var(--color-border));
+  border-radius: var(--radius-lg);
+  background: var(--doc-surface, var(--color-surface));
+}
+
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.cardCopy {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+  flex: 1 1 10rem;
+}
+
+.label {
+  margin: 0;
+  color: var(--doc-primary, var(--color-accent));
+  font-size: var(--text-xs);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--doc-text, var(--color-text));
+  font-size: var(--text-sm);
+  font-weight: 650;
+}
+
+.description {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--doc-muted, var(--color-text-secondary));
+  font-size: var(--text-sm);
+}
+
+.amount {
+  margin: 0;
+  color: var(--doc-text, var(--color-text));
+  font-size: var(--text-sm);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .amount {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 390px) {
+  .stack,
+  .card,
+  .grid {
+    max-width: 100%;
+  }
+}

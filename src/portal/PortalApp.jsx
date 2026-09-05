@@ -118,6 +118,7 @@ function PortalAppInner({
       data-surface="client-portal"
       data-experience="living-proposal"
       data-publication-source={living.publication.source}
+      data-living-selections={living.capabilities.selections ? 'true' : 'false'}
       data-readonly="true"
     >
       <PortalHeader

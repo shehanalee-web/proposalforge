@@ -6,6 +6,7 @@ import {
 } from '../utils/commercialTotals.js'
 import { TAX_MODE } from '../models/brandKit.js'
 import { RECURRING_INTERVAL_LABELS } from '../models/commercial.js'
+import { presentOfferGroups } from '../models/offer.js'
 import {
   resolveCoverImage,
   resolvePaymentTerms,
@@ -108,6 +109,9 @@ export function PricingPdf({ instance, proposal, brand }) {
   const totals = computeCommercials(modules)
   const currency = proposal.currency
   const money = (value) => formatMoney(value, currency)
+  const offers = presentOfferGroups(instance.data?.offers, modules, {
+    enabledOnly: true,
+  })
 
   function lineLabel(line) {
     const qty = Number(line.quantity) || 0
@@ -260,6 +264,48 @@ export function PricingPdf({ instance, proposal, brand }) {
 
       {instance.data.notes?.trim() ? (
         <Text style={styles.body}>{instance.data.notes}</Text>
+      ) : null}
+
+      {offers.packages.length > 0 ||
+      offers.addons.length > 0 ||
+      offers.alternatives.length > 0 ? (
+        <View style={styles.table}>
+          <Text style={styles.scopeHeading}>Authored offer choices</Text>
+          <Text style={styles.footerText}>
+            Studio-authored options. Selection is not available on this proposal.
+          </Text>
+          {offers.packages.map((offer) => (
+            <View key={offer.id} style={styles.tableRow}>
+              <Text style={[styles.body, styles.colDesc]}>
+                {offer.label ? `${offer.label}: ` : ''}
+                {offer.title || 'Offer option'}
+              </Text>
+              <Text style={[styles.body, styles.colAmount]}>
+                {money(offer.amount)}
+              </Text>
+            </View>
+          ))}
+          {offers.addons.map((offer) => (
+            <View key={offer.id} style={styles.tableRow}>
+              <Text style={[styles.body, styles.colDesc]}>
+                Add-on: {offer.title || 'Optional add-on'}
+              </Text>
+              <Text style={[styles.body, styles.colAmount]}>
+                {money(offer.amount)}
+              </Text>
+            </View>
+          ))}
+          {offers.alternatives.map((offer) => (
+            <View key={offer.id} style={styles.tableRow}>
+              <Text style={[styles.body, styles.colDesc]}>
+                Alternative: {offer.title || 'Alternative'}
+              </Text>
+              <Text style={[styles.body, styles.colAmount]}>
+                {money(offer.amount)}
+              </Text>
+            </View>
+          ))}
+        </View>
       ) : null}
     </Section>
   )

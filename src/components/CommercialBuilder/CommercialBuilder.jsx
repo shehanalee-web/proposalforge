@@ -16,8 +16,10 @@ import {
   reorderListById,
 } from '../../models/commercial.js'
 import { computeCommercials, formatMoney } from '../../utils/commercialTotals.js'
+import { makeOfferGroups } from '../../models/offer.js'
 import { useBrandKit } from '../../hooks/useBrandKit.js'
 import { DEFAULT_CURRENCY } from '../../models/proposal.js'
+import OfferAuthoring from './OfferAuthoring.jsx'
 import styles from './CommercialBuilder.module.css'
 
 const ADDABLE = [
@@ -717,6 +719,14 @@ function CommercialBuilder({ data, onChange, currency = DEFAULT_CURRENCY, disabl
           })}
         </div>
       </div>
+
+      <OfferAuthoring
+        offers={makeOfferGroups(data.offers)}
+        modules={modules}
+        currency={currency}
+        disabled={disabled}
+        onChange={(offers) => onChange({ offers })}
+      />
 
       <Field label="Notes">
         <textarea

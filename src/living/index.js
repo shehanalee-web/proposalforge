@@ -8,6 +8,7 @@ export {
 export { presentLivingProposal } from './projection.js'
 export { listLivingSections } from './sections.js'
 export { getLivingPublication } from './publication.js'
+export { presentAuthoredOffers, getProposalOfferGroups } from './offers.js'
 export {
   emitLivingEvent,
   onLivingEvent,

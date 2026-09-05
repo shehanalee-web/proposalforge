@@ -151,6 +151,7 @@ export function PricingScreen({ instance, proposal }) {
     <BlockFrame title="Investment">
       <CommercialDocument
         modules={modules}
+        offers={instance.data.offers}
         notes={instance.data.notes}
         currency={proposal.currency}
       />

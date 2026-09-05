@@ -1,6 +1,8 @@
 import { TAX_MODE } from '../../models/brandKit.js'
 import { RECURRING_INTERVAL_LABELS } from '../../models/commercial.js'
 import { computeCommercials, formatMoney } from '../../utils/commercialTotals.js'
+import { presentOfferGroups } from '../../models/offer.js'
+import OfferDocument from './OfferDocument.jsx'
 import styles from '../../layouts/blocks/blocks.module.css'
 import extra from './CommercialDocument.module.css'
 
@@ -52,10 +54,20 @@ function LineTable({ lines, currency, showOptional = false }) {
   )
 }
 
-function CommercialDocument({ modules = [], notes = '', currency = 'USD' }) {
+function CommercialDocument({
+  modules = [],
+  notes = '',
+  currency = 'USD',
+  offers,
+}) {
   const totals = computeCommercials(modules)
+  const presentedOffers = presentOfferGroups(offers, modules, { enabledOnly: true })
+  const hasOffers =
+    presentedOffers.packages.length > 0 ||
+    presentedOffers.addons.length > 0 ||
+    presentedOffers.alternatives.length > 0
 
-  if (!totals.hasContent && !notes?.trim()) return null
+  if (!totals.hasContent && !notes?.trim() && !hasOffers) return null
 
   return (
     <div className={extra.stack}>
@@ -196,6 +208,8 @@ function CommercialDocument({ modules = [], notes = '', currency = 'USD' }) {
       ) : null}
 
       {notes?.trim() ? <p className={styles.body}>{notes}</p> : null}
+
+      <OfferDocument offers={presentedOffers} currency={currency} />
     </div>
   )
 }
