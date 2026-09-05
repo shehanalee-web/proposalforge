@@ -15,6 +15,7 @@ export const NOTIFICATION_TYPE = Object.freeze({
   FILES_UPLOADED: 'files_uploaded',
   REQUEST_CHANGES: 'request_changes',
   DECLINED: 'declined',
+  FOLLOWUP_DUE: 'followup_due',
 })
 
 export const NOTIFICATION_TYPES = Object.freeze(Object.values(NOTIFICATION_TYPE))
@@ -30,6 +31,7 @@ export const NOTIFICATION_TITLES = Object.freeze({
   [NOTIFICATION_TYPE.FILES_UPLOADED]: 'Files uploaded',
   [NOTIFICATION_TYPE.REQUEST_CHANGES]: 'Changes requested',
   [NOTIFICATION_TYPE.DECLINED]: 'Proposal declined',
+  [NOTIFICATION_TYPE.FOLLOWUP_DUE]: 'Follow-up due',
 })
 
 /**

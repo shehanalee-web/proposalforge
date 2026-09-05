@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { useProposal } from '../../hooks/useProposal.js'
 import { useRestoreProposalVersion } from '../../hooks/useRestoreProposalVersion.js'
 import { useSaveProposalVersion } from '../../hooks/useSaveProposalVersion.js'
@@ -10,11 +10,13 @@ import { useLatestEmailMessage } from '../../hooks/useLatestEmailMessage.js'
 import { makeEmailDeliverySummary } from '../../models/emailDelivery.js'
 import { toDuplicateDraft } from '../../utils/duplicateDraft.js'
 import { useCreateProposalDialog } from '../../hooks/useCreateProposalDialog.js'
-import { PATH } from '../../workspace/paths.js'
+import { PATH, proposalEditPath } from '../../workspace/paths.js'
 import { archiveProposal, recordProposalDownload } from '../../services/proposalService.js'
 import { PROPOSAL_STATUS } from '../../models/proposal.js'
 import SendProposalDialog from '../../components/SendProposal/SendProposalDialog.jsx'
 import ProposalDetailView from './ProposalDetailView.jsx'
+import FollowupStrip from '../../components/Followup/FollowupStrip.jsx'
+import { useProposalFollowups } from '../../hooks/useProposalFollowups.js'
 import VersionHistoryPanel from './VersionHistoryPanel.jsx'
 import ActivityPanel from './ActivityPanel.jsx'
 import styles from './ProposalDetail.module.css'
@@ -23,8 +25,10 @@ const SKELETON_ROWS = 5
 
 function ProposalDetail() {
   const { id } = useParams()
+  const navigate = useNavigate()
   const { openCreate } = useCreateProposalDialog()
   const { proposal, loading, error, notFound, refetch, setProposal } = useProposal(id)
+  const followupFlow = useProposalFollowups(id)
   const {
     restore,
     submitting: restoring,
@@ -165,6 +169,10 @@ function ProposalDetail() {
 
   return (
     <section className={styles.page}>
+      <FollowupStrip
+        nextAction={followupFlow.nextAction}
+        onOpen={() => navigate(proposalEditPath(id))}
+      />
       <ProposalDetailView
         proposal={viewProposal}
         onDuplicate={handleDuplicate}

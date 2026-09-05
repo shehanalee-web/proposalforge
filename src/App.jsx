@@ -23,6 +23,7 @@ import KnowledgeEditor from './pages/Knowledge/KnowledgeEditor.jsx'
 import Testimonials from './pages/Testimonials/Testimonials.jsx'
 import Team from './pages/Team/Team.jsx'
 import ProposalAi from './pages/ProposalAi/ProposalAi.jsx'
+import Followups from './pages/Followups/Followups.jsx'
 import {
   HistoryDetailRedirect,
   HistoryEditRedirect,
@@ -42,6 +43,7 @@ function App() {
         <Route path="templates" element={<Templates />} />
         <Route path="templates/new" element={<TemplateEditor />} />
         <Route path="templates/:id/edit" element={<TemplateEditor />} />
+        <Route path="followups" element={<Followups />} />
         <Route path="proposals" element={<History />} />
         <Route path="proposals/:id/edit" element={<ProposalEdit />} />
         <Route path="proposals/:id" element={<ProposalDetail />} />

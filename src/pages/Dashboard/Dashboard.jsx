@@ -9,6 +9,8 @@ import OperationalQueues from './OperationalQueues.jsx'
 import { useCommercialOverview } from '../../hooks/useCommercialOverview.js'
 import { useWorkflowOverview } from '../../hooks/useWorkflowOverview.js'
 import WorkflowDashboard from '../../components/Workflow/WorkflowDashboard.jsx'
+import FollowupDashboard from '../../components/Followup/FollowupDashboard.jsx'
+import { useFollowupOverview } from '../../hooks/useFollowupOverview.js'
 import styles from './Dashboard.module.css'
 
 const RECENT_LIMIT = 5
@@ -40,6 +42,12 @@ function Dashboard() {
     error: workflowError,
     refetch: refetchWorkflow,
   } = useWorkflowOverview()
+  const {
+    overview: followupOverview,
+    loading: followupLoading,
+    error: followupError,
+    refetch: refetchFollowup,
+  } = useFollowupOverview()
 
   const isFirstRun =
     !summaryLoading &&
@@ -82,6 +90,13 @@ function Dashboard() {
         loading={workflowLoading}
         error={workflowError}
         onRetry={refetchWorkflow}
+      />
+
+      <FollowupDashboard
+        overview={followupOverview}
+        loading={followupLoading}
+        error={followupError}
+        onRetry={refetchFollowup}
       />
 
       {overviewError ? (

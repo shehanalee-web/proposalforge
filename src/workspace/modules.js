@@ -63,6 +63,19 @@ export const WORKSPACE_MODULES = Object.freeze([
     capabilities: [],
   },
   {
+    id: WORKSPACE_MODULE.FOLLOWUPS,
+    path: PATH.FOLLOWUPS,
+    label: 'Follow-up',
+    icon: 'activity',
+    group: WORKSPACE_GROUP.WORKSPACE,
+    inNav: true,
+    status: 'live',
+    summary: 'Deterministic next actions on existing proposals.',
+    description:
+      'Studio-only follow-up queue derived from proposal, workflow, portal, and interaction state. Reminders are scheduled locally; nothing is sent automatically.',
+    capabilities: [],
+  },
+  {
     id: WORKSPACE_MODULE.TEMPLATES,
     path: PATH.TEMPLATES,
     label: 'Templates',
