@@ -3,6 +3,7 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { loadEnv } from 'vite'
 import { describeAiEngine, generateImprovement, loadAiProvider } from '../src/improve/engine.js'
+import { generateCoachAdvice } from '../src/coach/ai.js'
 import { ImproveError, IMPROVE_ERROR_CODE, isImproveAbort } from '../src/improve/errors.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -83,6 +84,38 @@ export function aiPlugin() {
 
       if (method === 'GET' && matchRoute(url, '/api/ai/activity')) {
         return json(res, 200, { records: loadActivity().slice(-50).reverse() })
+      }
+
+      if (method === 'POST' && matchRoute(url, '/api/ai/coach')) {
+        const payload = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        const controller = new AbortController()
+        const onClose = () => controller.abort()
+        req.on('close', onClose)
+        try {
+          const result = await generateCoachAdvice(payload, env, {
+            signal: controller.signal,
+            onActivity: saveActivity,
+          })
+          return json(res, 200, {
+            text: result.text,
+            activity: result.activity,
+            provider: result.provider,
+          })
+        } catch (error) {
+          if (isImproveAbort(error) || controller.signal.aborted) {
+            return json(res, 499, publicError())
+          }
+          const failed = error instanceof ImproveError ? error : null
+          const status =
+            failed?.code === IMPROVE_ERROR_CODE.INVALID_KEY
+              ? 401
+              : failed?.code === IMPROVE_ERROR_CODE.RATE_LIMIT
+                ? 429
+                : 502
+          return json(res, status, publicError())
+        } finally {
+          req.off('close', onClose)
+        }
       }
 
       if (method === 'POST' && matchRoute(url, '/api/ai/improve')) {

@@ -5,6 +5,7 @@ import HealthScore from './HealthScore.jsx'
 import ProposalIntelligence from './ProposalIntelligence.jsx'
 import ProposalIntegrity from './ProposalIntegrity.jsx'
 import ProposalInsights from './ProposalInsights.jsx'
+import ProposalCoach from './ProposalCoach.jsx'
 import AiImprovements from './AiImprovements.jsx'
 import AiSuggestions from './AiSuggestions.jsx'
 import QuickActions from './QuickActions.jsx'
@@ -67,6 +68,7 @@ function AiSidebar({ proposal, blocks, onAction, onApplyImprovement }) {
             <ProposalIntelligence proposal={proposal} blocks={blocks} />
             <ProposalIntegrity proposal={proposal} blocks={blocks} />
             <ProposalInsights proposal={proposal} blocks={blocks} />
+            <ProposalCoach proposal={proposal} blocks={blocks} />
             <AiImprovements
               proposal={proposal}
               blocks={blocks}
