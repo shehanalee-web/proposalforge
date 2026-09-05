@@ -63,11 +63,11 @@ function StartProposalDialog() {
               <span className={styles.choiceKicker}>Recommended</span>
               <span className={styles.choiceTitle}>Generate with AI</span>
               <span className={styles.choiceText}>
-                Answer a few questions. We will draft the proposal and open it
-                in the editor, ready to refine.
+                Enter structured facts. We retrieve approved company knowledge,
+                draft the proposal, then open it in the editor after you review.
               </span>
             </span>
-            <span className={styles.choiceHint}>Start chat</span>
+            <span className={styles.choiceHint}>Generate proposal</span>
           </button>
 
           <button
