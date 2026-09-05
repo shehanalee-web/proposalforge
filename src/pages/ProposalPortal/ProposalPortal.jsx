@@ -4,6 +4,7 @@ import { useAsyncData } from '../../hooks/useAsyncData.js'
 import { fetchPublicPortalView } from '../../services/proposalPortalService.js'
 import { formatCurrency, formatDate, formatDateTime } from '../../utils/format.js'
 import { UNRESOLVED_FACT } from '../../generate/types.js'
+import PortalInteractions from './PortalInteractions.jsx'
 import styles from './ProposalPortal.module.css'
 
 function textOrUnresolved(value) {
@@ -181,6 +182,8 @@ function ProposalPortal() {
             <p className={styles.body}>{view.terms}</p>
           </Section>
         ) : null}
+
+        <PortalInteractions portalId={portalId} />
       </main>
     </div>
   )
