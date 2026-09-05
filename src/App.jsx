@@ -34,8 +34,8 @@ function App() {
   return (
     <Routes>
       <Route path="/portal/:portalId" element={<ProposalPortal />} />
-      <Route path="/p/share/:token" element={<ClientPortal />} />
-      <Route path="/p/:token" element={<ClientShareRedirect />} />
+      <Route path="/p/share/:token" element={<ClientShareRedirect />} />
+      <Route path="/p/:token" element={<ClientPortal />} />
       <Route path="/proposal-ai" element={<ProposalAi />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<Dashboard />} />

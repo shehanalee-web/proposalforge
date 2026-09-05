@@ -23,6 +23,7 @@ function ViewerSection({ id, children }) {
       ref={ref}
       id={`viewer-section-${id}`}
       data-section-id={id}
+      data-block-id={id}
       className={`${styles.section} ${visible ? styles.visible : ''}`}
     >
       {children}

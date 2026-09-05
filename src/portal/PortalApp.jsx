@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { ViewerProvider, useViewer } from '../viewer/ViewerContext.jsx'
 import { useFullscreen } from '../viewer/useFullscreen.js'
+import { useLivingProposal } from '../hooks/useLivingProposal.js'
 import ViewerStage from '../viewer/ViewerStage.jsx'
 import ViewerActionBar from '../viewer/ViewerActionBar.jsx'
 import { useProposalTheme } from '../theme/ProposalThemeContext.jsx'
@@ -33,6 +34,7 @@ function PortalAppInner({
   onDeclined,
 }) {
   const { proposal, capabilities } = usePortal()
+  const living = useLivingProposal(proposal)
   const { cssVars } = useProposalTheme()
   const { flash, saved, setSaved } = useViewer()
   const shellRef = useRef(null)
@@ -114,6 +116,8 @@ function PortalAppInner({
       className={`${styles.shell} ${fullscreen ? styles.fullscreen : ''}`}
       style={cssVars}
       data-surface="client-portal"
+      data-experience="living-proposal"
+      data-publication-source={living.publication.source}
       data-readonly="true"
     >
       <PortalHeader
@@ -124,9 +128,11 @@ function PortalAppInner({
       <div className={styles.body}>
         <ViewerStage
           proposal={proposal}
+          sections={living.sections}
           status={proposal.status}
           notices={notices}
           embedded
+          living
           onFullscreen={toggleFullscreen}
         />
         <PortalAside

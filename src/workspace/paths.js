@@ -32,6 +32,28 @@ export function portalPath(portalId) {
   return `/portal/${encodeURIComponent(String(portalId ?? '').trim())}`
 }
 
+/**
+ * Canonical Living Proposal URL. `/p/share/:token` remains an alias.
+ *
+ * @param {string} shareToken
+ */
+export function clientProposalPath(shareToken) {
+  const token = String(shareToken ?? '').trim()
+  if (!token) return '/p/'
+  return `/p/${encodeURIComponent(token)}`
+}
+
+/**
+ * Legacy share-token alias. Redirects to {@link clientProposalPath}.
+ *
+ * @param {string} shareToken
+ */
+export function clientProposalShareAliasPath(shareToken) {
+  const token = String(shareToken ?? '').trim()
+  if (!token) return '/p/share/'
+  return `/p/share/${encodeURIComponent(token)}`
+}
+
 export function proposalPath(id) {
   return `${PATH.PROPOSALS}/${id}`
 }
