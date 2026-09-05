@@ -93,6 +93,16 @@
   white-space: nowrap;
 }
 
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
 /* States ----------------------------------------------------------------- */
 
 .state {

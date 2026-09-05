@@ -38,6 +38,8 @@ import BlockInspector from '../../components/BlockInspector/BlockInspector.jsx'
 import ClientResponsesPanel from '../../components/ClientResponses/ClientResponsesPanel.jsx'
 import CollaborationPanel from '../../components/Collaboration/CollaborationPanel.jsx'
 import ClientWorkspacePanel from '../../components/ClientWorkspace/ClientWorkspacePanel.jsx'
+import WorkflowPanel from '../../components/Workflow/WorkflowPanel.jsx'
+import WorkflowStrip from '../../components/Workflow/WorkflowStrip.jsx'
 import SendProposalDialog from '../../components/SendProposal/SendProposalDialog.jsx'
 import { ProposalThemeProvider } from '../../theme/ProposalThemeContext.jsx'
 import { hasQuestionnaire } from '../../models/questionnaire.js'
@@ -47,6 +49,8 @@ import { useDeleteProposalVersion } from '../../hooks/useDeleteProposalVersion.j
 import VersionHistoryPanel from './VersionHistoryPanel.jsx'
 import ActivityPanel from './ActivityPanel.jsx'
 import styles from './ProposalEdit.module.css'
+import { useProposalWorkflow } from '../../hooks/useProposalWorkflow.js'
+import { DEFAULT_ACTOR_ID } from '../../workflow/actors.js'
 
 const SKELETON_ROWS = 4
 
@@ -103,6 +107,8 @@ function ProposalEditContent() {
     setCollaborationOpen,
     clientOpen,
     setClientOpen,
+    workflowOpen,
+    setWorkflowOpen,
     copyBlock,
     takeClipboard,
     activeBlockId,
@@ -112,6 +118,8 @@ function ProposalEditContent() {
   } = useEditorWorkspace()
 
   const { proposal, loading, error, notFound, refetch, setProposal } = useProposal(id)
+  const [workflowActorId, setWorkflowActorId] = useState(DEFAULT_ACTOR_ID)
+  const workflowFlow = useProposalWorkflow(id, workflowActorId)
   const {
     update,
     submitting,
@@ -430,10 +438,11 @@ function ProposalEditContent() {
     styles.page,
     sidebarOpen && styles.pageSidebarOpen,
     settingsOpen && styles.pageSettingsOpen,
-    inspectorOpen && !settingsOpen && !responsesOpen && !collaborationOpen && !clientOpen && styles.pageInspectorOpen,
+    inspectorOpen && !settingsOpen && !responsesOpen && !collaborationOpen && !clientOpen && !workflowOpen && styles.pageInspectorOpen,
     responsesOpen && styles.pageResponsesOpen,
     collaborationOpen && styles.pageCollaborationOpen,
     clientOpen && styles.pageClientOpen,
+    workflowOpen && styles.pageCollaborationOpen,
     outlineOpen && !previewMode && styles.pageOutlineOpen,
     previewMode && styles.pagePreview,
   ]
@@ -477,6 +486,18 @@ function ProposalEditContent() {
           setSendOpen(true)
         }}
       />
+      <WorkflowPanel
+        proposal={proposal}
+        blocks={documentBlocks}
+        open={workflowOpen}
+        onClose={() => setWorkflowOpen(false)}
+        workflow={workflowFlow.workflow}
+        loading={workflowFlow.loading}
+        error={workflowFlow.error}
+        actorId={workflowActorId}
+        onActorChange={setWorkflowActorId}
+        actions={workflowFlow}
+      />
       {historyOpen && proposal ? (
         <VersionHistoryPanel
           proposal={proposal}
@@ -509,7 +530,7 @@ function ProposalEditContent() {
       />
       <BlockInspector
         block={activeBlock}
-        open={inspectorOpen && !settingsOpen && !responsesOpen && !collaborationOpen && !clientOpen && !previewMode}
+        open={inspectorOpen && !settingsOpen && !responsesOpen && !collaborationOpen && !clientOpen && !workflowOpen && !previewMode}
         onClose={() => setInspectorOpen(false)}
         onEnabled={(value) =>
           handleBlocksChange(setBlockEnabled(documentBlocks, activeBlockId, value))
@@ -543,6 +564,7 @@ function ProposalEditContent() {
           setResponsesOpen(false)
           setCollaborationOpen(false)
           setClientOpen(false)
+          setWorkflowOpen(false)
           setHistoryOpen(false)
           setActivityOpen(false)
           setSendOpen(true)
@@ -552,6 +574,19 @@ function ProposalEditContent() {
         onToggleHistory={() => setHistoryOpen((open) => !open)}
         activityOpen={activityOpen}
         onToggleActivity={() => setActivityOpen((open) => !open)}
+      />
+
+      <WorkflowStrip
+        workflow={workflowFlow.workflow}
+        onOpen={() => {
+          setSettingsOpen(false)
+          setResponsesOpen(false)
+          setCollaborationOpen(false)
+          setClientOpen(false)
+          setHistoryOpen(false)
+          setActivityOpen(false)
+          setWorkflowOpen(true)
+        }}
       />
 
       {exportError ? (
