@@ -7,6 +7,8 @@ import SummaryCards from './SummaryCards.jsx'
 import RecentProposals from './RecentProposals.jsx'
 import OperationalQueues from './OperationalQueues.jsx'
 import { useCommercialOverview } from '../../hooks/useCommercialOverview.js'
+import { useWorkflowOverview } from '../../hooks/useWorkflowOverview.js'
+import WorkflowDashboard from '../../components/Workflow/WorkflowDashboard.jsx'
 import styles from './Dashboard.module.css'
 
 const RECENT_LIMIT = 5
@@ -32,6 +34,12 @@ function Dashboard() {
     error: overviewError,
     refetch: refetchOverview,
   } = useCommercialOverview()
+  const {
+    overview: workflowOverview,
+    loading: workflowLoading,
+    error: workflowError,
+    refetch: refetchWorkflow,
+  } = useWorkflowOverview()
 
   const isFirstRun =
     !summaryLoading &&
@@ -67,6 +75,13 @@ function Dashboard() {
         loading={summaryLoading}
         error={summaryError}
         onRetry={refetchSummary}
+      />
+
+      <WorkflowDashboard
+        overview={workflowOverview}
+        loading={workflowLoading}
+        error={workflowError}
+        onRetry={refetchWorkflow}
       />
 
       {overviewError ? (

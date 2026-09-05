@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 import StatusBadge from '../../components/StatusBadge/StatusBadge.jsx'
+import WorkflowStatusBadge from '../../components/Workflow/WorkflowStatusBadge.jsx'
 import { getDisplayStatus } from '../../models/proposal.js'
 import { getViewCount } from '../../models/commercialQueues.js'
 import { EMAIL_DELIVERY_STATUS_LABELS } from '../../models/emailDelivery.js'
@@ -9,11 +10,13 @@ import {
 } from '../../utils/cardNavigation.js'
 import { formatCurrency, formatDateTime } from '../../utils/format.js'
 import { proposalPath } from '../../workspace/paths.js'
+import { useWorkflowMap } from '../../hooks/useWorkflowMap.js'
 import styles from './RecentProposals.module.css'
 
 const SKELETON_ROWS = 4
 
-function RecentProposals({ proposals, loading, error, onRetry }) {
+function RecentProposals({ proposals = [], loading, error, onRetry }) {
+  const { statusOf } = useWorkflowMap(proposals.map((item) => item.id))
   if (error) {
     return (
       <div className={styles.state}>
@@ -86,7 +89,10 @@ function RecentProposals({ proposals, loading, error, onRetry }) {
             </span>
           </div>
 
-          <StatusBadge status={getDisplayStatus(proposal)} />
+          <div className={styles.badges}>
+            <WorkflowStatusBadge status={statusOf(proposal.id)} compact />
+            <StatusBadge status={getDisplayStatus(proposal)} />
+          </div>
         </li>
       ))}
     </ul>

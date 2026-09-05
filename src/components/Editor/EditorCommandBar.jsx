@@ -34,6 +34,8 @@ function EditorCommandBar({
     setCollaborationOpen,
     clientOpen,
     setClientOpen,
+    workflowOpen,
+    setWorkflowOpen,
   } = useEditorWorkspace()
 
   return (
@@ -102,6 +104,7 @@ function EditorCommandBar({
               setResponsesOpen(false)
               setCollaborationOpen(false)
               setClientOpen(false)
+              setWorkflowOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -122,6 +125,7 @@ function EditorCommandBar({
                 setSettingsOpen(false)
                 setCollaborationOpen(false)
                 setClientOpen(false)
+                setWorkflowOpen(false)
                 if (historyOpen) onToggleHistory?.()
                 if (activityOpen) onToggleActivity?.()
               }
@@ -142,6 +146,7 @@ function EditorCommandBar({
               setSettingsOpen(false)
               setResponsesOpen(false)
               setClientOpen(false)
+              setWorkflowOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -161,6 +166,7 @@ function EditorCommandBar({
               setSettingsOpen(false)
               setResponsesOpen(false)
               setCollaborationOpen(false)
+              setWorkflowOpen(false)
               if (historyOpen) onToggleHistory?.()
               if (activityOpen) onToggleActivity?.()
             }
@@ -173,6 +179,26 @@ function EditorCommandBar({
         </button>
         <button
           type="button"
+          className={`${styles.tool} ${workflowOpen ? styles.toolOn : ''}`}
+          onClick={() => {
+            setWorkflowOpen(!workflowOpen)
+            if (!workflowOpen) {
+              setSettingsOpen(false)
+              setResponsesOpen(false)
+              setCollaborationOpen(false)
+              setClientOpen(false)
+              if (historyOpen) onToggleHistory?.()
+              if (activityOpen) onToggleActivity?.()
+            }
+          }}
+          aria-pressed={workflowOpen}
+          title="Proposal workflow"
+        >
+          <Icon name="check" size={15} />
+          <span className={styles.toolLabel}>Workflow</span>
+        </button>
+        <button
+          type="button"
           className={`${styles.tool} ${historyOpen ? styles.toolOn : ''}`}
           onClick={() => {
             if (!historyOpen) {
@@ -180,6 +206,7 @@ function EditorCommandBar({
               setResponsesOpen(false)
               setCollaborationOpen(false)
               setClientOpen(false)
+              setWorkflowOpen(false)
               if (activityOpen) onToggleActivity?.()
             }
             onToggleHistory?.()
@@ -199,6 +226,7 @@ function EditorCommandBar({
               setResponsesOpen(false)
               setCollaborationOpen(false)
               setClientOpen(false)
+              setWorkflowOpen(false)
               if (historyOpen) onToggleHistory?.()
             }
             onToggleActivity?.()

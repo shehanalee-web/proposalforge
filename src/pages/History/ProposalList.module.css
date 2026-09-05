@@ -108,6 +108,14 @@
   white-space: nowrap;
 }
 
+.statusPair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+}
+
 /*
  * Below 760px a multi-column table cannot stay legible, so each row becomes a
  * stacked card. Cell labels come from the data-label attributes, which keeps
