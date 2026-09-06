@@ -185,6 +185,7 @@ assert(
     LIVING_CAPABILITIES.livingSession === true &&
     LIVING_CAPABILITIES.snapshots === true &&
     LIVING_CAPABILITIES.h12Interactions === true &&
+    LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false &&
     living.capabilities === LIVING_CAPABILITIES,
@@ -213,13 +214,16 @@ assert(
 const productionApi = sourceOf('server', 'productionApi.js')
 const livingIndex = sourceOf('src', 'living', 'index.js')
 assert(
-  'Test 13 — Phase 3 registers living API without follow-up coupling',
+  'Test 13 — Living API registers decisions; renderer stays decoupled from follow-up UI',
   productionApi.includes('livingPlugin') &&
     !livingIndex.includes('fetch(') &&
     !sourceOf('src', 'living', 'events.js').includes('localStorage') &&
     !sourceOf('src', 'living', 'projection.js').includes('followupPlugin') &&
-    !sourceOf('src', 'living', 'repository.js').includes('followup') &&
-    !sourceOf('server', 'livingPlugin.js').includes('followups.json'),
+    sourceOf('src', 'living', 'repository.js').includes(
+      'reconcileLivingCommercialSelectionFollowup',
+    ) &&
+    sourceOf('server', 'livingPlugin.js').includes('followups.json') &&
+    !sourceOf('src', 'portal', 'PortalApp.jsx').toLowerCase().includes('followup'),
 )
 
 const portalApp = sourceOf('src', 'portal', 'PortalApp.jsx')

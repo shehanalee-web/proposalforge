@@ -16,7 +16,7 @@ import {
 import { makeProposal, PROPOSAL_STATUS } from '../src/models/proposal.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import { WORKFLOW_ISOLATION_COMPANY_ID } from '../src/workflow/types.js'
-import { FOLLOWUP_REASON, FOLLOWUP_REASONS } from '../src/followup/types.js'
+import { FOLLOWUP_REASONS } from '../src/followup/types.js'
 import { ValidationError, NotFoundError } from '../src/services/errors.js'
 import {
   LIVING_CAPABILITIES,
@@ -357,10 +357,9 @@ assert(
 // 12 no follow-up
 assert(
   '12. event does not create follow-up',
-  !FOLLOWUP_REASONS.includes('commercial_selection') &&
-    !('COMMERCIAL_SELECTION' in FOLLOWUP_REASON) &&
-    !sourceOf('src', 'living', 'eventRepository.js').includes('followup') &&
-    !sourceOf('server', 'livingPlugin.js').includes('followups.json'),
+  !sourceOf('src', 'living', 'eventRepository.js').includes('followup') &&
+    !sourceOf('server', 'livingPlugin.js').includes('createManualFollowup') &&
+    FOLLOWUP_REASONS.includes('commercial_selection'),
 )
 
 // 13 event does not create snapshot
@@ -412,6 +411,7 @@ assert(
   '17. later capabilities remain false',
   LIVING_CAPABILITIES.snapshots === true &&
     LIVING_CAPABILITIES.h12Interactions === true &&
+    LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false &&
     LIVING_CAPABILITIES.packages === true &&

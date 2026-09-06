@@ -345,10 +345,9 @@ assert(
 )
 
 assert(
-  'No H13 follow-up is created',
-  !FOLLOWUP_REASONS.includes('commercial_selection') &&
-    !('COMMERCIAL_SELECTION' in FOLLOWUP_REASON) &&
-    !sourceOf('src', 'followup', 'types.js').includes('commercial_selection') &&
+  'No H13 follow-up is created by offer authoring alone',
+  FOLLOWUP_REASONS.includes('commercial_selection') &&
+    'COMMERCIAL_SELECTION' in FOLLOWUP_REASON &&
     !sourceOf('src', 'living', 'offers.js').includes('followup') &&
     !sourceOf('src', 'models', 'offer.js').includes('followup') &&
     !sourceOf('src', 'components', 'CommercialBuilder', 'OfferAuthoring.jsx').includes(
@@ -366,6 +365,7 @@ assert(
     LIVING_CAPABILITIES.livingSession === true &&
     LIVING_CAPABILITIES.snapshots === true &&
     LIVING_CAPABILITIES.h12Interactions === true &&
+    LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false &&
     living.capabilities === LIVING_CAPABILITIES &&

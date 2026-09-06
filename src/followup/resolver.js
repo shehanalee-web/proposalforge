@@ -3,6 +3,7 @@ import { PROPOSAL_STATUS } from '../models/proposal.js'
 import { PORTAL_STATUS } from '../portal/types.js'
 import { overdueTasks } from '../workflow/tasks.js'
 import { WORKFLOW_STATUS } from '../workflow/types.js'
+import { commercialSelectionSignalExtras } from './commercialSelection.js'
 import { FOLLOWUP_POLICY, addMs, clockOf, isValidityExpired, isValidityExpiring, parseTime } from './policy.js'
 import { FOLLOWUP_REASON_META, followupSignalKey, reasonLabel } from './reasons.js'
 import { FOLLOWUP_REASON, FOLLOWUP_SOURCE } from './types.js'
@@ -129,6 +130,7 @@ export function evaluateFollowupSignals({
   workflow = null,
   portal = null,
   interactions = [],
+  livingSession = null,
   now = Date.now(),
 } = {}) {
   if (!proposal?.id) return []
@@ -247,6 +249,30 @@ export function evaluateFollowupSignals({
           signalSourceId: '',
           dueAt: addMs(viewed, FOLLOWUP_POLICY.awaitingResponseAfterMs),
           description: `Viewed with no newer client response (${reasonLabel(FOLLOWUP_REASON.AWAITING_RESPONSE)}).`,
+        }),
+      )
+    }
+  }
+
+  // Living commercial selection — only while the deal is still open.
+  if (!lost && !expired && !acceptedNow) {
+    const commercial = commercialSelectionSignalExtras({
+      proposal,
+      livingSession,
+      ownerActorId,
+      now: clock,
+    })
+    if (commercial) {
+      signals.push(
+        signal(FOLLOWUP_REASON.COMMERCIAL_SELECTION, {
+          ownerActorId: commercial.ownerActorId,
+          sourceId: commercial.sourceId,
+          signalSourceId: commercial.signalSourceId,
+          sourceType: commercial.sourceType,
+          dueAt: commercial.dueAt,
+          title: commercial.title,
+          description: commercial.description,
+          priority: commercial.priority,
         }),
       )
     }

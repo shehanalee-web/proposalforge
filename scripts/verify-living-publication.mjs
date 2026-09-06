@@ -372,6 +372,7 @@ assert(
   LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false &&
     LIVING_CAPABILITIES.h12Interactions === true &&
+    LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     LIVING_CAPABILITIES.snapshots === true,
 )
 
@@ -463,6 +464,7 @@ assert(
     LIVING_CAPABILITIES.commercialEvents === true &&
     LIVING_CAPABILITIES.snapshots === true &&
     LIVING_CAPABILITIES.h12Interactions === true &&
+    LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false,
 )

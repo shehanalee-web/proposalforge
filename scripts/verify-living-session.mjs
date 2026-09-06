@@ -340,11 +340,11 @@ assert(
 const livingRepo = sourceOf('src', 'living', 'repository.js')
 const livingPlugin = sourceOf('server', 'livingPlugin.js')
 assert(
-  '16. no H13 writes',
-  !FOLLOWUP_REASONS.includes('commercial_selection') &&
-    !('COMMERCIAL_SELECTION' in FOLLOWUP_REASON) &&
-    !livingRepo.includes('followup') &&
-    !livingPlugin.includes('followups.json') &&
+  '16. H13 commercial selection is wired without proposal writes',
+  FOLLOWUP_REASONS.includes('commercial_selection') &&
+    'COMMERCIAL_SELECTION' in FOLLOWUP_REASON &&
+    livingRepo.includes('reconcileLivingCommercialSelectionFollowup') &&
+    livingPlugin.includes('followups.json') &&
     !livingPlugin.includes('/api/followups'),
 )
 assert(
@@ -390,6 +390,7 @@ assert(
     LIVING_CAPABILITIES.commercialEvents === true &&
     LIVING_CAPABILITIES.snapshots === true &&
     LIVING_CAPABILITIES.h12Interactions === true &&
+    LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false &&
     view.capabilities === LIVING_CAPABILITIES,

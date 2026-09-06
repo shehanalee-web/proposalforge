@@ -103,7 +103,7 @@ export function summarizeFollowupQueue(records, now = Date.now()) {
     if (bucket === 'expiring' || record.reason === 'expiring') {
       if (isOpenFollowupStatus(record.status)) buckets.expiring.push(record)
     }
-    if (bucket === 'client_feedback' || record.reason === 'client_interaction' || record.reason === 'changes_requested') {
+    if (bucket === 'client_feedback' || record.reason === 'client_interaction' || record.reason === 'changes_requested' || record.reason === 'commercial_selection') {
       if (isOpenFollowupStatus(record.status)) buckets.client_feedback.push(record)
     }
     if (isOpenFollowupStatus(record.status)) buckets.open.push(record)
