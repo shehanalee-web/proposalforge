@@ -367,16 +367,16 @@ assert(
     !sourceOf('src', 'portal', 'PortalApp.jsx').includes('rive'),
 )
 
-// 20 no later snapshot behavior
+// 20 unpublished proposals stay authored-compatible (no fake snapshot)
 const view = getLivingClientView({ shareToken: proposalA.shareToken })
 assert(
-  '20. no later snapshot behavior',
-  LIVING_CAPABILITIES.snapshots === false &&
+  '20. unpublished proposals stay authored-compatible',
+  LIVING_CAPABILITIES.snapshots === true &&
     view.publication.snapshot === false &&
     view.publication.revision === null &&
     view.publication.source === 'authored' &&
-    !livingPlugin.includes('publishedRevision') &&
-    !livingPlugin.includes('/publish'),
+    livingPlugin.includes('/publish') &&
+    livingPlugin.includes('living-publications.json'),
 )
 
 // 21 capability flags
@@ -388,7 +388,7 @@ assert(
     LIVING_CAPABILITIES.selections === true &&
     LIVING_CAPABILITIES.livingSession === true &&
     LIVING_CAPABILITIES.commercialEvents === true &&
-    LIVING_CAPABILITIES.snapshots === false &&
+    LIVING_CAPABILITIES.snapshots === true &&
     LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false &&
     view.capabilities === LIVING_CAPABILITIES,

@@ -363,12 +363,12 @@ assert(
     !sourceOf('server', 'livingPlugin.js').includes('followups.json'),
 )
 
-// 13 no snapshot
+// 13 event does not create snapshot
 assert(
   '13. event does not create snapshot',
-  LIVING_CAPABILITIES.snapshots === false &&
-    presentLivingProposal(proposalA).publication.snapshot === false &&
-    !sourceOf('src', 'living', 'eventRepository.js').includes('publishedRevision'),
+  presentLivingProposal(proposalA).publication.snapshot === false &&
+    !sourceOf('src', 'living', 'eventRepository.js').includes('publishLivingProposal') &&
+    !sourceOf('src', 'living', 'eventRepository.js').includes('insertLivingPublication'),
 )
 
 // 14 public client route cannot read studio feed (source contract)
@@ -410,7 +410,7 @@ assert(
 )
 assert(
   '17. later capabilities remain false',
-  LIVING_CAPABILITIES.snapshots === false &&
+  LIVING_CAPABILITIES.snapshots === true &&
     LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false &&
     LIVING_CAPABILITIES.packages === true &&

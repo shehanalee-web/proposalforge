@@ -16,6 +16,10 @@ import { LIVING_CAPABILITIES, LIVING_EVENT } from './types.js'
 import { listLivingEngagementEventsForProposal } from './eventStore.js'
 import { presentLivingEngagementEvent } from './eventSchema.js'
 import { summarizeLivingEngagement } from './eventRepository.js'
+import {
+  findCurrentLivingPublication,
+} from './publicationStore.js'
+import { resolveLivingProposalContent } from './publicationResolvers.js'
 
 function scopedCompany(companyId) {
   return String(companyId ?? '').trim() || DEFAULT_COMPANY_ID
@@ -27,7 +31,7 @@ function deny(message, { notFound = true } = {}) {
   throw error
 }
 
-function loadProposalOrDeny(shareToken) {
+function loadAuthoredOrDeny(shareToken) {
   const token = String(shareToken ?? '').trim()
   if (!token) deny('This proposal is not available.')
   const proposal = resolveLivingProposalByShareToken(token)
@@ -36,6 +40,14 @@ function loadProposalOrDeny(shareToken) {
     deny('This proposal is not available.')
   }
   return proposal
+}
+
+/**
+ * Client-facing proposal content: current publication when published,
+ * otherwise authored compatibility (no silent fake snapshot).
+ */
+function loadProposalOrDeny(shareToken) {
+  return resolveLivingProposalContent(loadAuthoredOrDeny(shareToken))
 }
 
 function assertProposalMatch(session, proposal) {
@@ -109,10 +121,20 @@ export function getOrCreateLivingSession(shareToken) {
  * @param {{ shareToken: string }} input
  */
 export function getLivingClientView({ shareToken }) {
-  const proposal = loadProposalOrDeny(shareToken)
-  const session = getOrCreateLivingSession(proposal.shareToken)
+  const authored = loadAuthoredOrDeny(shareToken)
+  const publication = LIVING_CAPABILITIES.snapshots
+    ? findCurrentLivingPublication(authored.id, authored.companyId ?? '')
+    : null
+  const activePublication =
+    publication && publication.shareToken === authored.shareToken ? publication : null
+  const proposal = resolveLivingProposalContent(authored)
+  const session = getOrCreateLivingSession(authored.shareToken)
   const commercialState = deriveSelectedCommercialState(proposal, session)
-  const living = presentLivingProposal(proposal, { session, commercialState })
+  const living = presentLivingProposal(proposal, {
+    session,
+    commercialState,
+    publication: activePublication,
+  })
 
   return {
     ...living,

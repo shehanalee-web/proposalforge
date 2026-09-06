@@ -1,8 +1,8 @@
 /**
  * Living Proposal contracts.
  *
- * Phase 4 enables living engagement event persistence. Snapshots, Forge
- * actions, and Rive stay off. Event names match the H14 brief.
+ * Phase 4B enables immutable living publications / snapshots. Forge actions
+ * and Rive stay off.
  */
 
 export const LIVING_EVENT = Object.freeze({
@@ -33,8 +33,8 @@ export const LIVING_SECTION_KIND = Object.freeze({
 })
 
 /**
- * Later H14 phases flip the remaining flags. Phase 4 persists living
- * engagement events without mutating authored proposal content or follow-ups.
+ * Later H14 phases flip remaining flags. Phase 4B enables snapshots without
+ * Forge or Rive.
  */
 export const LIVING_CAPABILITIES = Object.freeze({
   packages: true,
@@ -43,7 +43,7 @@ export const LIVING_CAPABILITIES = Object.freeze({
   selections: true,
   commercialEvents: true,
   livingSession: true,
-  snapshots: false,
+  snapshots: true,
   forgeActions: false,
   rive: false,
 })

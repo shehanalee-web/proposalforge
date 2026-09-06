@@ -364,7 +364,7 @@ assert(
     LIVING_CAPABILITIES.selections === true &&
     LIVING_CAPABILITIES.commercialEvents === true &&
     LIVING_CAPABILITIES.livingSession === true &&
-    LIVING_CAPABILITIES.snapshots === false &&
+    LIVING_CAPABILITIES.snapshots === true &&
     LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false &&
     living.capabilities === LIVING_CAPABILITIES &&

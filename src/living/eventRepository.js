@@ -17,6 +17,7 @@ import {
 } from './resolvers.js'
 import { findLivingSessionByShareToken } from './store.js'
 import { LIVING_CAPABILITIES, LIVING_EVENT, LIVING_EVENTS } from './types.js'
+import { resolveLivingProposalContent } from './publicationResolvers.js'
 
 function scopedCompany(companyId) {
   return String(companyId ?? '').trim() || DEFAULT_COMPANY_ID
@@ -29,13 +30,13 @@ function loadProposalByToken(shareToken) {
     error.reason = 'living_unavailable'
     throw error
   }
-  const proposal = resolveLivingProposalByShareToken(token)
-  if (!proposal) {
+  const authored = resolveLivingProposalByShareToken(token)
+  if (!authored) {
     const error = new NotFoundError('This proposal is not available.')
     error.reason = 'living_unavailable'
     throw error
   }
-  return proposal
+  return resolveLivingProposalContent(authored)
 }
 
 function assertBlockOnProposal(proposal, blockId) {
