@@ -371,19 +371,20 @@ assert(
     !('acknowledgedBy' in clientView),
 )
 
-// 14 no follow-up
+// 14 interaction create does not invent a second follow-up domain
 assert(
-  '14. no followup is created',
-  !FOLLOWUP_REASONS.includes('commercial_selection') &&
-    !('COMMERCIAL_SELECTION' in FOLLOWUP_REASON) &&
+  '14. living interactions do not own follow-up persistence',
+  FOLLOWUP_REASONS.includes('commercial_selection') &&
     !sourceOf('src', 'interactions', 'livingAccess.js').includes('followups.json') &&
-    !sourceOf('src', 'interactions', 'livingAccess.js').includes('createFollowup'),
+    !sourceOf('src', 'interactions', 'livingAccess.js').includes('createFollowup') &&
+    !sourceOf('src', 'interactions', 'livingAccess.js').includes('syncFollowups'),
 )
 
-// 15 no commercial_selection
+// 15 commercial_selection exists for living decisions (not interaction create)
 assert(
-  '15. no commercial_selection is created',
-  !FOLLOWUP_REASONS.includes('commercial_selection'),
+  '15. commercial_selection reason exists for living decisions',
+  FOLLOWUP_REASONS.includes('commercial_selection') &&
+    'COMMERCIAL_SELECTION' in FOLLOWUP_REASON,
 )
 
 // 16 no publication snapshot from interaction
@@ -493,6 +494,7 @@ assert(
     sourceOf('src', 'portal', 'PortalApp.jsx').includes('data-living-h12') &&
     sourceOf('src', 'portal', 'PortalComments.module.css').includes('min(34rem, 96vw)') &&
     LIVING_CAPABILITIES.h12Interactions === true &&
+    LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     INTERACTION_CAPABILITIES.autoProposalEdit === false &&
     INTERACTION_CAPABILITIES.realtimeChat === false &&
     LIVING_CAPABILITIES.forgeActions === false &&

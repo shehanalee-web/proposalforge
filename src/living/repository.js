@@ -20,6 +20,7 @@ import {
   findCurrentLivingPublication,
 } from './publicationStore.js'
 import { resolveLivingProposalContent } from './publicationResolvers.js'
+import { reconcileLivingCommercialSelectionFollowup } from './signals.js'
 
 function scopedCompany(companyId) {
   return String(companyId ?? '').trim() || DEFAULT_COMPANY_ID
@@ -239,16 +240,26 @@ export function applyLivingDecisions(input = {}) {
     emitLivingEvent(LIVING_EVENT.PACKAGE_SELECTED, {
       proposalId: proposal.id,
       shareToken: proposal.shareToken,
+      sessionId: saved.id,
       offerId: saved.selectedPackageId,
+      signal: 'commercial_selection',
     })
   }
   if (input.toggleAddonId || 'selectedAddonIds' in input) {
     emitLivingEvent(LIVING_EVENT.ADDON_SELECTED, {
       proposalId: proposal.id,
       shareToken: proposal.shareToken,
+      sessionId: saved.id,
       offerIds: saved.selectedAddonIds,
+      signal: 'commercial_selection',
     })
   }
+
+  // Best-effort H13 commercial selection signal — never blocks the client decision.
+  reconcileLivingCommercialSelectionFollowup({
+    companyId: scopedCompany(proposal.companyId),
+    proposalId: proposal.id,
+  })
 
   return {
     session: presentLivingSession(saved),

@@ -8,6 +8,10 @@ import { findWorkflowByProposal } from '../src/workflow/store.js'
 import { findPortalByProposal } from '../src/portal/store.js'
 import { listInteractionsForProposal } from '../src/interactions/store.js'
 import {
+  findLivingSessionByShareToken,
+  listLivingSessionsForProposal,
+} from '../src/living/store.js'
+import {
   allFollowupRecords,
   assignFollowupOwner,
   clientFollowupApiDenied,
@@ -160,6 +164,16 @@ export function followupPlugin() {
       },
       getInteractions(companyId, proposalId) {
         return listInteractionsForProposal(companyId, proposalId)
+      },
+      getLivingSession(companyId, proposalId) {
+        const proposals = readProposals()
+        const proposal = proposals.find((item) => item.id === proposalId)
+        if (proposal?.shareToken) {
+          const byToken = findLivingSessionByShareToken(proposal.shareToken)
+          if (byToken) return byToken
+        }
+        const sessions = listLivingSessionsForProposal(proposalId)
+        return sessions.find((item) => item.companyId === companyId) ?? sessions[0] ?? null
       },
     })
     ready = true

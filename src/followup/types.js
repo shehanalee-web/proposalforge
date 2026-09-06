@@ -22,6 +22,7 @@ export const FOLLOWUP_REASON = Object.freeze({
   EXPIRING: 'expiring',
   ACCEPTED_NEXT_STEP: 'accepted_next_step',
   OVERDUE_TASK: 'overdue_task',
+  COMMERCIAL_SELECTION: 'commercial_selection',
   MANUAL: 'manual',
 })
 
@@ -33,6 +34,7 @@ export const FOLLOWUP_SOURCE = Object.freeze({
   PORTAL: 'portal',
   INTERACTION: 'interaction',
   EXPIRY: 'expiry',
+  LIVING: 'living',
   MANUAL: 'manual',
 })
 
@@ -62,9 +64,11 @@ export const FOLLOWUP_EVENTS = Object.freeze(Object.values(FOLLOWUP_EVENT))
 /**
  * Local scheduling infrastructure only. No delivery, workers, or vendors.
  * `automatedReminders` means follow-up reminders can be represented and scheduled.
+ * `commercialSelection` means living commercial choices can create H13 signals.
  */
 export const FOLLOWUP_CAPABILITIES = Object.freeze({
   automatedReminders: true,
+  commercialSelection: true,
   emailDelivery: false,
   whatsapp: false,
   crm: false,

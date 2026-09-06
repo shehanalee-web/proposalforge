@@ -49,6 +49,11 @@ export {
 export { configureFollowupResolvers, resetFollowupResolvers } from './lookups.js'
 export { makeFollowupRecord, emptyFollowup, containsSecret } from './schema.js'
 export { evaluateFollowupSignals } from './resolver.js'
+export {
+  commercialSelectionSignalExtras,
+  describeLivingCommercialSelection,
+  livingSessionHasCommercialSelection,
+} from './commercialSelection.js'
 export { FOLLOWUP_NOTIFICATION_EVENTS, emitFollowupEvent } from './events.js'
 export { getNextFollowupAction, presentStudioFollowup, summarizeFollowupQueue } from './summary.js'
 

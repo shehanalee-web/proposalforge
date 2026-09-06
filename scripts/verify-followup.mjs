@@ -532,9 +532,15 @@ assert(
 assert(
   'Test 25 — Capability flags',
   FOLLOWUP_CAPABILITIES.automatedReminders === true &&
+    FOLLOWUP_CAPABILITIES.commercialSelection === true &&
     WORKFLOW_CAPABILITIES.automatedReminders === true &&
     FOLLOWUP_CAPABILITIES.backgroundWorkers === false &&
-    FOLLOWUP_CAPABILITIES.thirdPartyIntegrations === false,
+    FOLLOWUP_CAPABILITIES.thirdPartyIntegrations === false &&
+    FOLLOWUP_CAPABILITIES.emailDelivery === false &&
+    FOLLOWUP_CAPABILITIES.whatsapp === false &&
+    FOLLOWUP_CAPABILITIES.crm === false &&
+    FOLLOWUP_CAPABILITIES.digitalSignature === false &&
+    FOLLOWUP_CAPABILITIES.paymentProcessing === false,
 )
 
 const snapshot = allFollowupRecords()

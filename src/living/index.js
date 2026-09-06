@@ -98,3 +98,4 @@ export {
   postLivingEngagementEvent,
   resetLivingClientEventDedupe,
 } from './clientEvents.js'
+export { reconcileLivingCommercialSelectionFollowup } from './signals.js'

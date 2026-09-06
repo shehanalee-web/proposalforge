@@ -46,6 +46,7 @@ export const FOLLOWUP_REASON_LABELS = Object.freeze({
   [FOLLOWUP_REASON.EXPIRING]: 'Expiring',
   [FOLLOWUP_REASON.ACCEPTED_NEXT_STEP]: 'Accepted handoff',
   [FOLLOWUP_REASON.OVERDUE_TASK]: 'Overdue task',
+  [FOLLOWUP_REASON.COMMERCIAL_SELECTION]: 'Commercial selection',
   [FOLLOWUP_REASON.MANUAL]: 'Manual',
 })
 
@@ -57,6 +58,7 @@ export const FOLLOWUP_REASON_ACTIONS = Object.freeze({
   [FOLLOWUP_REASON.EXPIRING]: 'Follow up before expiry',
   [FOLLOWUP_REASON.ACCEPTED_NEXT_STEP]: 'Complete the next handoff',
   [FOLLOWUP_REASON.OVERDUE_TASK]: 'Complete overdue task',
+  [FOLLOWUP_REASON.COMMERCIAL_SELECTION]: 'Follow up with client',
   [FOLLOWUP_REASON.MANUAL]: 'Follow up',
 })
 
@@ -74,7 +76,8 @@ export function followupQueueBucket(record, now = Date.now()) {
   if (isDueToday(record.dueAt, now)) return 'due_today'
   if (
     record.reason === FOLLOWUP_REASON.CLIENT_INTERACTION ||
-    record.reason === FOLLOWUP_REASON.CHANGES_REQUESTED
+    record.reason === FOLLOWUP_REASON.CHANGES_REQUESTED ||
+    record.reason === FOLLOWUP_REASON.COMMERCIAL_SELECTION
   ) {
     return 'client_feedback'
   }

@@ -4,6 +4,7 @@ import { resolveWorkflowActor } from '../workflow/actors.js'
 import { emitFollowupEvent } from './events.js'
 import {
   resolveFollowupInteractions,
+  resolveFollowupLivingSession,
   resolveFollowupPortal,
   resolveFollowupProposal,
   resolveFollowupProposals,
@@ -91,6 +92,7 @@ function contextForProposal(companyId, proposalId) {
     workflow: resolveFollowupWorkflow(companyId, proposalId),
     portal: resolveFollowupPortal(companyId, proposalId),
     interactions: resolveFollowupInteractions(companyId, proposalId),
+    livingSession: resolveFollowupLivingSession(companyId, proposalId, proposal),
   }
 }
 
@@ -169,7 +171,26 @@ export function syncFollowupsForProposal({ companyId, proposalId, actor, now } =
     const openMatch = remaining.find(
       (record) => isOpenFollowupStatus(record.status) && existingKey(record) === item.signalKey,
     )
-    if (openMatch) continue
+    if (openMatch) {
+      // Keep one open commercial-selection follow-up; refresh studio copy if selection changed.
+      if (
+        item.reason === FOLLOWUP_REASON.COMMERCIAL_SELECTION &&
+        (openMatch.description !== item.description || openMatch.sourceId !== item.sourceId)
+      ) {
+        save(
+          stamp(
+            {
+              ...openMatch,
+              description: item.description,
+              sourceId: item.sourceId,
+              dueAt: item.dueAt || openMatch.dueAt,
+            },
+            clock,
+          ),
+        )
+      }
+      continue
+    }
     const historical = remaining.find(
       (record) => isTerminalFollowupStatus(record.status) && existingKey(record) === item.signalKey,
     )

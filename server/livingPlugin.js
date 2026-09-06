@@ -3,6 +3,19 @@ import { dirname, join } from 'node:path'
 import { ensureRuntimeData } from './dataPaths.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
+import { findWorkflowByProposal } from '../src/workflow/store.js'
+import { findPortalByProposal } from '../src/portal/store.js'
+import { listInteractionsForProposal } from '../src/interactions/store.js'
+import {
+  findLivingSessionByShareToken,
+  listLivingSessionsForProposal,
+} from '../src/living/store.js'
+import {
+  allFollowupRecords,
+  configureFollowupResolvers,
+  configureFollowupStore,
+  replaceFollowupRecords,
+} from '../src/followup/index.js'
 import {
   allLivingEngagementEvents,
   allLivingPublications,
@@ -113,15 +126,18 @@ function companyFrom(body, query) {
 /**
  * Persist living sessions to `data/living.json`, engagement events to
  * `data/living-events.json`, and publications to `data/living-publications.json`.
- * Never writes `data/proposals.json` or follow-ups.
+ * Decision side-effects may reconcile H13 follow-ups into `data/followups.json`.
+ * Never writes `data/proposals.json`.
  */
 export function livingPlugin() {
   const dataDir = ensureRuntimeData()
   const livingFile = join(dataDir, 'living.json')
   const livingEventsFile = join(dataDir, 'living-events.json')
   const livingPublicationsFile = join(dataDir, 'living-publications.json')
+  const followupsFile = join(dataDir, 'followups.json')
   const proposalsFile = join(dataDir, 'proposals.json')
   let ready = false
+  let followupReady = false
 
   function persistSessions(records) {
     writeJson(livingFile, records)
@@ -135,9 +151,61 @@ export function livingPlugin() {
     writeJson(livingPublicationsFile, records)
   }
 
+  function persistFollowups(records) {
+    writeJson(followupsFile, records)
+  }
+
   function readProposals() {
     const stored = readJson(proposalsFile, [])
     return Array.isArray(stored) ? stored : []
+  }
+
+  function ensureFollowupStore() {
+    if (followupReady) return
+    const stored = readJson(followupsFile, null)
+    if (Array.isArray(stored)) {
+      replaceFollowupRecords(stored)
+    } else {
+      replaceFollowupRecords([])
+      persistFollowups(allFollowupRecords())
+    }
+    configureFollowupStore({ persist: persistFollowups })
+    configureFollowupResolvers({
+      getProposal(proposalId, companyId) {
+        const found = readProposals().find((item) => item.id === proposalId)
+        if (!found) return null
+        const ownedBy =
+          String(found.companyId ?? DEFAULT_COMPANY_ID).trim() || DEFAULT_COMPANY_ID
+        if (ownedBy !== companyId) return null
+        return found
+      },
+      listProposals(companyId) {
+        return readProposals().filter((item) => {
+          const ownedBy =
+            String(item.companyId ?? DEFAULT_COMPANY_ID).trim() || DEFAULT_COMPANY_ID
+          return ownedBy === companyId
+        })
+      },
+      getWorkflow(companyId, proposalId) {
+        return findWorkflowByProposal(companyId, proposalId) ?? null
+      },
+      getPortal(companyId, proposalId) {
+        return findPortalByProposal(companyId, proposalId) ?? null
+      },
+      getInteractions(companyId, proposalId) {
+        return listInteractionsForProposal(companyId, proposalId)
+      },
+      getLivingSession(companyId, proposalId) {
+        const proposal = readProposals().find((item) => item.id === proposalId)
+        if (proposal?.shareToken) {
+          const byToken = findLivingSessionByShareToken(proposal.shareToken)
+          if (byToken) return byToken
+        }
+        const sessions = listLivingSessionsForProposal(proposalId)
+        return sessions.find((item) => item.companyId === companyId) ?? sessions[0] ?? null
+      },
+    })
+    followupReady = true
   }
 
   function ensureStore() {
@@ -348,6 +416,7 @@ export function livingPlugin() {
 
       const decisions = matchRoute(url, '/api/living/:token/decisions')
       if (method === 'POST' && decisions) {
+        ensureFollowupStore()
         const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
         const patch = { shareToken: decisions.token }
         if ('selectedPackageId' in body) patch.selectedPackageId = body.selectedPackageId
