@@ -2,7 +2,8 @@
  * Living Proposal contracts.
  *
  * Phase 14.7 enables studio Forge actions over living + H12 + H13.
- * Rive and client Forge stay off.
+ * Phase 14.8 adds a studio-only Forge Rive contract / fallback shell.
+ * Client living never exposes Forge or Rive (`rive` stays false here).
  */
 
 export const LIVING_EVENT = Object.freeze({
@@ -33,8 +34,8 @@ export const LIVING_SECTION_KIND = Object.freeze({
 })
 
 /**
- * Phase 14.7 enables studio Forge actions. Rive stays off.
- * Client living page never exposes Forge.
+ * Phase 14.7–14.8: studio Forge actions + Rive contract (studio chrome only).
+ * Client living page never exposes Forge or Rive.
  */
 export const LIVING_CAPABILITIES = Object.freeze({
   packages: true,

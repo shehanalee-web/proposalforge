@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { DEFAULT_COMPANY_ID } from '../../knowledge/types.js'
 import { DEFAULT_ACTOR_ID } from '../../workflow/actors.js'
 import { FORGE_ACTION } from '../../forge/types.js'
+import { ForgeAssistantShell } from './ForgeAssistantShell.jsx'
 import styles from './ProposalCommercial.module.css'
 
 function Card({ title, kicker, children }) {
@@ -17,6 +18,7 @@ function Card({ title, kicker, children }) {
 /**
  * Studio-only Forge action surface.
  * Never mutates proposals automatically. Follow-ups require an explicit click.
+ * Presentation uses the H14.8 Rive contract fallback shell (no .riv required).
  */
 export function ForgeActionsCard({ proposal, actorId = DEFAULT_ACTOR_ID, onFollowupChange }) {
   const [view, setView] = useState(null)
@@ -123,6 +125,14 @@ export function ForgeActionsCard({ proposal, actorId = DEFAULT_ACTOR_ID, onFollo
 
   return (
     <Card title="Forge" kicker="Studio actions">
+      <ForgeAssistantShell
+        busy={busy}
+        error={error}
+        resultMessage={resultMessage}
+        hasSummary={Boolean(summary?.available)}
+        hasSuggestion={Boolean(suggestion)}
+      />
+
       <p className={styles.note}>
         Deterministic living + interaction + follow-up intelligence. Nothing is
         sent or applied to the proposal automatically.
