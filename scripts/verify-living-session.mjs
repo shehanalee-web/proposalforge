@@ -349,7 +349,7 @@ assert(
 )
 assert(
   '17. no analytics persistence',
-  LIVING_CAPABILITIES.commercialEvents === false &&
+  LIVING_CAPABILITIES.commercialEvents === true &&
     !livingPlugin.includes('activityEvents') &&
     !livingRepo.includes('activityEvent') &&
     !sourceOf('src', 'living', 'events.js').includes('writeFile'),
@@ -387,7 +387,7 @@ assert(
     LIVING_CAPABILITIES.alternatives === true &&
     LIVING_CAPABILITIES.selections === true &&
     LIVING_CAPABILITIES.livingSession === true &&
-    LIVING_CAPABILITIES.commercialEvents === false &&
+    LIVING_CAPABILITIES.commercialEvents === true &&
     LIVING_CAPABILITIES.snapshots === false &&
     LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false &&
@@ -514,7 +514,7 @@ assert(
   'Selection events stay in-memory extension points',
   events.some((event) => event.type === LIVING_EVENT.PACKAGE_SELECTED) &&
     !livingPlugin.includes('activityEvents.json') &&
-    LIVING_CAPABILITIES.commercialEvents === false,
+    LIVING_CAPABILITIES.commercialEvents === true,
 )
 
 // Forbidden path sanity

@@ -13,6 +13,9 @@ import {
 } from './store.js'
 import { deriveSelectedCommercialState, normalizeLivingSelections } from './totals.js'
 import { LIVING_CAPABILITIES, LIVING_EVENT } from './types.js'
+import { listLivingEngagementEventsForProposal } from './eventStore.js'
+import { presentLivingEngagementEvent } from './eventSchema.js'
+import { summarizeLivingEngagement } from './eventRepository.js'
 
 function scopedCompany(companyId) {
   return String(companyId ?? '').trim() || DEFAULT_COMPANY_ID
@@ -233,8 +236,8 @@ export function applyLivingDecisions(input = {}) {
 }
 
 /**
- * Studio summary placeholder — engagement detail arrives in Phase 4.
- * Does not write follow-ups or analytics.
+ * Studio summary: sessions + engagement counts.
+ * Does not write follow-ups or activity analytics.
  *
  * @param {{ proposalId: string, companyId?: string }} input
  */
@@ -245,12 +248,16 @@ export function getLivingStudioSummary({ proposalId, companyId }) {
       { field: 'proposalId', message: 'proposalId is required.' },
     ])
   }
-  void companyId
+  const company = scopedCompany(companyId)
   const sessions = listLivingSessionsForProposal(pid)
+  const events = listLivingEngagementEventsForProposal(pid, company).map((event) =>
+    presentLivingEngagementEvent(event),
+  )
   return {
     proposalId: pid,
     sessionCount: sessions.length,
     sessions: sessions.map((session) => presentLivingSession(session)),
+    engagement: summarizeLivingEngagement(events),
     capabilities: LIVING_CAPABILITIES,
   }
 }

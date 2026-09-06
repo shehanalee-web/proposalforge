@@ -2,14 +2,15 @@ import { useEffect, useMemo, useRef } from 'react'
 import {
   emitLivingEvent,
   LIVING_EVENT,
+  postLivingEngagementEvent,
   presentLivingProposal,
 } from '../living/index.js'
 
 /**
  * Living renderer contract for the client portal.
  *
- * Domain projection stays outside the component. Opened is the only Phase 1
- * emit; later phases subscribe to `onLivingEvent` without a new store.
+ * Opens emit through the in-memory pipe and Phase 4 persistence.
+ * Persistence failures never block rendering.
  *
  * @param {import('../models/proposal.js').Proposal | null | undefined} proposal
  */
@@ -19,11 +20,16 @@ export function useLivingProposal(proposal) {
 
   useEffect(() => {
     const proposalId = living.proposal?.id
-    if (!proposalId || openedFor.current === proposalId) return
+    const shareToken = living.proposal?.shareToken ?? null
+    if (!proposalId || !shareToken || openedFor.current === proposalId) return
     openedFor.current = proposalId
     emitLivingEvent(LIVING_EVENT.PROPOSAL_OPENED, {
       proposalId,
-      shareToken: living.proposal?.shareToken ?? null,
+      shareToken,
+    })
+    void postLivingEngagementEvent(shareToken, {
+      type: LIVING_EVENT.PROPOSAL_OPENED,
+      dedupe: true,
     })
   }, [living.proposal?.id, living.proposal?.shareToken])
 

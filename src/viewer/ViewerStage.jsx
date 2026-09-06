@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useViewer } from './ViewerContext.jsx'
 import { listViewerSections } from './sectionMeta.js'
 import { useReadingProgress } from './useReadingProgress.js'
@@ -10,6 +10,8 @@ import ViewerDocument from './ViewerDocument.jsx'
 import ViewerToast from './ViewerToast.jsx'
 import GalleryLightbox from './GalleryLightbox.jsx'
 import { useProposalTheme } from '../theme/ProposalThemeContext.jsx'
+import { BLOCK_TYPE } from '../blocks/ids.js'
+import { LIVING_EVENT, postLivingEngagementEvent } from '../living/index.js'
 import styles from './ProposalViewer.module.css'
 
 /**
@@ -44,6 +46,25 @@ function ViewerStage({
   } = useViewer()
 
   const lightboxOpen = Boolean(lightbox)
+  const shareToken = proposal?.shareToken ?? null
+
+  useEffect(() => {
+    if (!living || !shareToken || !activeId) return
+    const section = sections.find((item) => item.id === activeId)
+    if (!section) return
+    void postLivingEngagementEvent(shareToken, {
+      type: LIVING_EVENT.SECTION_VIEWED,
+      blockId: activeId,
+      dedupe: true,
+    })
+    if (section.type === BLOCK_TYPE.PRICING || section.kind === 'commercial') {
+      void postLivingEngagementEvent(shareToken, {
+        type: LIVING_EVENT.PRICING_VIEWED,
+        blockId: activeId,
+        dedupe: true,
+      })
+    }
+  }, [living, shareToken, activeId, sections])
 
   useViewerKeyboard({
     sectionIds,

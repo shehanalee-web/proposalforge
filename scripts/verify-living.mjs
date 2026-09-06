@@ -176,12 +176,12 @@ assert(
 )
 
 assert(
-  'Test 11 — Phase 3 enables selections; later capabilities stay off',
+  'Test 11 — Phase 4 enables commercial events; later capabilities stay off',
   LIVING_CAPABILITIES.packages === true &&
     LIVING_CAPABILITIES.addons === true &&
     LIVING_CAPABILITIES.alternatives === true &&
     LIVING_CAPABILITIES.selections === true &&
-    LIVING_CAPABILITIES.commercialEvents === false &&
+    LIVING_CAPABILITIES.commercialEvents === true &&
     LIVING_CAPABILITIES.livingSession === true &&
     LIVING_CAPABILITIES.snapshots === false &&
     LIVING_CAPABILITIES.forgeActions === false &&

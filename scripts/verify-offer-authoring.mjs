@@ -362,7 +362,7 @@ assert(
     LIVING_CAPABILITIES.addons === true &&
     LIVING_CAPABILITIES.alternatives === true &&
     LIVING_CAPABILITIES.selections === true &&
-    LIVING_CAPABILITIES.commercialEvents === false &&
+    LIVING_CAPABILITIES.commercialEvents === true &&
     LIVING_CAPABILITIES.livingSession === true &&
     LIVING_CAPABILITIES.snapshots === false &&
     LIVING_CAPABILITIES.forgeActions === false &&

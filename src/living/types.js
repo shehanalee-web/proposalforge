@@ -1,9 +1,8 @@
 /**
  * Living Proposal contracts.
  *
- * Phase 3 enables living sessions and client commercial selections.
- * Snapshots, Forge actions, and commercial engagement persistence stay off.
- * Event names match the H14 brief so later phases emit through one pipe.
+ * Phase 4 enables living engagement event persistence. Snapshots, Forge
+ * actions, and Rive stay off. Event names match the H14 brief.
  */
 
 export const LIVING_EVENT = Object.freeze({
@@ -34,15 +33,15 @@ export const LIVING_SECTION_KIND = Object.freeze({
 })
 
 /**
- * Later H14 phases flip the remaining flags. Phase 3 persists client
- * selections in a living session without mutating authored proposal content.
+ * Later H14 phases flip the remaining flags. Phase 4 persists living
+ * engagement events without mutating authored proposal content or follow-ups.
  */
 export const LIVING_CAPABILITIES = Object.freeze({
   packages: true,
   addons: true,
   alternatives: true,
   selections: true,
-  commercialEvents: false,
+  commercialEvents: true,
   livingSession: true,
   snapshots: false,
   forgeActions: false,

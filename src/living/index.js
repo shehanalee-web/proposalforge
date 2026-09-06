@@ -45,3 +45,25 @@ export {
   getLivingStudioSummary,
   assertLivingProposalAccess,
 } from './repository.js'
+export {
+  makeLivingEngagementEvent,
+  presentLivingEngagementEvent,
+  sanitizeLivingEventMetadata,
+  cloneLivingEngagementEvent,
+} from './eventSchema.js'
+export {
+  configureLivingEventStore,
+  resetLivingEventStore,
+  allLivingEngagementEvents,
+  replaceLivingEngagementEvents,
+  listLivingEngagementEventsForProposal,
+} from './eventStore.js'
+export {
+  recordLivingEngagementEvent,
+  listStudioLivingEngagementEvents,
+  summarizeLivingEngagement,
+} from './eventRepository.js'
+export {
+  postLivingEngagementEvent,
+  resetLivingClientEventDedupe,
+} from './clientEvents.js'
