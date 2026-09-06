@@ -1,8 +1,8 @@
 /**
  * Living Proposal contracts.
  *
- * Phase 2 enables authored offer presentation only. Selections, snapshots,
- * Forge actions, and commercial engagement events stay off.
+ * Phase 3 enables living sessions and client commercial selections.
+ * Snapshots, Forge actions, and commercial engagement persistence stay off.
  * Event names match the H14 brief so later phases emit through one pipe.
  */
 
@@ -34,16 +34,16 @@ export const LIVING_SECTION_KIND = Object.freeze({
 })
 
 /**
- * Later H14 phases flip the remaining flags. Phase 2 only presents authored
- * packages, add-ons, and alternatives — it does not persist selections.
+ * Later H14 phases flip the remaining flags. Phase 3 persists client
+ * selections in a living session without mutating authored proposal content.
  */
 export const LIVING_CAPABILITIES = Object.freeze({
   packages: true,
   addons: true,
   alternatives: true,
-  selections: false,
+  selections: true,
   commercialEvents: false,
-  livingSession: false,
+  livingSession: true,
   snapshots: false,
   forgeActions: false,
   rive: false,

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { ViewerProvider, useViewer } from '../viewer/ViewerContext.jsx'
 import { useFullscreen } from '../viewer/useFullscreen.js'
 import { useLivingProposal } from '../hooks/useLivingProposal.js'
+import { LivingSessionProvider } from '../living/LivingSessionProvider.jsx'
 import ViewerStage from '../viewer/ViewerStage.jsx'
 import ViewerActionBar from '../viewer/ViewerActionBar.jsx'
 import { useProposalTheme } from '../theme/ProposalThemeContext.jsx'
@@ -111,125 +112,128 @@ function PortalAppInner({
   }
 
   return (
-    <div
-      ref={shellRef}
-      className={`${styles.shell} ${fullscreen ? styles.fullscreen : ''}`}
-      style={cssVars}
-      data-surface="client-portal"
-      data-experience="living-proposal"
-      data-publication-source={living.publication.source}
-      data-living-selections={living.capabilities.selections ? 'true' : 'false'}
-      data-readonly="true"
-    >
-      <PortalHeader
-        asideOpen={asideOpen}
-        onToggleAside={() => setAsideOpen((open) => !open)}
-      />
-
-      <div className={styles.body}>
-        <ViewerStage
-          proposal={proposal}
-          sections={living.sections}
-          status={proposal.status}
-          notices={notices}
-          embedded
-          living
-          onFullscreen={toggleFullscreen}
+    <LivingSessionProvider shareToken={proposal.shareToken}>
+      <div
+        ref={shellRef}
+        className={`${styles.shell} ${fullscreen ? styles.fullscreen : ''}`}
+        style={cssVars}
+        data-surface="client-portal"
+        data-experience="living-proposal"
+        data-publication-source={living.publication.source}
+        data-living-selections={living.capabilities.selections ? 'true' : 'false'}
+        data-living-session={living.capabilities.livingSession ? 'true' : 'false'}
+        data-readonly="true"
+      >
+        <PortalHeader
+          asideOpen={asideOpen}
+          onToggleAside={() => setAsideOpen((open) => !open)}
         />
-        <PortalAside
-          open={asideOpen}
-          onOpenModule={openModule}
-          onApprove={onAccept}
-          onDecline={() => setDeclineOpen(true)}
+
+        <div className={styles.body}>
+          <ViewerStage
+            proposal={proposal}
+            sections={living.sections}
+            status={proposal.status}
+            notices={notices}
+            embedded
+            living
+            onFullscreen={toggleFullscreen}
+          />
+          <PortalAside
+            open={asideOpen}
+            onOpenModule={openModule}
+            onApprove={onAccept}
+            onDecline={() => setDeclineOpen(true)}
+            onRequestChanges={() => setRequestOpen(true)}
+            onSign={() => setSignOpen(true)}
+            onPay={() => setPayOpen(true)}
+          />
+        </div>
+
+        {asideOpen ? (
+          <button
+            type="button"
+            className={styles.backdrop}
+            aria-label="Close details"
+            onClick={() => setAsideOpen(false)}
+          />
+        ) : null}
+
+        <ViewerActionBar
+          busy={busy}
+          canRespond={canAccept || canDecline || canComment || canRequestRevision}
+          showAccept={canAccept}
+          showReject={canDecline}
+          showAsk={canComment}
+          showRevision={canRequestRevision}
+          acceptLabel="Approve"
+          rejectLabel="Decline"
+          fullscreen={fullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          onAccept={onAccept}
+          onReject={() => setDeclineOpen(true)}
+          onAskQuestion={() => {
+            closeDrawers()
+            setCommentsOpen(true)
+          }}
           onRequestChanges={() => setRequestOpen(true)}
-          onSign={() => setSignOpen(true)}
-          onPay={() => setPayOpen(true)}
+          onDownload={onDownload}
+          onPrint={onPrint}
+          onShare={handleShare}
+          onSave={handleSave}
         />
+
+        {questionnaireOpen ? (
+          <PortalQuestionnaire
+            onClose={() => setQuestionnaireOpen(false)}
+            onProposalChange={onProposalChange}
+          />
+        ) : null}
+
+        {commentsOpen ? (
+          <PortalComments
+            onClose={() => setCommentsOpen(false)}
+            onProposalChange={onProposalChange}
+          />
+        ) : null}
+
+        {filesOpen ? (
+          <PortalFiles
+            onClose={() => setFilesOpen(false)}
+            onProposalChange={onProposalChange}
+          />
+        ) : null}
+
+        {requestOpen ? (
+          <PortalRequestChanges
+            onClose={() => setRequestOpen(false)}
+            onProposalChange={onProposalChange}
+            onSubmitted={() => setCommentsOpen(true)}
+          />
+        ) : null}
+
+        {declineOpen ? (
+          <PortalDecline
+            onClose={() => setDeclineOpen(false)}
+            onDeclined={onDeclined}
+          />
+        ) : null}
+
+        {signOpen ? (
+          <PortalSign
+            onClose={() => setSignOpen(false)}
+            onSigned={onProposalChange}
+          />
+        ) : null}
+
+        {payOpen ? (
+          <PortalPay
+            onClose={() => setPayOpen(false)}
+            onPaid={onProposalChange}
+          />
+        ) : null}
       </div>
-
-      {asideOpen ? (
-        <button
-          type="button"
-          className={styles.backdrop}
-          aria-label="Close details"
-          onClick={() => setAsideOpen(false)}
-        />
-      ) : null}
-
-      <ViewerActionBar
-        busy={busy}
-        canRespond={canAccept || canDecline || canComment || canRequestRevision}
-        showAccept={canAccept}
-        showReject={canDecline}
-        showAsk={canComment}
-        showRevision={canRequestRevision}
-        acceptLabel="Approve"
-        rejectLabel="Decline"
-        fullscreen={fullscreen}
-        onToggleFullscreen={toggleFullscreen}
-        onAccept={onAccept}
-        onReject={() => setDeclineOpen(true)}
-        onAskQuestion={() => {
-          closeDrawers()
-          setCommentsOpen(true)
-        }}
-        onRequestChanges={() => setRequestOpen(true)}
-        onDownload={onDownload}
-        onPrint={onPrint}
-        onShare={handleShare}
-        onSave={handleSave}
-      />
-
-      {questionnaireOpen ? (
-        <PortalQuestionnaire
-          onClose={() => setQuestionnaireOpen(false)}
-          onProposalChange={onProposalChange}
-        />
-      ) : null}
-
-      {commentsOpen ? (
-        <PortalComments
-          onClose={() => setCommentsOpen(false)}
-          onProposalChange={onProposalChange}
-        />
-      ) : null}
-
-      {filesOpen ? (
-        <PortalFiles
-          onClose={() => setFilesOpen(false)}
-          onProposalChange={onProposalChange}
-        />
-      ) : null}
-
-      {requestOpen ? (
-        <PortalRequestChanges
-          onClose={() => setRequestOpen(false)}
-          onProposalChange={onProposalChange}
-          onSubmitted={() => setCommentsOpen(true)}
-        />
-      ) : null}
-
-      {declineOpen ? (
-        <PortalDecline
-          onClose={() => setDeclineOpen(false)}
-          onDeclined={onDeclined}
-        />
-      ) : null}
-
-      {signOpen ? (
-        <PortalSign
-          onClose={() => setSignOpen(false)}
-          onSigned={onProposalChange}
-        />
-      ) : null}
-
-      {payOpen ? (
-        <PortalPay
-          onClose={() => setPayOpen(false)}
-          onPaid={onProposalChange}
-        />
-      ) : null}
-    </div>
+    </LivingSessionProvider>
   )
 }
 

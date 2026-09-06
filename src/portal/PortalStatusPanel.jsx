@@ -5,6 +5,8 @@ import {
   getApprovalStatus,
 } from '../models/approval.js'
 import { formatCurrency, formatDate, formatDateTime } from '../utils/format.js'
+import { hasPresentedOffers } from '../living/offers.js'
+import { useLivingSessionOptional } from '../living/LivingSessionContext.js'
 import { usePortal } from './PortalContext.jsx'
 import styles from './PortalAside.module.css'
 
@@ -19,9 +21,15 @@ function Row({ label, children }) {
 
 function PortalStatusPanel({ bare = false }) {
   const { proposal, readOnly } = usePortal()
+  const living = useLivingSessionOptional()
   const status = getApprovalStatus(proposal)
   const version =
     proposal.currentVersion > 0 ? `v${proposal.currentVersion}` : 'Current'
+  const selectedTotal = living?.commercialState?.selectedTotal
+  const showSelected =
+    living?.interactive &&
+    living?.commercialState &&
+    Number.isFinite(selectedTotal)
 
   const body = (
     <>
@@ -32,6 +40,11 @@ function PortalStatusPanel({ bare = false }) {
         <Row label="Investment">
           {formatCurrency(proposal.amount, proposal.currency)}
         </Row>
+        {showSelected ? (
+          <Row label="Selected">
+            {formatCurrency(selectedTotal, proposal.currency)}
+          </Row>
+        ) : null}
         <Row label="Valid until">{formatDate(proposal.validUntil)}</Row>
         <Row label="Last opened">{formatDateTime(proposal.lastViewedAt)}</Row>
         <Row label="Version">{version}</Row>
@@ -41,6 +54,9 @@ function PortalStatusPanel({ bare = false }) {
         <p className={styles.lock}>
           <Icon name="lock" size={13} />
           This document is read-only. Content can only be edited in the studio.
+          {living?.interactive && hasPresentedOffers(living?.authoredOffers)
+            ? ' You can still choose authored packages and add-ons.'
+            : ''}
         </p>
       ) : null}
     </>

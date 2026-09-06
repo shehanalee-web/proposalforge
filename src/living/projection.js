@@ -1,9 +1,11 @@
 import { presentProposalForClient } from '../collaboration/present.js'
 import { getLivingPublication } from './publication.js'
 import { listLivingSections } from './sections.js'
-import { presentAuthoredOffers } from './offers.js'
+import { hasPresentedOffers, presentAuthoredOffers } from './offers.js'
 import { LIVING_CAPABILITIES } from './types.js'
 import { emptyOfferGroups } from '../models/offer.js'
+import { presentLivingSession } from './schema.js'
+import { deriveSelectedCommercialState } from './totals.js'
 
 const STUDIO_ONLY_KEYS = Object.freeze([
   'followups',
@@ -30,11 +32,15 @@ function withoutStudioDomains(proposal) {
  *
  * Reuses the client presentation strip. Does not clone blocks, invent a
  * second document schema, or merge follow-up / workflow / interaction state.
- * Authored offers are projected separately from future client session state.
+ * Authored offers stay separate from living session selection state.
  *
  * @param {import('../models/proposal.js').Proposal | null | undefined} proposal
+ * @param {{
+ *   session?: object | null,
+ *   commercialState?: object | null,
+ * }} [options]
  */
-export function presentLivingProposal(proposal) {
+export function presentLivingProposal(proposal, options = {}) {
   const presented = withoutStudioDomains(presentProposalForClient(proposal))
   if (!presented) {
     return {
@@ -45,7 +51,18 @@ export function presentLivingProposal(proposal) {
       authoredOffers: emptyOfferGroups(),
       interactionState: null,
       commercialState: null,
+      session: null,
     }
+  }
+
+  const authoredOffers = presentAuthoredOffers(presented)
+  const session = options.session ? presentLivingSession(options.session) : null
+  let commercialState = options.commercialState ?? null
+  if (commercialState === null && hasPresentedOffers(authoredOffers)) {
+    commercialState = deriveSelectedCommercialState(presented, session)
+  }
+  if (!hasPresentedOffers(authoredOffers)) {
+    commercialState = null
   }
 
   return {
@@ -53,8 +70,9 @@ export function presentLivingProposal(proposal) {
     sections: listLivingSections(presented),
     publication: getLivingPublication(presented),
     capabilities: LIVING_CAPABILITIES,
-    authoredOffers: presentAuthoredOffers(presented),
+    authoredOffers,
     interactionState: null,
-    commercialState: null,
+    commercialState,
+    session,
   }
 }

@@ -176,13 +176,13 @@ assert(
 )
 
 assert(
-  'Test 11 — Phase 2 presents authored offers; later capabilities stay off',
+  'Test 11 — Phase 3 enables selections; later capabilities stay off',
   LIVING_CAPABILITIES.packages === true &&
     LIVING_CAPABILITIES.addons === true &&
     LIVING_CAPABILITIES.alternatives === true &&
-    LIVING_CAPABILITIES.selections === false &&
+    LIVING_CAPABILITIES.selections === true &&
     LIVING_CAPABILITIES.commercialEvents === false &&
-    LIVING_CAPABILITIES.livingSession === false &&
+    LIVING_CAPABILITIES.livingSession === true &&
     LIVING_CAPABILITIES.snapshots === false &&
     LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false &&
@@ -212,11 +212,13 @@ assert(
 const productionApi = sourceOf('server', 'productionApi.js')
 const livingIndex = sourceOf('src', 'living', 'index.js')
 assert(
-  'Test 13 — Phase 1/2 add no living API plugin or persistence',
-  !productionApi.includes('livingPlugin') &&
+  'Test 13 — Phase 3 registers living API without follow-up coupling',
+  productionApi.includes('livingPlugin') &&
     !livingIndex.includes('fetch(') &&
     !sourceOf('src', 'living', 'events.js').includes('localStorage') &&
-    !sourceOf('src', 'living', 'projection.js').includes('followupPlugin'),
+    !sourceOf('src', 'living', 'projection.js').includes('followupPlugin') &&
+    !sourceOf('src', 'living', 'repository.js').includes('followup') &&
+    !sourceOf('server', 'livingPlugin.js').includes('followups.json'),
 )
 
 const portalApp = sourceOf('src', 'portal', 'PortalApp.jsx')
