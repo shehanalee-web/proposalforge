@@ -4,6 +4,7 @@ import { emailPlugin } from './emailPlugin.js'
 import { followupPlugin } from './followupPlugin.js'
 import { interactionsPlugin } from './interactionsPlugin.js'
 import { knowledgePlugin } from './knowledgePlugin.js'
+import { livingPlugin } from './livingPlugin.js'
 import { localUploadsPlugin } from './localUploadsPlugin.js'
 import { portalPlugin } from './portalPlugin.js'
 import { workflowPlugin } from './workflowPlugin.js'
@@ -21,6 +22,7 @@ function getHandlers() {
     portalPlugin(),
     interactionsPlugin(),
     followupPlugin(),
+    livingPlugin(),
   ]
   handlers = plugins.map((plugin) => plugin.handle)
   return handlers

@@ -301,23 +301,23 @@ assert(
     afterMutate[0].title === 'Essential Plus' &&
     afterMutate.length === 1 &&
     !('selected' in living.authoredOffers.packages[0]) &&
-    living.commercialState === null &&
+    living.commercialState?.selectedPackageId === null &&
     sourceOf('src', 'components', 'CommercialBuilder', 'OfferDocument.jsx').includes(
       'data-offer-selectable="false"',
     ) &&
     sourceOf('src', 'portal', 'PortalApp.jsx').includes('data-readonly="true"') &&
-    !sourceOf('src', 'components', 'CommercialBuilder', 'OfferDocument.jsx').includes(
-      'onSelect',
+    sourceOf('src', 'components', 'CommercialBuilder', 'OfferAuthoring.jsx').includes(
+      'data-offer-authoring="true"',
     ) &&
     !sourceOf('src', 'living', 'offers.js').includes('selected:'),
 )
 
 assert(
-  'No selection state is persisted',
+  'Selection state is not stored on authored offers',
   !JSON.stringify(afterMutate[0]).includes('"selected"') &&
     !JSON.stringify(living.authoredOffers).includes('"selected"') &&
-    living.capabilities.selections === false &&
-    living.capabilities.livingSession === false &&
+    living.capabilities.selections === true &&
+    living.capabilities.livingSession === true &&
     !sourceOf('src', 'living', 'projection.js').includes('localStorage') &&
     !sourceOf('src', 'models', 'offer.js').includes('selected'),
 )
@@ -361,9 +361,9 @@ assert(
   LIVING_CAPABILITIES.packages === true &&
     LIVING_CAPABILITIES.addons === true &&
     LIVING_CAPABILITIES.alternatives === true &&
-    LIVING_CAPABILITIES.selections === false &&
+    LIVING_CAPABILITIES.selections === true &&
     LIVING_CAPABILITIES.commercialEvents === false &&
-    LIVING_CAPABILITIES.livingSession === false &&
+    LIVING_CAPABILITIES.livingSession === true &&
     LIVING_CAPABILITIES.snapshots === false &&
     LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false &&

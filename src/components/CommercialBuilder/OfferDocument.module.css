@@ -54,6 +54,46 @@
   background: var(--doc-surface, var(--color-surface));
 }
 
+.selectable {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.selectable:hover {
+  border-color: color-mix(in srgb, var(--doc-primary, var(--color-accent)) 45%, var(--doc-border, var(--color-border)));
+}
+
+.selected {
+  border-color: var(--doc-primary, var(--color-accent));
+  background: color-mix(
+    in srgb,
+    var(--doc-primary, var(--color-accent)) 8%,
+    var(--doc-surface, var(--color-surface))
+  );
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  padding-top: 0.15rem;
+}
+
+.input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  accent-color: var(--doc-primary, var(--color-accent));
+  cursor: pointer;
+}
+
+.input:disabled {
+  cursor: wait;
+}
+
 .cardHead {
   display: flex;
   flex-wrap: wrap;
@@ -103,6 +143,53 @@
   white-space: nowrap;
 }
 
+.summary {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--doc-border, var(--color-border));
+  border-radius: var(--radius-lg);
+  background: color-mix(
+    in srgb,
+    var(--doc-surface, var(--color-surface)) 88%,
+    transparent
+  );
+}
+
+.summaryList {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.summaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  color: var(--doc-text, var(--color-text));
+  font-size: var(--text-sm);
+}
+
+.summaryTotal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: 0;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--doc-border, var(--color-border));
+  color: var(--doc-text, var(--color-text));
+  font-size: var(--text-sm);
+}
+
+.summaryTotal strong {
+  font-variant-numeric: tabular-nums;
+}
+
 @media (max-width: 720px) {
   .grid {
     grid-template-columns: minmax(0, 1fr);
@@ -111,12 +198,17 @@
   .amount {
     white-space: normal;
   }
+
+  .selectable {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 390px) {
   .stack,
   .card,
-  .grid {
+  .grid,
+  .summary {
     max-width: 100%;
   }
 }
