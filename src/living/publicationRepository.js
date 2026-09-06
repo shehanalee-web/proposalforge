@@ -20,6 +20,7 @@ import {
 } from './publicationResolvers.js'
 import { resolveLivingProposalById, resolveLivingProposalByShareToken } from './resolvers.js'
 import { LIVING_CAPABILITIES } from './types.js'
+import { recordStudioLivingRepublishedEvent } from './eventRepository.js'
 
 function scopedCompany(companyId) {
   return String(companyId ?? '').trim() || DEFAULT_COMPANY_ID
@@ -73,6 +74,7 @@ export function publishLivingProposal(input = {}) {
 
   const company = scopedCompany(authored.companyId)
   const existing = listLivingPublicationsForProposal(authored.id, company)
+  const previousPublicationId = existing[0]?.id ?? null
   const snapshotNumber = (existing[0]?.snapshotNumber ?? 0) + 1
   const payload = snapshotFromProposal(authored)
 
@@ -101,6 +103,13 @@ export function publishLivingProposal(input = {}) {
       contentFingerprint: fingerprintAuthoredProposal(authored),
     }),
   )
+
+  // Observation only — never mutates the immutable publication payload.
+  recordStudioLivingRepublishedEvent({
+    proposal: authored,
+    publication: record,
+    previousPublicationId,
+  })
 
   return {
     publication: presentLivingPublication(record, { includePayload: false }),

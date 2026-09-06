@@ -22,6 +22,7 @@ import {
   LIVING_CAPABILITIES,
   LIVING_EVENT,
   LIVING_EVENTS,
+  LIVING_STUDIO_ONLY_EVENTS,
   applyLivingDecisions,
   configureLivingResolvers,
   getOrCreateLivingSession,
@@ -382,9 +383,12 @@ assert(
     ),
 )
 
-// 15 all LIVING_EVENTS accepted
+// 15 client-postable LIVING_EVENTS accepted; studio-only rejected on client path
+const clientEventTypes = LIVING_EVENTS.filter(
+  (type) => !LIVING_STUDIO_ONLY_EVENTS.includes(type),
+)
 const acceptedTypes = []
-for (const type of LIVING_EVENTS) {
+for (const type of clientEventTypes) {
   const event = recordLivingEngagementEvent({
     shareToken: proposalA.shareToken,
     type,
@@ -395,9 +399,22 @@ for (const type of LIVING_EVENTS) {
   acceptedTypes.push(event.type)
 }
 assert(
-  '15. all LIVING_EVENTS are accepted',
-  acceptedTypes.length === LIVING_EVENTS.length &&
-    LIVING_EVENTS.every((type) => acceptedTypes.includes(type)),
+  '15. client-postable LIVING_EVENTS are accepted',
+  acceptedTypes.length === clientEventTypes.length &&
+    clientEventTypes.every((type) => acceptedTypes.includes(type)),
+)
+let studioOnlyRejected = false
+try {
+  recordLivingEngagementEvent({
+    shareToken: proposalA.shareToken,
+    type: LIVING_EVENT.REPUBLISHED,
+  })
+} catch (error) {
+  studioOnlyRejected = error instanceof ValidationError
+}
+assert(
+  '15b. studio-only republished cannot be client-posted',
+  LIVING_EVENTS.includes('republished') && studioOnlyRejected,
 )
 
 // Fix addon_selected to use addon id - the loop used pkg-essential for addon which might fail... wait presentAuthoredOffers only has enabled offers, pkg-essential is enabled, oadd-walk is addon. For ADDON_SELECTED with offerId pkg-essential - packages are also in known offers list via presentAuthoredOffers packages+addons+alternatives. So pkg-essential is valid for any offerId check. OK.
@@ -413,6 +430,7 @@ assert(
     LIVING_CAPABILITIES.h12Interactions === true &&
     LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     LIVING_CAPABILITIES.forgeActions === true &&
+    LIVING_CAPABILITIES.decisionSnapshots === true &&
     LIVING_CAPABILITIES.rive === false &&
     LIVING_CAPABILITIES.packages === true &&
     LIVING_CAPABILITIES.selections === true &&

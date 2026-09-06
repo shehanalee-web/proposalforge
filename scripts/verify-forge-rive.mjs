@@ -56,6 +56,7 @@ assert(
     FORGE_CAPABILITIES.llm === false &&
     LIVING_CAPABILITIES.rive === false &&
     LIVING_CAPABILITIES.forgeActions === true &&
+    LIVING_CAPABILITIES.decisionSnapshots === true &&
     KNOWLEDGE_CAPABILITIES.forge === false &&
     GENERATOR_CAPABILITIES.forge === false,
 )
