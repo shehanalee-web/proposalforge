@@ -1,28 +1,39 @@
 import { useState } from 'react'
 import ViewerDialog from '../viewer/ViewerDialog.jsx'
 import { listViewerSections } from '../viewer/sectionMeta.js'
-import { usePortalComments } from '../hooks/usePortalComments.js'
+import { useLivingInteractions } from '../hooks/useLivingInteractions.js'
+import { INTERACTION_TYPE } from '../interactions/types.js'
 import { usePortal } from './PortalContext.jsx'
 import styles from './PortalRequestChanges.module.css'
 
-function PortalRequestChanges({ onClose, onProposalChange, onSubmitted }) {
-  const { proposal, token } = usePortal()
-  const flow = usePortalComments({ token, onProposalChange })
+/**
+ * Living change-request dialog — writes H12 change_request, not proposal.comments.
+ */
+function PortalRequestChanges({ onClose, onSubmitted }) {
+  const { proposal } = usePortal()
+  const flow = useLivingInteractions(proposal?.shareToken)
   const [message, setMessage] = useState('')
   const [sectionId, setSectionId] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
   const sections = listViewerSections(proposal.blocks, proposal)
 
   async function handleSubmit(event) {
     event.preventDefault()
-    const section = sections.find((item) => item.id === sectionId)
-    const saved = await flow.requestChanges({
-      message,
-      sectionId: section?.id ?? null,
-      sectionTitle: section?.title ?? '',
-    })
-    if (saved) {
+    setBusy(true)
+    setError(null)
+    try {
+      await flow.submit({
+        type: INTERACTION_TYPE.CHANGE_REQUEST,
+        message,
+        blockId: sectionId || '',
+      })
       onSubmitted?.()
       onClose()
+    } catch (caught) {
+      setError(caught)
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -30,7 +41,7 @@ function PortalRequestChanges({ onClose, onProposalChange, onSubmitted }) {
     <ViewerDialog
       open
       title="Request changes"
-      description="Tell the studio what needs to change. The proposal will move to Needs revision."
+      description="Tell the studio what needs to change. This is recorded as feedback and does not rewrite the proposal."
       onClose={onClose}
       footer={
         <>
@@ -41,14 +52,19 @@ function PortalRequestChanges({ onClose, onProposalChange, onSubmitted }) {
             type="submit"
             form="portal-request-changes"
             className={styles.submit}
-            disabled={flow.busy || !message.trim()}
+            disabled={busy || flow.loading || !message.trim()}
           >
-            {flow.busy ? 'Sending…' : 'Request changes'}
+            {busy ? 'Sending…' : 'Request changes'}
           </button>
         </>
       }
     >
       <form id="portal-request-changes" className={styles.form} onSubmit={handleSubmit}>
+        {error ? (
+          <p className={styles.banner} role="alert">
+            {error.message}
+          </p>
+        ) : null}
         {flow.error ? (
           <p className={styles.banner} role="alert">
             {flow.error.message}
@@ -65,7 +81,7 @@ function PortalRequestChanges({ onClose, onProposalChange, onSubmitted }) {
             placeholder="Describe the revision you need…"
             required
             rows={5}
-            disabled={flow.busy}
+            disabled={busy}
           />
         </label>
         {sections.length > 0 ? (
@@ -75,7 +91,7 @@ function PortalRequestChanges({ onClose, onProposalChange, onSubmitted }) {
               className={styles.select}
               value={sectionId}
               onChange={(event) => setSectionId(event.target.value)}
-              disabled={flow.busy}
+              disabled={busy}
             >
               <option value="">Entire proposal</option>
               {sections.map((section) => (

@@ -1,8 +1,8 @@
 /**
  * Living Proposal contracts.
  *
- * Phase 4B enables immutable living publications / snapshots. Forge actions
- * and Rive stay off.
+ * Phase 5 enables H12 interactions on the living share URL. Forge actions
+ * and Rive stay off. Follow-up commercial_selection stays for the next phase.
  */
 
 export const LIVING_EVENT = Object.freeze({
@@ -33,8 +33,8 @@ export const LIVING_SECTION_KIND = Object.freeze({
 })
 
 /**
- * Later H14 phases flip remaining flags. Phase 4B enables snapshots without
- * Forge or Rive.
+ * Later H14 phases flip remaining flags. Phase 5 enables H12 on living
+ * without Forge, Rive, or follow-up commercial_selection.
  */
 export const LIVING_CAPABILITIES = Object.freeze({
   packages: true,
@@ -44,6 +44,7 @@ export const LIVING_CAPABILITIES = Object.freeze({
   commercialEvents: true,
   livingSession: true,
   snapshots: true,
+  h12Interactions: true,
   forgeActions: false,
   rive: false,
 })

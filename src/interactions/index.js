@@ -57,3 +57,12 @@ export {
   deleteClientInteraction,
   mutateClientInteractionStatus,
 } from './repository.js'
+
+export {
+  resolveProposalForLivingToken,
+  ensurePortalForLivingProposal,
+  resolveLivingInteractionContext,
+  listLivingClientInteractions,
+  createLivingClientInteraction,
+  presentLivingInteractionState,
+} from './livingAccess.js'

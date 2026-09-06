@@ -19,12 +19,13 @@ import { usePortal } from './PortalContext.jsx'
 import PortalHeader from './PortalHeader.jsx'
 import PortalAside from './PortalAside.jsx'
 import PortalQuestionnaire from './PortalQuestionnaire.jsx'
-import PortalComments from './PortalComments.jsx'
+import PortalLivingInteractions from './PortalLivingInteractions.jsx'
 import PortalRequestChanges from './PortalRequestChanges.jsx'
 import PortalFiles from './PortalFiles.jsx'
 import PortalDecline from './PortalDecline.jsx'
 import PortalSign from './PortalSign.jsx'
 import PortalPay from './PortalPay.jsx'
+import { LIVING_CAPABILITIES } from '../living/types.js'
 import styles from './PortalShell.module.css'
 
 function PortalAppInner({
@@ -170,6 +171,7 @@ function PortalLivingSurface({
       data-living-session={living.capabilities.livingSession ? 'true' : 'false'}
       data-living-events={living.capabilities.commercialEvents ? 'true' : 'false'}
       data-living-snapshots={living.capabilities.snapshots ? 'true' : 'false'}
+      data-living-h12={LIVING_CAPABILITIES.h12Interactions ? 'true' : 'false'}
       data-readonly="true"
     >
       <PortalHeader
@@ -239,10 +241,7 @@ function PortalLivingSurface({
       ) : null}
 
       {commentsOpen ? (
-        <PortalComments
-          onClose={() => setCommentsOpen(false)}
-          onProposalChange={onProposalChange}
-        />
+        <PortalLivingInteractions onClose={() => setCommentsOpen(false)} />
       ) : null}
 
       {filesOpen ? (
@@ -255,7 +254,6 @@ function PortalLivingSurface({
       {requestOpen ? (
         <PortalRequestChanges
           onClose={() => setRequestOpen(false)}
-          onProposalChange={onProposalChange}
           onSubmitted={() => setCommentsOpen(true)}
         />
       ) : null}

@@ -76,7 +76,11 @@ export function presentLivingProposal(proposal, options = {}) {
     }),
     capabilities: LIVING_CAPABILITIES,
     authoredOffers,
-    interactionState: null,
+    // H12 feedback loads via living share token APIs — not embedded here
+    // (presenting must not ensure/create portal records as a side effect).
+    interactionState: LIVING_CAPABILITIES.h12Interactions
+      ? { enabled: true }
+      : null,
     commercialState,
     session,
   }
