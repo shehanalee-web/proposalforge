@@ -3,7 +3,6 @@ import { listPortalModules, PORTAL_MODULE, PORTAL_MODULE_STATUS } from '../model
 import { hasCapability } from '../models/portalPermissions.js'
 import { isQuestionnaireSubmitted } from '../models/questionnaire.js'
 import { questionnaireProgress } from '../forms/progress.js'
-import { countOpenThreads } from '../collaboration/threads.js'
 import { usePortal } from './PortalContext.jsx'
 import styles from './PortalAside.module.css'
 
@@ -12,8 +11,7 @@ function moduleBadge(module, live, proposal) {
     return isQuestionnaireSubmitted(proposal.questionnaire) ? 'Submitted' : 'Open'
   }
   if (live && module.id === PORTAL_MODULE.COMMENTS) {
-    const open = countOpenThreads(proposal.comments, { clientVisibleOnly: true })
-    return open > 0 ? `${open} open` : 'Open'
+    return 'Open'
   }
   if (module.status === PORTAL_MODULE_STATUS.LIVE) return 'Not on this proposal'
   return 'Coming later'

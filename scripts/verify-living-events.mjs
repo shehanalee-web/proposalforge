@@ -411,6 +411,7 @@ assert(
 assert(
   '17. later capabilities remain false',
   LIVING_CAPABILITIES.snapshots === true &&
+    LIVING_CAPABILITIES.h12Interactions === true &&
     LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false &&
     LIVING_CAPABILITIES.packages === true &&

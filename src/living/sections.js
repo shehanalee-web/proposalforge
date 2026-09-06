@@ -1,6 +1,6 @@
 import { BLOCK_TYPE } from '../blocks/ids.js'
 import { listViewerSections } from '../viewer/sectionMeta.js'
-import { LIVING_SECTION_KIND } from './types.js'
+import { LIVING_CAPABILITIES, LIVING_SECTION_KIND } from './types.js'
 
 function livingSectionKind(type) {
   if (type === BLOCK_TYPE.PRICING) return LIVING_SECTION_KIND.COMMERCIAL
@@ -25,6 +25,6 @@ export function listLivingSections(proposal) {
     type: section.type,
     title: section.title,
     kind: livingSectionKind(section.type),
-    interactive: false,
+    interactive: LIVING_CAPABILITIES.h12Interactions,
   }))
 }

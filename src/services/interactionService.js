@@ -68,6 +68,25 @@ export async function createPublicInteraction(portalId, body = {}) {
   return payload.interaction
 }
 
+export async function fetchLivingInteractions(shareToken) {
+  return request(`/api/interactions/living/${encodeURIComponent(shareToken)}`)
+}
+
+export async function createLivingInteraction(shareToken, body = {}) {
+  const payload = await request(`/api/interactions/living/${encodeURIComponent(shareToken)}`, {
+    method: 'POST',
+    body: JSON.stringify({
+      type: body.type,
+      message: body.message,
+      blockId: body.blockId || '',
+      // Never relied on for identity — server resolves from token.
+      proposalId: body.proposalId,
+      companyId: body.companyId,
+    }),
+  })
+  return payload.interaction
+}
+
 export async function fetchStudioInteractions({
   companyId,
   proposalId,

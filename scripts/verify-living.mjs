@@ -134,19 +134,19 @@ assert(
   !('followups' in living.proposal) &&
     !('followup' in living.proposal) &&
     !('workflow' in living.proposal) &&
-    living.interactionState === null &&
+    living.interactionState?.enabled === true &&
     living.commercialState === null,
 )
 
 const pricing = living.sections.find((section) => section.id === 'blk-pricing')
 const terms = living.sections.find((section) => section.id === 'blk-terms')
 assert(
-  'Test 8 — Sections expose blockId for later H12 attachment',
+  'Test 8 — Sections expose blockId for H12 attachment',
   living.sections.length === 3 &&
     living.sections.every((section) => section.blockId === section.id) &&
     pricing?.kind === 'commercial' &&
     terms?.kind === 'close' &&
-    living.sections.every((section) => section.interactive === false),
+    living.sections.every((section) => section.interactive === true),
 )
 
 assert(
@@ -184,6 +184,7 @@ assert(
     LIVING_CAPABILITIES.commercialEvents === true &&
     LIVING_CAPABILITIES.livingSession === true &&
     LIVING_CAPABILITIES.snapshots === true &&
+    LIVING_CAPABILITIES.h12Interactions === true &&
     LIVING_CAPABILITIES.forgeActions === false &&
     LIVING_CAPABILITIES.rive === false &&
     living.capabilities === LIVING_CAPABILITIES,
@@ -224,19 +225,28 @@ assert(
 const portalApp = sourceOf('src', 'portal', 'PortalApp.jsx')
 const viewerSection = sourceOf('src', 'viewer', 'ViewerSection.jsx')
 assert(
-  'Test 14 — PortalApp is the living renderer; sections keep blockId hooks',
+  'Test 14 — PortalApp is the living renderer with H12 feedback',
   portalApp.includes('useLivingProposal') &&
     portalApp.includes('data-experience="living-proposal"') &&
     portalApp.includes('sections={living.sections}') &&
     viewerSection.includes('data-block-id={id}') &&
-    portalApp.includes('<PortalComments'),
+    portalApp.includes('<PortalLivingInteractions') &&
+    !portalApp.includes('<PortalComments'),
 )
 
-const commentsSource = sourceOf('src', 'portal', 'PortalComments.jsx')
+const livingInteractionsSource = sourceOf('src', 'portal', 'PortalLivingInteractions.jsx')
 assert(
-  'Test 15 — Old share-portal comments are not expanded in Phase 1',
-  !commentsSource.includes('blockId') &&
-    !portalApp.includes('createPublicInteraction'),
+  'Test 15 — Living feedback uses H12, not legacy proposal.comments',
+  livingInteractionsSource.includes('useLivingInteractions') &&
+    livingInteractionsSource.includes('data-living-interactions="true"') &&
+    !livingInteractionsSource.includes('addPortalComment') &&
+    portalApp.includes('createLivingInteraction') === false &&
+    sourceOf('src', 'hooks', 'useLivingInteractions.js').includes(
+      '/api/interactions/living/',
+    ) === false &&
+    sourceOf('src', 'services', 'interactionService.js').includes(
+      '/api/interactions/living/',
+    ),
 )
 
 const shellCss = sourceOf('src', 'portal', 'PortalShell.module.css')

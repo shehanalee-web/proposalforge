@@ -11,7 +11,6 @@ import {
 import { PORTAL_MODULE } from '../models/portalModules.js'
 import { hasQuestionnaire, isQuestionnaireSubmitted } from '../models/questionnaire.js'
 import { questionnaireProgress } from '../forms/progress.js'
-import { countOpenThreads } from '../collaboration/threads.js'
 import {
   PAYMENT_STATUS,
   PAYMENT_STATUS_LABELS,
@@ -21,6 +20,8 @@ import {
   SIGNATURE_STATUS_LABELS,
 } from '../models/signature.js'
 import { formatCurrency } from '../utils/format.js'
+import { useLivingInteractions } from '../hooks/useLivingInteractions.js'
+import { INTERACTION_STATUS } from '../interactions/types.js'
 import { usePortal } from './PortalContext.jsx'
 import PortalDashboardModule from './PortalDashboardModule.jsx'
 import PortalStatusPanel from './PortalStatusPanel.jsx'
@@ -38,6 +39,7 @@ function PortalAside({
   onPay,
 }) {
   const { proposal, capabilities } = usePortal()
+  const livingFeedback = useLivingInteractions(proposal?.shareToken)
   const approval = getApprovalStatus(proposal)
   const canApprove = hasCapability(capabilities, PORTAL_CAPABILITY.ACCEPT)
   const canDecline = hasCapability(capabilities, PORTAL_CAPABILITY.DECLINE)
@@ -45,7 +47,9 @@ function PortalAside({
   const form = proposal.questionnaire
   const hasForm = hasQuestionnaire(form)
   const uploads = proposal.uploads ?? []
-  const openThreads = countOpenThreads(proposal.comments, { clientVisibleOnly: true })
+  const openFeedback = livingFeedback.interactions.filter(
+    (item) => item.status === INTERACTION_STATUS.OPEN,
+  ).length
   const signature = proposal.signature
   const payment = proposal.payment
   const locked = !canMutateClientFiles(proposal)
@@ -126,19 +130,20 @@ function PortalAside({
       </PortalDashboardModule>
 
       <PortalDashboardModule
-        title="Comments"
+        title="Feedback"
         icon="message"
-        badge={openThreads > 0 ? `${openThreads} open` : 'Open'}
+        badge={openFeedback > 0 ? `${openFeedback} open` : 'Open'}
       >
         <p className={styles.copy}>
-          Ask a question or follow a conversation with the studio.
+          Ask a question, leave a comment, or request a change. Feedback stays on
+          this proposal for the studio.
         </p>
         <button
           type="button"
           className={styles.link}
           onClick={() => onOpenModule?.(PORTAL_MODULE.COMMENTS)}
         >
-          Open comments
+          Open feedback
         </button>
       </PortalDashboardModule>
 

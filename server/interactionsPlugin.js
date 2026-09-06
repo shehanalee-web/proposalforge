@@ -5,13 +5,26 @@ import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import { DEFAULT_ACTOR_ID } from '../src/workflow/actors.js'
 import {
+  allPortalRecords,
+  configurePortalStore,
+  replacePortalRecords,
+} from '../src/portal/index.js'
+import {
+  allLivingEngagementEvents,
+  configureLivingEventStore,
+  configureLivingResolvers,
+  replaceLivingEngagementEvents,
+} from '../src/living/index.js'
+import {
   acknowledgeInteraction,
   allInteractionRecords,
   configureInteractionResolvers,
   configureInteractionStore,
   createClientInteraction,
+  createLivingClientInteraction,
   INTERACTION_CAPABILITIES,
   listClientInteractions,
+  listLivingClientInteractions,
   listStudioInteractions,
   mutateClientInteraction,
   mutateClientInteractionStatus,
@@ -114,20 +127,74 @@ function companyFrom(body, query) {
 /**
  * Persist client interaction records to `data/interactions.json`.
  * Never writes `data/proposals.json`.
+ * Living share routes may ensure portal + living-event stores for H12 convergence.
  */
 export function interactionsPlugin() {
   const dataDir = ensureRuntimeData()
   const interactionsFile = join(dataDir, 'interactions.json')
   const proposalsFile = join(dataDir, 'proposals.json')
+  const portalFile = join(dataDir, 'portal.json')
+  const livingEventsFile = join(dataDir, 'living-events.json')
   let ready = false
+  let portalReady = false
+  let livingEventsReady = false
 
   function persist(records) {
     writeJson(interactionsFile, records)
   }
 
+  function persistPortals(records) {
+    writeJson(portalFile, records)
+  }
+
+  function persistLivingEvents(records) {
+    writeJson(livingEventsFile, records)
+  }
+
   function readProposals() {
     const stored = readJson(proposalsFile, [])
     return Array.isArray(stored) ? stored : []
+  }
+
+  function ensurePortalStore() {
+    if (portalReady) return
+    const stored = readJson(portalFile, null)
+    if (Array.isArray(stored)) {
+      replacePortalRecords(stored)
+    } else {
+      replacePortalRecords([])
+      persistPortals(allPortalRecords())
+    }
+    configurePortalStore({ persist: persistPortals })
+    portalReady = true
+  }
+
+  function ensureLivingEventStore() {
+    if (livingEventsReady) return
+    const stored = readJson(livingEventsFile, null)
+    if (Array.isArray(stored)) {
+      replaceLivingEngagementEvents(stored)
+    } else {
+      replaceLivingEngagementEvents([])
+      persistLivingEvents(allLivingEngagementEvents())
+    }
+    configureLivingEventStore({ persist: persistLivingEvents })
+    configureLivingResolvers({
+      getProposalByShareToken(shareToken) {
+        const token = String(shareToken ?? '').trim()
+        if (!token) return null
+        return readProposals().find((item) => item.shareToken === token) ?? null
+      },
+      getProposalById(proposalId, companyId) {
+        const found = readProposals().find((item) => item.id === proposalId)
+        if (!found) return null
+        const ownedBy =
+          String(found.companyId ?? DEFAULT_COMPANY_ID).trim() || DEFAULT_COMPANY_ID
+        if (companyId && ownedBy !== companyId) return null
+        return found
+      },
+    })
+    livingEventsReady = true
   }
 
   function ensureStore() {
@@ -148,6 +215,11 @@ export function interactionsPlugin() {
         if (ownedBy !== companyId) return null
         return found
       },
+      getProposalByShareToken(shareToken) {
+        const token = String(shareToken ?? '').trim()
+        if (!token) return null
+        return readProposals().find((item) => item.shareToken === token) ?? null
+      },
     })
     ready = true
   }
@@ -162,6 +234,30 @@ export function interactionsPlugin() {
     try {
       if (method === 'GET' && matchRoute(url, '/api/interactions/capabilities')) {
         return json(res, 200, { capabilities: INTERACTION_CAPABILITIES })
+      }
+
+      const livingPublic = matchRoute(url, '/api/interactions/living/:token')
+      if (livingPublic) {
+        ensurePortalStore()
+        ensureLivingEventStore()
+        if (method === 'GET') {
+          return json(res, 200, listLivingClientInteractions({ shareToken: livingPublic.token }))
+        }
+        if (method === 'POST') {
+          const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+          return json(res, 201, {
+            interaction: createLivingClientInteraction({
+              shareToken: livingPublic.token,
+              type: body.type,
+              message: body.message,
+              blockId: body.blockId,
+              // Identity comes from the token — these are validated, never trusted.
+              proposalId: body.proposalId,
+              companyId: body.companyId,
+            }),
+          })
+        }
+        return json(res, 405, { message: 'Method not allowed.' })
       }
 
       const publicList = matchRoute(url, '/api/interactions/public/:portalId')
