@@ -368,8 +368,8 @@ assert(
 
 // 17 Forge/Rive remain disabled
 assert(
-  '17. Forge/Rive remain disabled',
-  LIVING_CAPABILITIES.forgeActions === false &&
+  '17. studio Forge on; Rive remains disabled',
+  LIVING_CAPABILITIES.forgeActions === true &&
     LIVING_CAPABILITIES.rive === false &&
     LIVING_CAPABILITIES.h12Interactions === true &&
     LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
@@ -465,7 +465,7 @@ assert(
     LIVING_CAPABILITIES.snapshots === true &&
     LIVING_CAPABILITIES.h12Interactions === true &&
     LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
-    LIVING_CAPABILITIES.forgeActions === false &&
+    LIVING_CAPABILITIES.forgeActions === true &&
     LIVING_CAPABILITIES.rive === false,
 )
 

@@ -176,7 +176,7 @@ assert(
 )
 
 assert(
-  'Test 11 — Phase 4B enables snapshots; Forge/Rive stay off',
+  'Test 11 — Phase 14.7 enables studio Forge; Rive stays off',
   LIVING_CAPABILITIES.packages === true &&
     LIVING_CAPABILITIES.addons === true &&
     LIVING_CAPABILITIES.alternatives === true &&
@@ -186,7 +186,7 @@ assert(
     LIVING_CAPABILITIES.snapshots === true &&
     LIVING_CAPABILITIES.h12Interactions === true &&
     LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
-    LIVING_CAPABILITIES.forgeActions === false &&
+    LIVING_CAPABILITIES.forgeActions === true &&
     LIVING_CAPABILITIES.rive === false &&
     living.capabilities === LIVING_CAPABILITIES,
 )
