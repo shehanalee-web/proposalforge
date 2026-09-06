@@ -9,6 +9,37 @@ export { presentLivingProposal } from './projection.js'
 export { listLivingSections } from './sections.js'
 export { getLivingPublication } from './publication.js'
 export {
+  makeLivingPublication,
+  presentLivingPublication,
+  fingerprintAuthoredProposal,
+  fingerprintPublicationPayload,
+  authoredDiffersFromPayload,
+  LIVING_PUBLICATION_STATUS,
+} from './publicationSchema.js'
+export {
+  configureLivingPublicationStore,
+  resetLivingPublicationStore,
+  allLivingPublications,
+  replaceLivingPublications,
+  findCurrentLivingPublication,
+  findLivingPublicationById,
+  listLivingPublicationsForProposal,
+  insertLivingPublication,
+} from './publicationStore.js'
+export {
+  resolveLivingProposalContent,
+  materializeProposalFromPublication,
+  resolveLivingPublicationMeta,
+  presentPublicationSummary,
+} from './publicationResolvers.js'
+export {
+  publishLivingProposal,
+  getLivingPublicationState,
+  listLivingSnapshots,
+  getLivingSnapshot,
+  assertLivingPublicationAccess,
+} from './publicationRepository.js'
+export {
   presentAuthoredOffers,
   getProposalOfferGroups,
   hasPresentedOffers,

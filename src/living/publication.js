@@ -1,22 +1,33 @@
-import { LIVING_CAPABILITIES, LIVING_PUBLICATION_SOURCE } from './types.js'
+import { resolveLivingPublicationMeta } from './publicationResolvers.js'
+import { findCurrentLivingPublication } from './publicationStore.js'
+import { LIVING_CAPABILITIES } from './types.js'
 
 /**
- * Conceptual publication metadata for the living renderer.
+ * Publication metadata for the living renderer.
  *
- * Phase 1 always reports the current authored/live proposal. Frozen snapshot
- * pointers (`publishedRevision`, `livingRevision`) belong to a later H14
- * publication phase and are not read here.
+ * When snapshots are enabled and a current publication exists for the proposal,
+ * reports the published source. Otherwise preserves authored compatibility —
+ * never invents a fake snapshot.
  *
  * @param {import('../models/proposal.js').Proposal | null | undefined} proposal
+ * @param {{ publication?: object | null }} [options]
  */
-export function getLivingPublication(proposal) {
-  return {
-    source: LIVING_PUBLICATION_SOURCE.AUTHORED,
-    snapshot: false,
-    revision: null,
-    proposalId: proposal?.id ?? null,
-    shareToken: proposal?.shareToken ?? null,
-    status: proposal?.status ?? null,
-    capabilities: LIVING_CAPABILITIES,
+export function getLivingPublication(proposal, options = {}) {
+  if (options.publication) {
+    return resolveLivingPublicationMeta(proposal, {
+      publication: options.publication,
+    })
   }
+
+  if (proposal?.id && LIVING_CAPABILITIES.snapshots) {
+    const current = findCurrentLivingPublication(
+      proposal.id,
+      proposal.companyId ?? '',
+    )
+    if (current && current.shareToken === (proposal.shareToken ?? '')) {
+      return resolveLivingPublicationMeta(proposal, { publication: current })
+    }
+  }
+
+  return resolveLivingPublicationMeta(proposal, { publication: null })
 }

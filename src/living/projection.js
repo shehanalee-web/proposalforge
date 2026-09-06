@@ -38,6 +38,7 @@ function withoutStudioDomains(proposal) {
  * @param {{
  *   session?: object | null,
  *   commercialState?: object | null,
+ *   publication?: object | null,
  * }} [options]
  */
 export function presentLivingProposal(proposal, options = {}) {
@@ -46,7 +47,9 @@ export function presentLivingProposal(proposal, options = {}) {
     return {
       proposal: presented,
       sections: [],
-      publication: getLivingPublication(presented),
+      publication: getLivingPublication(presented, {
+        publication: options.publication ?? null,
+      }),
       capabilities: LIVING_CAPABILITIES,
       authoredOffers: emptyOfferGroups(),
       interactionState: null,
@@ -68,7 +71,9 @@ export function presentLivingProposal(proposal, options = {}) {
   return {
     proposal: presented,
     sections: listLivingSections(presented),
-    publication: getLivingPublication(presented),
+    publication: getLivingPublication(presented, {
+      publication: options.publication ?? null,
+    }),
     capabilities: LIVING_CAPABILITIES,
     authoredOffers,
     interactionState: null,

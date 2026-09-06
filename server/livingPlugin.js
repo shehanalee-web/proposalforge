@@ -5,17 +5,24 @@ import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import {
   allLivingEngagementEvents,
+  allLivingPublications,
   allLivingSessions,
   applyLivingDecisions,
   configureLivingEventStore,
+  configureLivingPublicationStore,
   configureLivingResolvers,
   configureLivingStore,
   getLivingClientView,
+  getLivingPublicationState,
+  getLivingSnapshot,
   getLivingStudioSummary,
   LIVING_CAPABILITIES,
+  listLivingSnapshots,
   listStudioLivingEngagementEvents,
+  publishLivingProposal,
   recordLivingEngagementEvent,
   replaceLivingEngagementEvents,
+  replaceLivingPublications,
   replaceLivingSessions,
 } from '../src/living/index.js'
 
@@ -104,13 +111,15 @@ function companyFrom(body, query) {
 }
 
 /**
- * Persist living sessions to `data/living.json` and engagement events to
- * `data/living-events.json`. Never writes `data/proposals.json` or follow-ups.
+ * Persist living sessions to `data/living.json`, engagement events to
+ * `data/living-events.json`, and publications to `data/living-publications.json`.
+ * Never writes `data/proposals.json` or follow-ups.
  */
 export function livingPlugin() {
   const dataDir = ensureRuntimeData()
   const livingFile = join(dataDir, 'living.json')
   const livingEventsFile = join(dataDir, 'living-events.json')
+  const livingPublicationsFile = join(dataDir, 'living-publications.json')
   const proposalsFile = join(dataDir, 'proposals.json')
   let ready = false
 
@@ -120,6 +129,10 @@ export function livingPlugin() {
 
   function persistEvents(records) {
     writeJson(livingEventsFile, records)
+  }
+
+  function persistPublications(records) {
+    writeJson(livingPublicationsFile, records)
   }
 
   function readProposals() {
@@ -146,6 +159,15 @@ export function livingPlugin() {
       persistEvents(allLivingEngagementEvents())
     }
     configureLivingEventStore({ persist: persistEvents })
+
+    const storedPublications = readJson(livingPublicationsFile, null)
+    if (Array.isArray(storedPublications)) {
+      replaceLivingPublications(storedPublications)
+    } else {
+      replaceLivingPublications([])
+      persistPublications(allLivingPublications())
+    }
+    configureLivingPublicationStore({ persist: persistPublications })
 
     configureLivingResolvers({
       getProposalByShareToken(shareToken) {
@@ -177,6 +199,72 @@ export function livingPlugin() {
         return json(res, 200, { capabilities: LIVING_CAPABILITIES })
       }
 
+      const studioSnapshotOne = matchRoute(
+        url,
+        '/api/living/proposal/:proposalId/snapshots/:snapshotId',
+      )
+      if (studioSnapshotOne) {
+        if (method !== 'GET') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        return json(
+          res,
+          200,
+          getLivingSnapshot({
+            proposalId: studioSnapshotOne.proposalId,
+            snapshotId: studioSnapshotOne.snapshotId,
+            companyId: companyFrom(null, query),
+          }),
+        )
+      }
+
+      const studioSnapshots = matchRoute(url, '/api/living/proposal/:proposalId/snapshots')
+      if (studioSnapshots) {
+        if (method !== 'GET') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        return json(
+          res,
+          200,
+          listLivingSnapshots({
+            proposalId: studioSnapshots.proposalId,
+            companyId: companyFrom(null, query),
+          }),
+        )
+      }
+
+      const studioPublication = matchRoute(
+        url,
+        '/api/living/proposal/:proposalId/publication',
+      )
+      if (method === 'GET' && studioPublication) {
+        const query = queryOf(url)
+        return json(
+          res,
+          200,
+          getLivingPublicationState({
+            proposalId: studioPublication.proposalId,
+            companyId: companyFrom(null, query),
+          }),
+        )
+      }
+
+      const studioPublish = matchRoute(url, '/api/living/proposal/:proposalId/publish')
+      if (method === 'POST' && studioPublish) {
+        const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        return json(
+          res,
+          201,
+          publishLivingProposal({
+            proposalId: studioPublish.proposalId,
+            companyId: companyFrom(body, null),
+            publishedBy: body.publishedBy,
+          }),
+        )
+      }
+
       const studioEvents = matchRoute(url, '/api/living/proposal/:proposalId/events')
       if (studioEvents) {
         if (method !== 'GET') {
@@ -204,6 +292,22 @@ export function livingPlugin() {
             companyId: companyFrom(null, query),
           }),
         )
+      }
+
+      const publicSnapshots = matchRoute(url, '/api/living/:token/snapshots')
+      if (publicSnapshots) {
+        return json(res, 403, {
+          message: 'Living publication snapshots are studio-only.',
+          reason: 'studio_only',
+        })
+      }
+
+      const publicPublication = matchRoute(url, '/api/living/:token/publication')
+      if (publicPublication) {
+        return json(res, 403, {
+          message: 'Living publication controls are studio-only.',
+          reason: 'studio_only',
+        })
       }
 
       const events = matchRoute(url, '/api/living/:token/events')

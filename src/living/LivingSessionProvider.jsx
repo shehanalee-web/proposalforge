@@ -25,6 +25,8 @@ export function LivingSessionProvider({ shareToken, children }) {
   const [session, setSession] = useState(null)
   const [commercialState, setCommercialState] = useState(null)
   const [authoredOffers, setAuthoredOffers] = useState(null)
+  const [livingProposal, setLivingProposal] = useState(null)
+  const [publication, setPublication] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [ready, setReady] = useState(!enabled)
@@ -48,6 +50,8 @@ export function LivingSessionProvider({ shareToken, children }) {
         setSession(payload.session ?? null)
         setCommercialState(payload.commercialState ?? null)
         setAuthoredOffers(payload.authoredOffers ?? null)
+        setLivingProposal(payload.proposal ?? null)
+        setPublication(payload.publication ?? null)
         setReady(true)
       } catch {
         if (cancelled) return
@@ -141,6 +145,8 @@ export function LivingSessionProvider({ shareToken, children }) {
       session,
       commercialState,
       authoredOffers,
+      livingProposal,
+      publication,
       capabilities: LIVING_CAPABILITIES,
       interactive: Boolean(
         token && LIVING_CAPABILITIES.selections && LIVING_CAPABILITIES.livingSession,
@@ -156,6 +162,8 @@ export function LivingSessionProvider({ shareToken, children }) {
       session,
       commercialState,
       authoredOffers,
+      livingProposal,
+      publication,
       token,
       selectPackage,
       selectAlternative,
