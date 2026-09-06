@@ -717,7 +717,7 @@ assert(
   'bonus. capability flags honest',
   LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     FOLLOWUP_CAPABILITIES.commercialSelection === true &&
-    LIVING_CAPABILITIES.forgeActions === false &&
+    LIVING_CAPABILITIES.forgeActions === true &&
     LIVING_CAPABILITIES.rive === false &&
     FOLLOWUP_CAPABILITIES.whatsapp === false &&
     FOLLOWUP_CAPABILITIES.crm === false &&

@@ -23,6 +23,7 @@ import {
 } from './ProposalCommercial.jsx'
 import { LivingEngagementCard } from './LivingEngagementCard.jsx'
 import { LivingPublicationCard } from './LivingPublicationCard.jsx'
+import { ForgeActionsCard } from './ForgeActionsCard.jsx'
 import styles from './ProposalDetailView.module.css'
 
 function MetaItem({ label, children }) {
@@ -347,6 +348,7 @@ function ProposalDetailView({
       <ProposalAnalyticsCard proposal={proposal} />
       <LivingPublicationCard proposal={proposal} />
       <LivingEngagementCard proposal={proposal} />
+      <ForgeActionsCard proposal={proposal} />
       <ProposalCommentsSection
         proposal={proposal}
         onProposalChange={onProposalChange}

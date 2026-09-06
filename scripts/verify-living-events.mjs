@@ -412,7 +412,7 @@ assert(
   LIVING_CAPABILITIES.snapshots === true &&
     LIVING_CAPABILITIES.h12Interactions === true &&
     LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
-    LIVING_CAPABILITIES.forgeActions === false &&
+    LIVING_CAPABILITIES.forgeActions === true &&
     LIVING_CAPABILITIES.rive === false &&
     LIVING_CAPABILITIES.packages === true &&
     LIVING_CAPABILITIES.selections === true &&

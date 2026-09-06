@@ -1,8 +1,8 @@
 /**
  * Living Proposal contracts.
  *
- * Phase 6 enables commercial selection → H13 follow-up signal.
- * Forge actions and Rive stay off.
+ * Phase 14.7 enables studio Forge actions over living + H12 + H13.
+ * Rive and client Forge stay off.
  */
 
 export const LIVING_EVENT = Object.freeze({
@@ -33,8 +33,8 @@ export const LIVING_SECTION_KIND = Object.freeze({
 })
 
 /**
- * Later H14 phases flip remaining flags. Phase 6 enables commercial-selection
- * follow-up signals without Forge, Rive, or vendor automation.
+ * Phase 14.7 enables studio Forge actions. Rive stays off.
+ * Client living page never exposes Forge.
  */
 export const LIVING_CAPABILITIES = Object.freeze({
   packages: true,
@@ -46,6 +46,6 @@ export const LIVING_CAPABILITIES = Object.freeze({
   snapshots: true,
   h12Interactions: true,
   commercialSelectionFollowup: true,
-  forgeActions: false,
+  forgeActions: true,
   rive: false,
 })

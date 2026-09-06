@@ -497,7 +497,7 @@ assert(
     LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     INTERACTION_CAPABILITIES.autoProposalEdit === false &&
     INTERACTION_CAPABILITIES.realtimeChat === false &&
-    LIVING_CAPABILITIES.forgeActions === false &&
+    LIVING_CAPABILITIES.forgeActions === true &&
     LIVING_CAPABILITIES.rive === false,
 )
 
