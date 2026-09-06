@@ -244,6 +244,7 @@ assert(
     FORGE_CAPABILITIES.studioActions === true &&
     FORGE_CAPABILITIES.livingSummary === true &&
     FORGE_CAPABILITIES.followupActions === true &&
+    FORGE_CAPABILITIES.riveContract === true &&
     FORGE_CAPABILITIES.clientForge === false &&
     FORGE_CAPABILITIES.rive === false &&
     FORGE_CAPABILITIES.llm === false &&
