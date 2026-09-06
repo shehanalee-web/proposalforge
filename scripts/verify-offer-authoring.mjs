@@ -367,6 +367,7 @@ assert(
     LIVING_CAPABILITIES.h12Interactions === true &&
     LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     LIVING_CAPABILITIES.forgeActions === true &&
+    LIVING_CAPABILITIES.decisionSnapshots === true &&
     LIVING_CAPABILITIES.rive === false &&
     living.capabilities === LIVING_CAPABILITIES &&
     living.publication.snapshot === false &&

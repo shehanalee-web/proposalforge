@@ -16,7 +16,12 @@ import {
   resolveLivingProposalByShareToken,
 } from './resolvers.js'
 import { findLivingSessionByShareToken } from './store.js'
-import { LIVING_CAPABILITIES, LIVING_EVENT, LIVING_EVENTS } from './types.js'
+import {
+  LIVING_CAPABILITIES,
+  LIVING_EVENT,
+  LIVING_EVENTS,
+  LIVING_STUDIO_ONLY_EVENTS,
+} from './types.js'
 import { resolveLivingProposalContent } from './publicationResolvers.js'
 
 function scopedCompany(companyId) {
@@ -92,6 +97,7 @@ export function summarizeLivingEngagement(events = []) {
     addonSelections: countType(LIVING_EVENT.ADDON_SELECTED),
     acceptanceStarted: countType(LIVING_EVENT.ACCEPTANCE_STARTED),
     accepted: countType(LIVING_EVENT.ACCEPTED),
+    republished: countType(LIVING_EVENT.REPUBLISHED),
     totalEvents: list.length,
     lastEngagementAt: last?.at ?? null,
     lastEngagementType: last?.type ?? null,
@@ -124,6 +130,12 @@ export function recordLivingEngagementEvent(input = {}) {
   if (!LIVING_EVENTS.includes(type)) {
     throw new ValidationError('Unknown living event type.', [
       { field: 'type', message: `Unsupported event type: ${type || '(empty)'}` },
+    ])
+  }
+
+  if (LIVING_STUDIO_ONLY_EVENTS.includes(type)) {
+    throw new ValidationError('This living event type is studio-only.', [
+      { field: 'type', message: `Client cannot record ${type}.` },
     ])
   }
 
@@ -221,4 +233,54 @@ export function listStudioLivingEngagementEvents({ proposalId, companyId }) {
     summary: summarizeLivingEngagement(events),
     capabilities: LIVING_CAPABILITIES,
   }
+}
+
+/**
+ * Studio-only living.republished event after an immutable publication insert.
+ * Uses the living-events store — no second event domain.
+ *
+ * @param {{
+ *   proposal: import('../models/proposal.js').Proposal,
+ *   publication: object,
+ *   previousPublicationId?: string | null,
+ *   at?: string,
+ * }} input
+ */
+export function recordStudioLivingRepublishedEvent(input = {}) {
+  if (!LIVING_CAPABILITIES.commercialEvents) return null
+
+  const proposal = input.proposal
+  const publication = input.publication
+  if (!proposal?.id || !proposal?.shareToken || !publication?.id) return null
+
+  const session = findLivingSessionByShareToken(proposal.shareToken)
+  const record = insertLivingEngagementEvent(
+    makeLivingEngagementEvent({
+      companyId: scopedCompany(proposal.companyId),
+      proposalId: proposal.id,
+      shareToken: proposal.shareToken,
+      type: LIVING_EVENT.REPUBLISHED,
+      sessionId: session?.id ?? null,
+      metadata: {
+        publicationId: publication.id,
+        snapshotNumber: publication.snapshotNumber,
+        proposalVersion: publication.sourceRevision,
+        publishedBy: publication.publishedBy,
+        previousPublicationId: input.previousPublicationId || null,
+        source: 'studio_publish',
+      },
+      at: input.at || publication.publishedAt,
+    }),
+  )
+
+  emitLivingEvent(LIVING_EVENT.REPUBLISHED, {
+    proposalId: proposal.id,
+    shareToken: proposal.shareToken,
+    sessionId: session?.id ?? null,
+    eventId: record.id,
+    publicationId: publication.id,
+    snapshotNumber: publication.snapshotNumber,
+  })
+
+  return presentLivingEngagementEvent(record)
 }

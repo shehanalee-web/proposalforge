@@ -187,6 +187,7 @@ assert(
     LIVING_CAPABILITIES.h12Interactions === true &&
     LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     LIVING_CAPABILITIES.forgeActions === true &&
+    LIVING_CAPABILITIES.decisionSnapshots === true &&
     LIVING_CAPABILITIES.rive === false &&
     living.capabilities === LIVING_CAPABILITIES,
 )
@@ -208,7 +209,8 @@ assert(
     received.length === 1 &&
     received[0].proposalId === 'prop-living-1' &&
     LIVING_EVENTS.includes('package_selected') &&
-    LIVING_EVENTS.includes('accepted'),
+    LIVING_EVENTS.includes('accepted') &&
+    LIVING_EVENTS.includes('republished'),
 )
 
 const productionApi = sourceOf('server', 'productionApi.js')

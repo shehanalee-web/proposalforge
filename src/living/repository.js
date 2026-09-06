@@ -4,7 +4,11 @@ import { emitLivingEvent } from './events.js'
 import { presentAuthoredOffers } from './offers.js'
 import { presentLivingProposal } from './projection.js'
 import { resolveLivingProposalByShareToken } from './resolvers.js'
-import { makeLivingSession, presentLivingSession } from './schema.js'
+import {
+  makeDecisionSnapshot,
+  makeLivingSession,
+  presentLivingSession,
+} from './schema.js'
 import {
   findLivingSessionByShareToken,
   insertLivingSession,
@@ -14,11 +18,13 @@ import {
 import { deriveSelectedCommercialState, normalizeLivingSelections } from './totals.js'
 import { LIVING_CAPABILITIES, LIVING_EVENT } from './types.js'
 import { listLivingEngagementEventsForProposal } from './eventStore.js'
-import { presentLivingEngagementEvent } from './eventSchema.js'
-import { summarizeLivingEngagement } from './eventRepository.js'
 import {
-  findCurrentLivingPublication,
-} from './publicationStore.js'
+  makeLivingEngagementEvent,
+  presentLivingEngagementEvent,
+} from './eventSchema.js'
+import { insertLivingEngagementEvent } from './eventStore.js'
+import { summarizeLivingEngagement } from './eventRepository.js'
+import { findCurrentLivingPublication } from './publicationStore.js'
 import { resolveLivingProposalContent } from './publicationResolvers.js'
 import { reconcileLivingCommercialSelectionFollowup } from './signals.js'
 
@@ -60,6 +66,66 @@ function assertProposalMatch(session, proposal) {
   }
 }
 
+/**
+ * Resolve publication / revision identity for close-binding.
+ * Uses living publication ids — does not invent a second versioning system.
+ *
+ * @param {import('../models/proposal.js').Proposal} authored
+ */
+export function resolveLivingRevisionIdentity(authored) {
+  if (!authored?.id) {
+    return {
+      publicationId: null,
+      snapshotNumber: null,
+      proposalVersion: null,
+      sourceVersionId: null,
+    }
+  }
+
+  const publication = LIVING_CAPABILITIES.snapshots
+    ? findCurrentLivingPublication(authored.id, authored.companyId ?? '')
+    : null
+
+  if (
+    publication &&
+    (!authored.shareToken || publication.shareToken === authored.shareToken)
+  ) {
+    return {
+      publicationId: publication.id,
+      snapshotNumber: publication.snapshotNumber ?? null,
+      proposalVersion:
+        publication.sourceRevision != null
+          ? Number(publication.sourceRevision)
+          : authored.currentVersion != null
+            ? Number(authored.currentVersion)
+            : null,
+      sourceVersionId: publication.sourceVersionId ?? null,
+    }
+  }
+
+  return {
+    publicationId: null,
+    snapshotNumber: null,
+    proposalVersion:
+      authored.currentVersion != null && authored.currentVersion !== ''
+        ? Number(authored.currentVersion)
+        : null,
+    sourceVersionId: null,
+  }
+}
+
+function withRevisionIdentity(session, authored) {
+  if (session.decisionLocked) return session
+  const revision = resolveLivingRevisionIdentity(authored)
+  return {
+    ...session,
+    publicationId: revision.publicationId,
+    snapshotNumber: revision.snapshotNumber,
+    proposalVersion: revision.proposalVersion,
+    sourceVersionId: revision.sourceVersionId,
+  }
+}
+
 function stamp(session) {
   return { ...session, updatedAt: new Date().toISOString() }
 }
@@ -86,32 +152,44 @@ function save(session) {
  * @param {string} shareToken
  */
 export function getOrCreateLivingSession(shareToken) {
-  const proposal = loadProposalOrDeny(shareToken)
-  const companyId = scopedCompany(proposal.companyId)
-  const existing = findLivingSessionByShareToken(proposal.shareToken)
+  const authored = loadAuthoredOrDeny(shareToken)
+  const proposal = resolveLivingProposalContent(authored)
+  const companyId = scopedCompany(authored.companyId)
+  const existing = findLivingSessionByShareToken(authored.shareToken)
   if (existing) {
-    assertProposalMatch(existing, proposal)
+    assertProposalMatch(existing, authored)
+    if (existing.decisionLocked) return existing
     const offers = presentAuthoredOffers(proposal)
     const normalized = normalizeLivingSelections(offers, existing)
+    const stamped = withRevisionIdentity(
+      { ...existing, ...normalized },
+      authored,
+    )
     if (
-      normalized.selectedPackageId !== existing.selectedPackageId ||
-      normalized.selectedAlternativeId !== existing.selectedAlternativeId ||
-      normalized.selectedAddonIds.join('\0') !== existing.selectedAddonIds.join('\0')
+      stamped.selectedPackageId !== existing.selectedPackageId ||
+      stamped.selectedAlternativeId !== existing.selectedAlternativeId ||
+      stamped.selectedAddonIds.join('\0') !== existing.selectedAddonIds.join('\0') ||
+      stamped.publicationId !== existing.publicationId ||
+      stamped.snapshotNumber !== existing.snapshotNumber ||
+      stamped.proposalVersion !== existing.proposalVersion
     ) {
-      return save({ ...existing, ...normalized })
+      return save(stamped)
     }
     return existing
   }
 
   return save(
-    makeLivingSession({
-      proposalId: proposal.id,
-      shareToken: proposal.shareToken,
-      companyId,
-      selectedPackageId: null,
-      selectedAlternativeId: null,
-      selectedAddonIds: [],
-    }),
+    withRevisionIdentity(
+      makeLivingSession({
+        proposalId: authored.id,
+        shareToken: authored.shareToken,
+        companyId,
+        selectedPackageId: null,
+        selectedAlternativeId: null,
+        selectedAddonIds: [],
+      }),
+      authored,
+    ),
   )
 }
 
@@ -164,9 +242,16 @@ function rejectUnknownOffer(kind, id) {
  * }} input
  */
 export function applyLivingDecisions(input = {}) {
-  const proposal = loadProposalOrDeny(input.shareToken)
-  const session = getOrCreateLivingSession(proposal.shareToken)
-  assertProposalMatch(session, proposal)
+  const authored = loadAuthoredOrDeny(input.shareToken)
+  const proposal = resolveLivingProposalContent(authored)
+  const session = getOrCreateLivingSession(authored.shareToken)
+  assertProposalMatch(session, authored)
+
+  if (session.decisionLocked) {
+    throw new ValidationError('This commercial decision is locked after acceptance.', [
+      { field: 'decisionLocked', message: 'Selections cannot change after acceptance.' },
+    ])
+  }
 
   const offers = presentAuthoredOffers(proposal)
   const next = {
@@ -233,7 +318,15 @@ export function applyLivingDecisions(input = {}) {
   void input.selectedTotal
   void input.packageAmount
 
-  const saved = save({ ...session, ...next })
+  const saved = save(
+    withRevisionIdentity(
+      {
+        ...session,
+        ...next,
+      },
+      authored,
+    ),
+  )
   const commercialState = deriveSelectedCommercialState(proposal, saved)
 
   if ('selectedPackageId' in input && saved.selectedPackageId) {
@@ -265,6 +358,91 @@ export function applyLivingDecisions(input = {}) {
     session: presentLivingSession(saved),
     commercialState,
     proposalId: proposal.id,
+  }
+}
+
+/**
+ * Freeze acceptance against the current publication revision + commercial selection.
+ * Does not mutate authored proposal content or offer prices.
+ *
+ * @param {{ shareToken: string, acceptedAt?: string }} input
+ */
+export function captureLivingAcceptanceDecision(input = {}) {
+  const authored = loadAuthoredOrDeny(input.shareToken)
+  const proposal = resolveLivingProposalContent(authored)
+  const session = getOrCreateLivingSession(authored.shareToken)
+  assertProposalMatch(session, authored)
+
+  if (session.decisionLocked && session.decisionSnapshot) {
+    return {
+      session: presentLivingSession(session),
+      decisionSnapshot: makeDecisionSnapshot(session.decisionSnapshot),
+      alreadyLocked: true,
+    }
+  }
+
+  const revision = resolveLivingRevisionIdentity(authored)
+  const commercialState = deriveSelectedCommercialState(proposal, session)
+  const acceptedAt = input.acceptedAt || new Date().toISOString()
+
+  const decisionSnapshot = makeDecisionSnapshot({
+    publicationId: revision.publicationId,
+    snapshotNumber: revision.snapshotNumber,
+    proposalVersion: revision.proposalVersion,
+    sourceVersionId: revision.sourceVersionId,
+    selectedPackageId: session.selectedPackageId,
+    selectedAlternativeId: session.selectedAlternativeId,
+    selectedAddonIds: session.selectedAddonIds,
+    selectedTotal: commercialState?.selectedTotal ?? null,
+    selectedSubtotal: commercialState?.selectedSubtotal ?? null,
+    packageAmount: commercialState?.packageAmount ?? null,
+    alternativeAmount: commercialState?.alternativeAmount ?? null,
+    addonsAmount: commercialState?.addonsAmount ?? null,
+    currency: commercialState?.currency ?? proposal.currency ?? 'USD',
+    acceptedAt,
+  })
+
+  const saved = save({
+    ...session,
+    publicationId: revision.publicationId,
+    snapshotNumber: revision.snapshotNumber,
+    proposalVersion: revision.proposalVersion,
+    sourceVersionId: revision.sourceVersionId,
+    decisionLocked: true,
+    acceptedAt,
+    decisionSnapshot,
+  })
+
+  if (LIVING_CAPABILITIES.commercialEvents) {
+    const record = insertLivingEngagementEvent(
+      makeLivingEngagementEvent({
+        companyId: scopedCompany(authored.companyId),
+        proposalId: authored.id,
+        shareToken: authored.shareToken,
+        type: LIVING_EVENT.ACCEPTED,
+        sessionId: saved.id,
+        metadata: {
+          publicationId: revision.publicationId,
+          snapshotNumber: revision.snapshotNumber,
+          proposalVersion: revision.proposalVersion,
+          source: 'acceptance',
+        },
+        at: acceptedAt,
+      }),
+    )
+    emitLivingEvent(LIVING_EVENT.ACCEPTED, {
+      proposalId: authored.id,
+      shareToken: authored.shareToken,
+      sessionId: saved.id,
+      eventId: record.id,
+      publicationId: revision.publicationId,
+    })
+  }
+
+  return {
+    session: presentLivingSession(saved),
+    decisionSnapshot,
+    alreadyLocked: false,
   }
 }
 

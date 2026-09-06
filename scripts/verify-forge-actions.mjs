@@ -251,6 +251,7 @@ assert(
     FORGE_CAPABILITIES.proposalDrafts === false &&
     KNOWLEDGE_CAPABILITIES.forge === false &&
     GENERATOR_CAPABILITIES.forge === false &&
+    LIVING_CAPABILITIES.decisionSnapshots === true &&
     LIVING_CAPABILITIES.rive === false,
 )
 

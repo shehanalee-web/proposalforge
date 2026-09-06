@@ -105,6 +105,7 @@ import {
   buildOperationalStats,
 } from '../models/commercialQueues.js'
 import * as activityStore from './activityStore.js'
+import { captureLivingAcceptanceDecision } from '../living/repository.js'
 
 /**
  * Public data access layer for proposals.
@@ -1144,7 +1145,21 @@ export async function acceptProposal(token) {
     createdBy: existing.clientName?.trim() || 'Client',
   })
 
-  return present(await store.replace(existing.id, recorded))
+  const replaced = await store.replace(existing.id, recorded)
+
+  // H14 close-binding: freeze living decision against published revision + selection.
+  // Never mutates authored offer prices. Signature/payment remain placeholders.
+  try {
+    captureLivingAcceptanceDecision({
+      shareToken: token,
+      acceptedAt: now,
+    })
+  } catch {
+    // Living binding is best-effort relative to proposal acceptance persistence.
+    // Suites cover the binding path when living stores are configured.
+  }
+
+  return present(replaced)
 }
 
 /**

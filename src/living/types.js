@@ -1,9 +1,9 @@
 /**
  * Living Proposal contracts.
  *
- * Phase 14.7 enables studio Forge actions over living + H12 + H13.
- * Phase 14.8 adds a studio-only Forge Rive contract / fallback shell.
- * Client living never exposes Forge or Rive (`rive` stays false here).
+ * H14 close-binding hardening: sessions carry publication revision identity,
+ * publish emits `republished`, and acceptance freezes a decision snapshot.
+ * Rive and client Forge stay off. Vendor signature/payment stay off.
  */
 
 export const LIVING_EVENT = Object.freeze({
@@ -18,9 +18,14 @@ export const LIVING_EVENT = Object.freeze({
   CHANGE_REQUESTED: 'change_requested',
   ACCEPTANCE_STARTED: 'acceptance_started',
   ACCEPTED: 'accepted',
+  /** Studio-only: emitted when an immutable living publication is created. */
+  REPUBLISHED: 'republished',
 })
 
 export const LIVING_EVENTS = Object.freeze(Object.values(LIVING_EVENT))
+
+/** Event types clients may not POST. Recorded only by studio publish path. */
+export const LIVING_STUDIO_ONLY_EVENTS = Object.freeze([LIVING_EVENT.REPUBLISHED])
 
 export const LIVING_PUBLICATION_SOURCE = Object.freeze({
   AUTHORED: 'authored',
@@ -34,8 +39,9 @@ export const LIVING_SECTION_KIND = Object.freeze({
 })
 
 /**
- * Phase 14.7–14.8: studio Forge actions + Rive contract (studio chrome only).
+ * H14 capabilities through close-binding hardening.
  * Client living page never exposes Forge or Rive.
+ * Vendor close flags stay false until H15 architecture.
  */
 export const LIVING_CAPABILITIES = Object.freeze({
   packages: true,
@@ -48,5 +54,6 @@ export const LIVING_CAPABILITIES = Object.freeze({
   h12Interactions: true,
   commercialSelectionFollowup: true,
   forgeActions: true,
+  decisionSnapshots: true,
   rive: false,
 })

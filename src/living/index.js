@@ -2,6 +2,7 @@ export {
   LIVING_CAPABILITIES,
   LIVING_EVENT,
   LIVING_EVENTS,
+  LIVING_STUDIO_ONLY_EVENTS,
   LIVING_PUBLICATION_SOURCE,
   LIVING_SECTION_KIND,
 } from './types.js'
@@ -54,6 +55,8 @@ export {
   presentLivingSession,
   emptySelectionState,
   cloneLivingSession,
+  makeDecisionSnapshot,
+  presentDecisionSnapshot,
 } from './schema.js'
 export {
   configureLivingStore,
@@ -73,6 +76,8 @@ export {
   getOrCreateLivingSession,
   getLivingClientView,
   applyLivingDecisions,
+  captureLivingAcceptanceDecision,
+  resolveLivingRevisionIdentity,
   getLivingStudioSummary,
   assertLivingProposalAccess,
 } from './repository.js'
@@ -93,6 +98,7 @@ export {
   recordLivingEngagementEvent,
   listStudioLivingEngagementEvents,
   summarizeLivingEngagement,
+  recordStudioLivingRepublishedEvent,
 } from './eventRepository.js'
 export {
   postLivingEngagementEvent,

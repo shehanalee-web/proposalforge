@@ -357,6 +357,7 @@ assert(
 assert(
   '18. studio Forge enabled; client portal has no Forge UI',
   LIVING_CAPABILITIES.forgeActions === true &&
+    LIVING_CAPABILITIES.decisionSnapshots === true &&
     LIVING_CAPABILITIES.rive === false &&
     !sourceOf('src', 'portal', 'PortalApp.jsx').includes('Forge') &&
     !sourceOf('src', 'portal', 'PortalApp.jsx').includes('/api/forge'),
@@ -393,6 +394,7 @@ assert(
     LIVING_CAPABILITIES.h12Interactions === true &&
     LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     LIVING_CAPABILITIES.forgeActions === true &&
+    LIVING_CAPABILITIES.decisionSnapshots === true &&
     LIVING_CAPABILITIES.rive === false &&
     view.capabilities === LIVING_CAPABILITIES,
 )

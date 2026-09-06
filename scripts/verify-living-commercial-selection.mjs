@@ -718,6 +718,7 @@ assert(
   LIVING_CAPABILITIES.commercialSelectionFollowup === true &&
     FOLLOWUP_CAPABILITIES.commercialSelection === true &&
     LIVING_CAPABILITIES.forgeActions === true &&
+    LIVING_CAPABILITIES.decisionSnapshots === true &&
     LIVING_CAPABILITIES.rive === false &&
     FOLLOWUP_CAPABILITIES.whatsapp === false &&
     FOLLOWUP_CAPABILITIES.crm === false &&
