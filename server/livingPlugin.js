@@ -4,13 +4,18 @@ import { ensureRuntimeData } from './dataPaths.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import {
+  allLivingEngagementEvents,
   allLivingSessions,
   applyLivingDecisions,
+  configureLivingEventStore,
   configureLivingResolvers,
   configureLivingStore,
   getLivingClientView,
   getLivingStudioSummary,
   LIVING_CAPABILITIES,
+  listStudioLivingEngagementEvents,
+  recordLivingEngagementEvent,
+  replaceLivingEngagementEvents,
   replaceLivingSessions,
 } from '../src/living/index.js'
 
@@ -99,17 +104,22 @@ function companyFrom(body, query) {
 }
 
 /**
- * Persist living sessions to `data/living.json`.
- * Never writes `data/proposals.json`, follow-ups, or analytics.
+ * Persist living sessions to `data/living.json` and engagement events to
+ * `data/living-events.json`. Never writes `data/proposals.json` or follow-ups.
  */
 export function livingPlugin() {
   const dataDir = ensureRuntimeData()
   const livingFile = join(dataDir, 'living.json')
+  const livingEventsFile = join(dataDir, 'living-events.json')
   const proposalsFile = join(dataDir, 'proposals.json')
   let ready = false
 
-  function persist(records) {
+  function persistSessions(records) {
     writeJson(livingFile, records)
+  }
+
+  function persistEvents(records) {
+    writeJson(livingEventsFile, records)
   }
 
   function readProposals() {
@@ -119,14 +129,24 @@ export function livingPlugin() {
 
   function ensureStore() {
     if (ready) return
-    const stored = readJson(livingFile, null)
-    if (Array.isArray(stored)) {
-      replaceLivingSessions(stored)
+    const storedSessions = readJson(livingFile, null)
+    if (Array.isArray(storedSessions)) {
+      replaceLivingSessions(storedSessions)
     } else {
       replaceLivingSessions([])
-      persist(allLivingSessions())
+      persistSessions(allLivingSessions())
     }
-    configureLivingStore({ persist })
+    configureLivingStore({ persist: persistSessions })
+
+    const storedEvents = readJson(livingEventsFile, null)
+    if (Array.isArray(storedEvents)) {
+      replaceLivingEngagementEvents(storedEvents)
+    } else {
+      replaceLivingEngagementEvents([])
+      persistEvents(allLivingEngagementEvents())
+    }
+    configureLivingEventStore({ persist: persistEvents })
+
     configureLivingResolvers({
       getProposalByShareToken(shareToken) {
         const token = String(shareToken ?? '').trim()
@@ -157,6 +177,22 @@ export function livingPlugin() {
         return json(res, 200, { capabilities: LIVING_CAPABILITIES })
       }
 
+      const studioEvents = matchRoute(url, '/api/living/proposal/:proposalId/events')
+      if (studioEvents) {
+        if (method !== 'GET') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        return json(
+          res,
+          200,
+          listStudioLivingEngagementEvents({
+            proposalId: studioEvents.proposalId,
+            companyId: companyFrom(null, query),
+          }),
+        )
+      }
+
       const studio = matchRoute(url, '/api/living/proposal/:proposalId')
       if (method === 'GET' && studio) {
         const query = queryOf(url)
@@ -170,13 +206,40 @@ export function livingPlugin() {
         )
       }
 
-      // Phase 4 owns /events and publish. Reject early so they are not silent.
       const events = matchRoute(url, '/api/living/:token/events')
       if (events) {
-        return json(res, 404, {
-          message: 'Living engagement events are not available yet.',
-          reason: 'phase_deferred',
-        })
+        if (method === 'GET') {
+          return json(res, 403, {
+            message: 'Living engagement feeds are studio-only.',
+            reason: 'studio_only',
+          })
+        }
+        if (method !== 'POST') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        return json(
+          res,
+          201,
+          {
+            event: recordLivingEngagementEvent({
+              shareToken: events.token,
+              type: body.type,
+              blockId: body.blockId,
+              offerId: body.offerId,
+              sessionId: body.sessionId,
+              metadata: body.metadata,
+              at: body.at,
+              // Ignored identity / money fields — token establishes proposal.
+              proposalId: body.proposalId,
+              companyId: body.companyId,
+              amount: body.amount,
+              total: body.total,
+              selectedTotal: body.selectedTotal,
+              packageAmount: body.packageAmount,
+            }),
+          },
+        )
       }
 
       const decisions = matchRoute(url, '/api/living/:token/decisions')
@@ -189,7 +252,6 @@ export function livingPlugin() {
         }
         if ('selectedAddonIds' in body) patch.selectedAddonIds = body.selectedAddonIds
         if ('toggleAddonId' in body) patch.toggleAddonId = body.toggleAddonId
-        // Amount fields are accepted then ignored — authored prices win.
         if ('amount' in body) patch.amount = body.amount
         if ('total' in body) patch.total = body.total
         if ('selectedTotal' in body) patch.selectedTotal = body.selectedTotal
@@ -199,7 +261,6 @@ export function livingPlugin() {
 
       const client = matchRoute(url, '/api/living/:token')
       if (method === 'GET' && client) {
-        // Avoid swallowing the studio route if a token literally equals "proposal"
         if (client.token === 'proposal' || client.token === 'capabilities') {
           return next()
         }

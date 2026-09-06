@@ -21,6 +21,7 @@ import {
   ProposalSignatureCard,
   ProposalTimeline,
 } from './ProposalCommercial.jsx'
+import { LivingEngagementCard } from './LivingEngagementCard.jsx'
 import styles from './ProposalDetailView.module.css'
 
 function MetaItem({ label, children }) {
@@ -343,6 +344,7 @@ function ProposalDetailView({
 
       <ProposalTimeline proposal={proposal} />
       <ProposalAnalyticsCard proposal={proposal} />
+      <LivingEngagementCard proposal={proposal} />
       <ProposalCommentsSection
         proposal={proposal}
         onProposalChange={onProposalChange}

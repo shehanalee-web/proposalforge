@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { LivingSessionContext } from './LivingSessionContext.js'
-import { LIVING_CAPABILITIES } from './types.js'
+import { postLivingEngagementEvent } from './clientEvents.js'
+import { LIVING_CAPABILITIES, LIVING_EVENT } from './types.js'
 
 async function readJson(response) {
   return response.json().catch(() => ({}))
@@ -11,6 +12,7 @@ async function readJson(response) {
  *
  * Session identity follows the share token already in `/p/:token`.
  * Internal session ids are never placed in the URL.
+ * Selection events persist after a successful decision update.
  *
  * @param {{
  *   shareToken?: string | null,
@@ -92,8 +94,19 @@ export function LivingSessionProvider({ shareToken, children }) {
   )
 
   const selectPackage = useCallback(
-    (packageId) => postDecision({ selectedPackageId: packageId }),
-    [postDecision],
+    async (packageId) => {
+      const payload = await postDecision({ selectedPackageId: packageId })
+      if (payload?.session?.selectedPackageId) {
+        void postLivingEngagementEvent(token, {
+          type: LIVING_EVENT.PACKAGE_SELECTED,
+          offerId: payload.session.selectedPackageId,
+          sessionId: payload.session.id,
+          dedupe: false,
+        })
+      }
+      return payload
+    },
+    [postDecision, token],
   )
 
   const selectAlternative = useCallback(
@@ -102,8 +115,22 @@ export function LivingSessionProvider({ shareToken, children }) {
   )
 
   const toggleAddon = useCallback(
-    (addonId) => postDecision({ toggleAddonId: addonId }),
-    [postDecision],
+    async (addonId) => {
+      const payload = await postDecision({ toggleAddonId: addonId })
+      if (payload?.session) {
+        void postLivingEngagementEvent(token, {
+          type: LIVING_EVENT.ADDON_SELECTED,
+          offerId: addonId,
+          sessionId: payload.session.id,
+          metadata: {
+            selected: payload.session.selectedAddonIds?.includes(addonId) ? 1 : 0,
+          },
+          dedupe: false,
+        })
+      }
+      return payload
+    },
+    [postDecision, token],
   )
 
   const value = useMemo(

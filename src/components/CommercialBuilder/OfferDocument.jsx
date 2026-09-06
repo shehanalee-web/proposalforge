@@ -2,6 +2,7 @@ import { formatMoney } from '../../utils/commercialTotals.js'
 import { hasPresentedOffers } from '../../living/offers.js'
 import { OFFER_KIND, OFFER_KIND_LABELS } from '../../models/offer.js'
 import { useLivingSessionOptional } from '../../living/LivingSessionContext.js'
+import { LIVING_EVENT, postLivingEngagementEvent } from '../../living/index.js'
 import styles from './OfferDocument.module.css'
 
 function OfferCard({
@@ -11,6 +12,7 @@ function OfferCard({
   selected,
   exclusive,
   onSelect,
+  onExpand,
   disabled,
 }) {
   const label = offer.label?.trim()
@@ -18,6 +20,10 @@ function OfferCard({
   const description = offer.description?.trim()
   const kindLabel = OFFER_KIND_LABELS[offer.kind] ?? 'Offer option'
   const inputId = `offer-${offer.kind}-${offer.id}`
+
+  function handleExpand() {
+    onExpand?.(offer.id)
+  }
 
   const body = (
     <>
@@ -56,6 +62,8 @@ function OfferCard({
       data-offer-enabled={offer.enabled ? 'true' : 'false'}
       data-offer-selectable="true"
       data-offer-selected={selected ? 'true' : 'false'}
+      onFocus={handleExpand}
+      onPointerEnter={handleExpand}
     >
       <span className={styles.control}>
         <input
@@ -84,6 +92,7 @@ function OfferGroup({
   selectedIds,
   exclusive,
   onSelect,
+  onExpand,
   disabled,
 }) {
   if (!offers?.length) return null
@@ -108,6 +117,7 @@ function OfferGroup({
               selected={selected}
               exclusive={exclusive}
               onSelect={onSelect}
+              onExpand={onExpand}
               disabled={disabled}
             />
           )
@@ -196,6 +206,17 @@ function OfferDocument({
   const selectedAlternativeId = living?.session?.selectedAlternativeId ?? null
   const selectedAddonIds = living?.session?.selectedAddonIds ?? []
   const busy = Boolean(living?.busy)
+  const shareToken = living?.session?.shareToken ?? null
+
+  function handlePackageExpand(offerId) {
+    if (!interactive || !shareToken) return
+    void postLivingEngagementEvent(shareToken, {
+      type: LIVING_EVENT.PACKAGE_EXPANDED,
+      offerId,
+      sessionId: living?.session?.id ?? null,
+      dedupe: true,
+    })
+  }
 
   return (
     <div
@@ -232,6 +253,7 @@ function OfferDocument({
         selectedId={selectedPackageId}
         exclusive
         onSelect={(id) => living?.selectPackage?.(id)}
+        onExpand={handlePackageExpand}
         disabled={busy}
       />
       <OfferGroup

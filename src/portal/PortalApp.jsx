@@ -3,6 +3,7 @@ import { ViewerProvider, useViewer } from '../viewer/ViewerContext.jsx'
 import { useFullscreen } from '../viewer/useFullscreen.js'
 import { useLivingProposal } from '../hooks/useLivingProposal.js'
 import { LivingSessionProvider } from '../living/LivingSessionProvider.jsx'
+import { LIVING_EVENT, postLivingEngagementEvent } from '../living/index.js'
 import ViewerStage from '../viewer/ViewerStage.jsx'
 import ViewerActionBar from '../viewer/ViewerActionBar.jsx'
 import { useProposalTheme } from '../theme/ProposalThemeContext.jsx'
@@ -111,6 +112,17 @@ function PortalAppInner({
     }
   }
 
+  function handleAccept() {
+    const token = proposal?.shareToken
+    if (token) {
+      void postLivingEngagementEvent(token, {
+        type: LIVING_EVENT.ACCEPTANCE_STARTED,
+        dedupe: true,
+      })
+    }
+    onAccept?.()
+  }
+
   return (
     <LivingSessionProvider shareToken={proposal.shareToken}>
       <div
@@ -122,6 +134,7 @@ function PortalAppInner({
         data-publication-source={living.publication.source}
         data-living-selections={living.capabilities.selections ? 'true' : 'false'}
         data-living-session={living.capabilities.livingSession ? 'true' : 'false'}
+        data-living-events={living.capabilities.commercialEvents ? 'true' : 'false'}
         data-readonly="true"
       >
         <PortalHeader
@@ -142,7 +155,7 @@ function PortalAppInner({
           <PortalAside
             open={asideOpen}
             onOpenModule={openModule}
-            onApprove={onAccept}
+            onApprove={handleAccept}
             onDecline={() => setDeclineOpen(true)}
             onRequestChanges={() => setRequestOpen(true)}
             onSign={() => setSignOpen(true)}
@@ -170,7 +183,7 @@ function PortalAppInner({
           rejectLabel="Decline"
           fullscreen={fullscreen}
           onToggleFullscreen={toggleFullscreen}
-          onAccept={onAccept}
+          onAccept={handleAccept}
           onReject={() => setDeclineOpen(true)}
           onAskQuestion={() => {
             closeDrawers()
