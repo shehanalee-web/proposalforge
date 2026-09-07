@@ -18,6 +18,7 @@ import {
 import { LIVING_EVENT } from '../living/types.js'
 import {
   studioCanCreateCommercialClose,
+  studioCanManageCommercialCloseSignature,
   studioCanTransitionCommercialClose,
   studioCanViewCommercialClose,
 } from './permissions.js'
@@ -28,6 +29,15 @@ import {
   presentClientCommercialClose,
   presentCommercialClose,
 } from './schema.js'
+import {
+  hasValidSignatureEvidence,
+  makeCloseSignature,
+  makeCloseSignatureBinding,
+  makeCloseSignatureEvidence,
+  makeCloseSignatureParty,
+  makeCloseSignatureRequest,
+  presentCloseSignature,
+} from './signatureSchema.js'
 import { reconcileCommercialCloseFollowup } from './signals.js'
 import {
   findCommercialClose,
@@ -42,6 +52,9 @@ import {
   allowedCommercialCloseTransitions,
 } from './transitions.js'
 import {
+  CLOSE_SIGNATURE_METHOD,
+  CLOSE_SIGNATURE_PARTY_ROLE,
+  CLOSE_SIGNATURE_STATUS,
   COMMERCIAL_CLOSE_CAPABILITIES,
   COMMERCIAL_CLOSE_EVENT,
   COMMERCIAL_CLOSE_STATUS,
@@ -79,6 +92,105 @@ function assertStateMachine() {
         message: 'commercialCloseStateMachine capability is off.',
       },
     ])
+  }
+}
+
+function assertSignaturePath() {
+  assertStateMachine()
+  if (!COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseSignaturePath) {
+    throw new ValidationError('Commercial close signature path is not enabled.', [
+      {
+        field: 'capabilities',
+        message: 'commercialCloseSignaturePath capability is off.',
+      },
+    ])
+  }
+}
+
+function bindingFromClose(close) {
+  return makeCloseSignatureBinding({
+    closeId: close.id,
+    sessionId: close.sessionId,
+    proposalId: close.proposalId,
+    acceptedAt: close.decision?.acceptedAt,
+    publicationId: close.decision?.publicationId,
+    snapshotNumber: close.decision?.snapshotNumber,
+    proposalVersion: close.decision?.proposalVersion,
+  })
+}
+
+function defaultClientParty(proposal) {
+  return makeCloseSignatureParty({
+    displayName: String(proposal?.clientName ?? '').trim() || 'Client',
+    email: String(proposal?.clientEmail ?? '').trim(),
+    role: CLOSE_SIGNATURE_PARTY_ROLE.CLIENT,
+    required: true,
+  })
+}
+
+function buildSignatureRequest(close, actorId, parties) {
+  return makeCloseSignature({
+    required: true,
+    status: CLOSE_SIGNATURE_STATUS.PENDING,
+    method: CLOSE_SIGNATURE_METHOD.INTERNAL,
+    parties,
+    request: makeCloseSignatureRequest({
+      method: CLOSE_SIGNATURE_METHOD.INTERNAL,
+      status: CLOSE_SIGNATURE_STATUS.PENDING,
+      createdByActorId: actorId || null,
+      binding: bindingFromClose(close),
+    }),
+    evidence: close.signature?.evidence ?? [],
+    completedAt: null,
+  })
+}
+
+function evidenceAlreadyRecorded(signature, input) {
+  const list = signature?.evidence ?? []
+  const legacyId = String(input.legacyProposalSignatureId ?? '').trim()
+  const evidenceRef = String(input.evidenceRef ?? '').trim()
+  if (legacyId && list.some((item) => item.legacyProposalSignatureId === legacyId)) {
+    return true
+  }
+  if (evidenceRef && list.some((item) => item.evidenceRef === evidenceRef)) {
+    return true
+  }
+  return false
+}
+
+function emitSignatureEvent({ proposal, close, type, actorId, at, extra = {} }) {
+  if (!proposal?.shareToken) return null
+  try {
+    const record = insertLivingEngagementEvent(
+      makeLivingEngagementEvent({
+        companyId: close.companyId,
+        proposalId: close.proposalId,
+        shareToken: proposal.shareToken,
+        type,
+        sessionId: close.sessionId,
+        metadata: {
+          closeId: close.id,
+          source: 'commercial_close',
+          method: CLOSE_SIGNATURE_METHOD.INTERNAL,
+          actorId: actorId || null,
+          ...extra,
+        },
+        at,
+      }),
+    )
+    emitLivingEvent(type, {
+      proposalId: close.proposalId,
+      shareToken: proposal.shareToken,
+      closeId: close.id,
+      eventId: record.id,
+    })
+    return {
+      id: record.id,
+      type,
+      at: record.at,
+    }
+  } catch {
+    return null
   }
 }
 
@@ -440,6 +552,7 @@ export function createCommercialCloseFromAcceptedDecision({
 /**
  * Studio-only: transition commercial close status.
  * Never mutates proposal content or the immutable decision binding.
+ * H15.3: transition to `signed` requires valid signature evidence.
  */
 export function transitionCommercialClose({
   companyId,
@@ -476,6 +589,22 @@ export function transitionCommercialClose({
   const from = existing.status
   assertCommercialCloseTransition(from, target)
 
+  if (target === COMMERCIAL_CLOSE_STATUS.SIGNED) {
+    assertSignaturePath()
+    if (!hasValidSignatureEvidence(existing)) {
+      throw new ValidationError(
+        'Signed requires valid commercial-close signature evidence.',
+        [
+          {
+            field: 'signature',
+            message:
+              'Complete an internal signature before transitioning to signed.',
+          },
+        ],
+      )
+    }
+  }
+
   // Decision binding must remain frozen.
   const decision = makeCloseDecisionBinding(existing.decision)
   const at = new Date().toISOString()
@@ -486,9 +615,35 @@ export function transitionCommercialClose({
     actorId: user.id,
   })
 
+  let signature = makeCloseSignature(existing.signature)
+  if (target === COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING) {
+    assertSignaturePath()
+    const proposal = resolveLivingProposalById(existing.proposalId, scoped)
+    if (
+      !signature.request ||
+      signature.status === CLOSE_SIGNATURE_STATUS.NOT_REQUESTED
+    ) {
+      signature = buildSignatureRequest(
+        existing,
+        user.id,
+        signature.parties.length
+          ? signature.parties
+          : [defaultClientParty(proposal)],
+      )
+    } else {
+      signature = makeCloseSignature({
+        ...signature,
+        required: true,
+        status: CLOSE_SIGNATURE_STATUS.PENDING,
+        method: CLOSE_SIGNATURE_METHOD.INTERNAL,
+      })
+    }
+  }
+
   const patch = {
     ...existing,
     decision,
+    signature,
     status: target,
     statusHistory: [...existing.statusHistory, historyEntry],
     lastTransitionAt: at,
@@ -509,6 +664,17 @@ export function transitionCommercialClose({
     actorId: user.id,
     at,
   })
+
+  if (target === COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING) {
+    emitSignatureEvent({
+      proposal,
+      close: saved,
+      type: LIVING_EVENT.SIGNATURE_REQUESTED,
+      actorId: user.id,
+      at,
+      extra: { requestId: saved.signature?.request?.id || null },
+    })
+  }
 
   reconcileCommercialCloseFollowup({
     companyId: scoped,
@@ -577,7 +743,9 @@ export function getClientCommercialCloseSummary({ shareToken } = {}) {
     capabilities: {
       commercialCloseDomain: COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseDomain,
       commercialCloseStateMachine: COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseStateMachine,
+      commercialCloseSignaturePath: COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseSignaturePath,
       digitalSignature: false,
+      signatureVendors: false,
       paymentProcessing: false,
     },
   }
@@ -596,6 +764,452 @@ export function listProposalCommercialCloses({ companyId, proposalId, actor } = 
     closes: listCommercialClosesForProposal(proposalId, scoped).map((item) =>
       presentCommercialClose(item),
     ),
+    capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
+  }
+}
+
+/**
+ * Apply internal signature evidence and move close toward signed.
+ * Shared by studio complete + client bridge. Does not write proposals.json.
+ *
+ * @param {object} existing
+ * @param {{
+ *   signerDisplayName: string,
+ *   signedAt?: string,
+ *   evidenceRef?: string | null,
+ *   legacyProposalSignatureId?: string | null,
+ *   signerActorId?: string | null,
+ *   transitionActorId?: string | null,
+ * }} evidenceInput
+ */
+function applyInternalEvidenceAndSign(existing, evidenceInput) {
+  const signerDisplayName = String(evidenceInput.signerDisplayName ?? '').trim()
+  if (!signerDisplayName) {
+    throw new ValidationError('Signer display name is required.', [
+      { field: 'signerDisplayName', message: 'A signer name is required.' },
+    ])
+  }
+
+  if (hasValidSignatureEvidence(existing)) {
+    return {
+      close: existing,
+      created: false,
+      duplicate: true,
+    }
+  }
+
+  if (evidenceAlreadyRecorded(existing.signature, evidenceInput)) {
+    throw new ValidationError('Signature evidence already recorded for this request.', [
+      { field: 'evidence', message: 'Duplicate signature evidence is not allowed.' },
+    ])
+  }
+
+  const at = asIsoOrNow(evidenceInput.signedAt)
+  let working = existing
+  const proposal = resolveLivingProposalById(working.proposalId, working.companyId)
+
+  // Ensure a signature request exists (open → signature_pending).
+  if (working.status === COMMERCIAL_CLOSE_STATUS.OPEN) {
+    assertCommercialCloseTransition(
+      working.status,
+      COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING,
+    )
+    const signature = buildSignatureRequest(
+      working,
+      evidenceInput.transitionActorId || null,
+      working.signature?.parties?.length
+        ? working.signature.parties
+        : [defaultClientParty(proposal)],
+    )
+    const historyEntry = makeCloseStatusHistoryEntry({
+      from: working.status,
+      to: COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING,
+      at,
+      actorId: evidenceInput.transitionActorId || null,
+    })
+    working = replaceCommercialClose(
+      working.id,
+      makeCommercialClose({
+        ...working,
+        decision: makeCloseDecisionBinding(working.decision),
+        signature,
+        status: COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING,
+        statusHistory: [...working.statusHistory, historyEntry],
+        lastTransitionAt: at,
+        lastTransitionByActorId: evidenceInput.transitionActorId || null,
+        updatedAt: at,
+      }),
+    )
+    emitCloseTransitionEvent({
+      proposal,
+      close: working,
+      from: COMMERCIAL_CLOSE_STATUS.OPEN,
+      to: COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING,
+      actorId: evidenceInput.transitionActorId || null,
+      at,
+    })
+    emitSignatureEvent({
+      proposal,
+      close: working,
+      type: LIVING_EVENT.SIGNATURE_REQUESTED,
+      actorId: evidenceInput.transitionActorId || null,
+      at,
+      extra: { requestId: working.signature?.request?.id || null },
+    })
+    reconcileCommercialCloseFollowup({
+      companyId: working.companyId,
+      proposalId: working.proposalId,
+      closeId: working.id,
+      status: COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING,
+      ownerActorId: evidenceInput.transitionActorId || undefined,
+      now: at,
+    })
+  }
+
+  if (working.status !== COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING) {
+    throw new ValidationError('Commercial close is not awaiting signature.', [
+      {
+        field: 'status',
+        message: `Cannot record signature while status is ${working.status}.`,
+      },
+    ])
+  }
+
+  const evidence = makeCloseSignatureEvidence({
+    signerActorId: evidenceInput.signerActorId || null,
+    signerDisplayName,
+    signedAt: at,
+    method: CLOSE_SIGNATURE_METHOD.INTERNAL,
+    evidenceRef: evidenceInput.evidenceRef || null,
+    legacyProposalSignatureId: evidenceInput.legacyProposalSignatureId || null,
+    binding: bindingFromClose(working),
+  })
+
+  const signature = makeCloseSignature({
+    ...working.signature,
+    required: true,
+    status: CLOSE_SIGNATURE_STATUS.COMPLETED,
+    method: CLOSE_SIGNATURE_METHOD.INTERNAL,
+    parties:
+      working.signature?.parties?.length > 0
+        ? working.signature.parties
+        : [defaultClientParty(proposal)],
+    request:
+      working.signature?.request ||
+      makeCloseSignatureRequest({
+        method: CLOSE_SIGNATURE_METHOD.INTERNAL,
+        status: CLOSE_SIGNATURE_STATUS.COMPLETED,
+        createdByActorId: evidenceInput.transitionActorId || null,
+        binding: bindingFromClose(working),
+      }),
+    evidence: [...(working.signature?.evidence ?? []), evidence],
+    completedAt: at,
+  })
+
+  assertCommercialCloseTransition(
+    working.status,
+    COMMERCIAL_CLOSE_STATUS.SIGNED,
+  )
+
+  const historyEntry = makeCloseStatusHistoryEntry({
+    from: working.status,
+    to: COMMERCIAL_CLOSE_STATUS.SIGNED,
+    at,
+    actorId: evidenceInput.transitionActorId || null,
+  })
+
+  const saved = replaceCommercialClose(
+    working.id,
+    makeCommercialClose({
+      ...working,
+      decision: makeCloseDecisionBinding(working.decision),
+      signature,
+      status: COMMERCIAL_CLOSE_STATUS.SIGNED,
+      statusHistory: [...working.statusHistory, historyEntry],
+      lastTransitionAt: at,
+      lastTransitionByActorId: evidenceInput.transitionActorId || null,
+      updatedAt: at,
+    }),
+  )
+
+  emitCloseTransitionEvent({
+    proposal,
+    close: saved,
+    from: COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING,
+    to: COMMERCIAL_CLOSE_STATUS.SIGNED,
+    actorId: evidenceInput.transitionActorId || null,
+    at,
+  })
+  emitSignatureEvent({
+    proposal,
+    close: saved,
+    type: LIVING_EVENT.SIGNATURE_COMPLETED,
+    actorId: evidenceInput.transitionActorId || null,
+    at,
+    extra: {
+      evidenceId: evidence.id,
+      method: CLOSE_SIGNATURE_METHOD.INTERNAL,
+    },
+  })
+  reconcileCommercialCloseFollowup({
+    companyId: saved.companyId,
+    proposalId: saved.proposalId,
+    closeId: saved.id,
+    status: COMMERCIAL_CLOSE_STATUS.SIGNED,
+    ownerActorId: evidenceInput.transitionActorId || undefined,
+    now: at,
+  })
+
+  return {
+    close: saved,
+    created: true,
+    duplicate: false,
+    evidence,
+  }
+}
+
+function asIsoOrNow(value) {
+  if (!value) return new Date().toISOString()
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return new Date().toISOString()
+  return date.toISOString()
+}
+
+/**
+ * Studio: create/update signature request and move to signature_pending.
+ */
+export function requestCommercialCloseSignature({
+  companyId,
+  closeId,
+  actor,
+  parties,
+} = {}) {
+  assertSignaturePath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanManageCommercialCloseSignature(user)) {
+    throw new ForbiddenError(
+      'You do not have permission to request commercial-close signatures.',
+    )
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const existing = findCommercialClose(id)
+  if (!existing || existing.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  if (
+    existing.status !== COMMERCIAL_CLOSE_STATUS.OPEN &&
+    existing.status !== COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING
+  ) {
+    throw new ValidationError('Signature can only be requested from open or pending.', [
+      {
+        field: 'status',
+        message: `Cannot request signature while status is ${existing.status}.`,
+      },
+    ])
+  }
+
+  if (Array.isArray(parties) && parties.length > 0) {
+    const nextParties = parties.map((party) => makeCloseSignatureParty(party))
+    const signature = buildSignatureRequest(existing, user.id, nextParties)
+    replaceCommercialClose(
+      existing.id,
+      makeCommercialClose({
+        ...existing,
+        decision: makeCloseDecisionBinding(existing.decision),
+        signature,
+        updatedAt: new Date().toISOString(),
+      }),
+    )
+  } else if (existing.status === COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING) {
+    return {
+      ...studioPayload(existing),
+      created: false,
+    }
+  }
+
+  if (existing.status === COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING) {
+    const refreshed = findCommercialClose(existing.id)
+    return {
+      ...studioPayload(refreshed),
+      created: false,
+    }
+  }
+
+  return transitionCommercialClose({
+    companyId: scoped,
+    closeId: existing.id,
+    actor: user,
+    to: COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING,
+  })
+}
+
+/**
+ * Studio: record internal signature evidence and transition to signed.
+ */
+export function completeInternalCommercialCloseSignature({
+  companyId,
+  closeId,
+  actor,
+  signerDisplayName,
+  signedAt,
+  evidenceRef,
+  legacyProposalSignatureId,
+} = {}) {
+  assertSignaturePath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanManageCommercialCloseSignature(user)) {
+    throw new ForbiddenError(
+      'You do not have permission to complete commercial-close signatures.',
+    )
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const existing = findCommercialClose(id)
+  if (!existing || existing.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  const provided =
+    signerDisplayName === undefined || signerDisplayName === null
+      ? null
+      : String(signerDisplayName).trim()
+  const name = provided || String(user.name ?? '').trim()
+  if (!name) {
+    throw new ValidationError('Signer display name is required.', [
+      { field: 'signerDisplayName', message: 'A signer name is required.' },
+    ])
+  }
+  // Explicit empty string is rejected even when the actor has a name.
+  if (signerDisplayName != null && !String(signerDisplayName).trim()) {
+    throw new ValidationError('Signer display name is required.', [
+      { field: 'signerDisplayName', message: 'A signer name is required.' },
+    ])
+  }
+
+  const result = applyInternalEvidenceAndSign(existing, {
+    signerDisplayName: name,
+    signedAt,
+    evidenceRef,
+    legacyProposalSignatureId,
+    signerActorId: user.id,
+    transitionActorId: user.id,
+  })
+
+  return {
+    ...studioPayload(result.close),
+    created: result.created,
+    duplicate: result.duplicate,
+    evidence: result.evidence
+      ? presentCloseSignature(result.close.signature)?.evidence?.slice(-1)?.[0]
+      : null,
+  }
+}
+
+/**
+ * Client bridge entry: record internal signature without studio actor auth.
+ * Token-scoped callers must already have validated the share action.
+ * Never writes proposals.json.
+ */
+export function recordClientBridgeSignature({
+  companyId,
+  proposalId,
+  signerDisplayName,
+  signedAt,
+  evidenceRef,
+  legacyProposalSignatureId,
+} = {}) {
+  assertSignaturePath()
+  const scoped = scopedCompany(companyId)
+  const pid = String(proposalId ?? '').trim()
+  if (!pid) return null
+
+  const closes = listCommercialClosesForProposal(pid, scoped)
+  const active =
+    closes.find(
+      (item) =>
+        !isTerminalCommercialCloseStatus(item.status) &&
+        (item.status === COMMERCIAL_CLOSE_STATUS.OPEN ||
+          item.status === COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING),
+    ) ?? null
+
+  if (!active) {
+    const alreadySigned = closes.find(
+      (item) =>
+        item.status === COMMERCIAL_CLOSE_STATUS.SIGNED &&
+        hasValidSignatureEvidence(item),
+    )
+    if (alreadySigned) {
+      return {
+        close: presentClientCommercialClose(alreadySigned),
+        created: false,
+        duplicate: true,
+      }
+    }
+    return null
+  }
+
+  const result = applyInternalEvidenceAndSign(active, {
+    signerDisplayName,
+    signedAt,
+    evidenceRef,
+    legacyProposalSignatureId,
+    signerActorId: null,
+    transitionActorId: null,
+  })
+
+  return {
+    close: presentClientCommercialClose(result.close),
+    created: result.created,
+    duplicate: result.duplicate,
+  }
+}
+
+/**
+ * Studio: retrieve signature evidence for a close.
+ */
+export function getCommercialCloseSignature({ companyId, closeId, actor } = {}) {
+  assertSignaturePath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanViewCommercialClose(user)) {
+    throw new ForbiddenError('You do not have permission to view commercial closes.')
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const close = findCommercialClose(id)
+  if (!close || close.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  return {
+    signature: presentCloseSignature(close.signature),
+    closeId: close.id,
+    status: close.status,
     capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
   }
 }

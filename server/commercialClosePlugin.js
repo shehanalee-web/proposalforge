@@ -22,12 +22,15 @@ import {
   COMMERCIAL_CLOSE_CAPABILITIES,
   allCommercialCloses,
   clientCommercialCloseTransitionDenied,
+  completeInternalCommercialCloseSignature,
   configureCommercialCloseStore,
   createCommercialCloseFromAcceptedDecision,
   getClientCommercialCloseSummary,
   getCommercialCloseById,
   getCommercialCloseForProposal,
+  getCommercialCloseSignature,
   replaceCommercialCloses,
+  requestCommercialCloseSignature,
   transitionCommercialClose,
 } from '../src/commercialClose/index.js'
 
@@ -253,6 +256,68 @@ export function commercialClosePlugin() {
             companyId: companyFrom(body, query),
             actor: actorFrom(body, query),
             to: body.to,
+          }),
+        )
+      }
+
+      const signatureRequest = matchRoute(
+        url,
+        '/api/commercial-close/:closeId/signature/request',
+      )
+      if (signatureRequest) {
+        if (method !== 'POST') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        const raw = await readBody(req)
+        const body = raw.length ? JSON.parse(raw.toString('utf8') || '{}') : {}
+        const result = requestCommercialCloseSignature({
+          closeId: signatureRequest.closeId,
+          companyId: companyFrom(body, query),
+          actor: actorFrom(body, query),
+          parties: body.parties,
+        })
+        return json(res, result.created === false ? 200 : 200, result)
+      }
+
+      const signatureComplete = matchRoute(
+        url,
+        '/api/commercial-close/:closeId/signature/complete',
+      )
+      if (signatureComplete) {
+        if (method !== 'POST') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        const raw = await readBody(req)
+        const body = raw.length ? JSON.parse(raw.toString('utf8') || '{}') : {}
+        return json(
+          res,
+          200,
+          completeInternalCommercialCloseSignature({
+            closeId: signatureComplete.closeId,
+            companyId: companyFrom(body, query),
+            actor: actorFrom(body, query),
+            signerDisplayName: body.signerDisplayName,
+            signedAt: body.signedAt,
+            evidenceRef: body.evidenceRef,
+          }),
+        )
+      }
+
+      const signatureGet = matchRoute(url, '/api/commercial-close/:closeId/signature')
+      if (signatureGet) {
+        if (method !== 'GET') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        return json(
+          res,
+          200,
+          getCommercialCloseSignature({
+            closeId: signatureGet.closeId,
+            companyId: companyFrom(null, query),
+            actor: actorFrom(null, query),
           }),
         )
       }

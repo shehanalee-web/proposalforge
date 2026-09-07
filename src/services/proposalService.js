@@ -106,6 +106,7 @@ import {
 } from '../models/commercialQueues.js'
 import * as activityStore from './activityStore.js'
 import { captureLivingAcceptanceDecision } from '../living/repository.js'
+import { bridgeInternalSignatureToCommercialClose } from '../commercialClose/bridge.js'
 
 /**
  * Public data access layer for proposals.
@@ -2141,7 +2142,27 @@ export async function signClientProposal(token, input = {}) {
       })
     : updated
 
-  return present(await store.replace(existing.id, recorded))
+  const saved = present(await store.replace(existing.id, recorded))
+
+  // H15.3 bridge: legacy proposal.signature → CommercialClose evidence → signed.
+  // Never rewrites authored pricing/content. Best-effort relative to proposal persist.
+  try {
+    const companyId =
+      String(existing.companyId ?? '').trim() ||
+      String(saved.companyId ?? '').trim()
+    bridgeInternalSignatureToCommercialClose({
+      proposalId: existing.id,
+      companyId,
+      signerDisplayName: signerName,
+      signedAt: now,
+      legacyProposalSignatureId: signature.id,
+      evidenceRef: signature.id,
+    })
+  } catch {
+    // Bridge is best-effort; proposal signature remains the legacy surface.
+  }
+
+  return saved
 }
 
 export async function payClientProposal(token, input = {}) {

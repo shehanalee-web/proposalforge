@@ -133,7 +133,7 @@ export function reconcileCommercialCloseFollowup(input = {}) {
         reason: FOLLOWUP_REASON.CLOSE_SIGNATURE_PENDING,
         ownerActorId,
         description:
-          'Commercial close is awaiting signature. External signature providers are not connected yet.',
+          'Commercial close is awaiting signature. Use the internal signature path; external signature providers are not connected yet.',
         now: input.now,
       })
     }
