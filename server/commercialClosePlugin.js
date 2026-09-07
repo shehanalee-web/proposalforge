@@ -14,14 +14,21 @@ import {
 } from '../src/living/store.js'
 import { configureLivingResolvers } from '../src/living/resolvers.js'
 import {
+  allFollowupRecords,
+  configureFollowupStore,
+  replaceFollowupRecords,
+} from '../src/followup/index.js'
+import {
   COMMERCIAL_CLOSE_CAPABILITIES,
   allCommercialCloses,
+  clientCommercialCloseTransitionDenied,
   configureCommercialCloseStore,
   createCommercialCloseFromAcceptedDecision,
   getClientCommercialCloseSummary,
   getCommercialCloseById,
   getCommercialCloseForProposal,
   replaceCommercialCloses,
+  transitionCommercialClose,
 } from '../src/commercialClose/index.js'
 
 function json(res, status, body) {
@@ -111,13 +118,14 @@ function companyFrom(body, query) {
 /**
  * Persist commercial closes to `data/commercial-closes.json`.
  * Never writes `data/proposals.json`.
- * Reads living sessions/events and proposal catalog for decision binding.
+ * H13 follow-up side-effects may write `data/followups.json`.
  */
 export function commercialClosePlugin() {
   const dataDir = ensureRuntimeData()
   const closesFile = join(dataDir, 'commercial-closes.json')
   const livingFile = join(dataDir, 'living.json')
   const livingEventsFile = join(dataDir, 'living-events.json')
+  const followupsFile = join(dataDir, 'followups.json')
   const proposalsFile = join(dataDir, 'proposals.json')
   let ready = false
 
@@ -131,6 +139,10 @@ export function commercialClosePlugin() {
 
   function persistEvents(records) {
     writeJson(livingEventsFile, records)
+  }
+
+  function persistFollowups(records) {
+    writeJson(followupsFile, records)
   }
 
   function readProposals() {
@@ -152,6 +164,15 @@ export function commercialClosePlugin() {
       replaceLivingEngagementEvents(storedEvents)
     }
     configureLivingEventStore({ persist: persistEvents })
+
+    const storedFollowups = readJson(followupsFile, null)
+    if (Array.isArray(storedFollowups)) {
+      replaceFollowupRecords(storedFollowups)
+    } else {
+      replaceFollowupRecords([])
+      persistFollowups(allFollowupRecords())
+    }
+    configureFollowupStore({ persist: persistFollowups })
 
     const storedCloses = readJson(closesFile, null)
     if (Array.isArray(storedCloses)) {
@@ -195,6 +216,9 @@ export function commercialClosePlugin() {
 
       const publicByToken = matchRoute(url, '/api/commercial-close/public/:token')
       if (publicByToken) {
+        if (method === 'POST') {
+          clientCommercialCloseTransitionDenied()
+        }
         if (method !== 'GET') {
           return json(res, 405, { message: 'Method not allowed.' })
         }
@@ -202,6 +226,34 @@ export function commercialClosePlugin() {
           res,
           200,
           getClientCommercialCloseSummary({ shareToken: publicByToken.token }),
+        )
+      }
+
+      const publicTransition = matchRoute(
+        url,
+        '/api/commercial-close/public/:token/transition',
+      )
+      if (publicTransition) {
+        clientCommercialCloseTransitionDenied()
+      }
+
+      const transition = matchRoute(url, '/api/commercial-close/:closeId/transition')
+      if (transition) {
+        if (method !== 'POST') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        const raw = await readBody(req)
+        const body = raw.length ? JSON.parse(raw.toString('utf8') || '{}') : {}
+        return json(
+          res,
+          200,
+          transitionCommercialClose({
+            closeId: transition.closeId,
+            companyId: companyFrom(body, query),
+            actor: actorFrom(body, query),
+            to: body.to,
+          }),
         )
       }
 

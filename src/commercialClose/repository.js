@@ -2,9 +2,7 @@ import { ForbiddenError, NotFoundError, ValidationError } from '../services/erro
 import { DEFAULT_COMPANY_ID } from '../knowledge/types.js'
 import { PROPOSAL_STATUS } from '../models/proposal.js'
 import { resolveWorkflowActor } from '../workflow/actors.js'
-import {
-  makeLivingEngagementEvent,
-} from '../living/eventSchema.js'
+import { makeLivingEngagementEvent } from '../living/eventSchema.js'
 import { insertLivingEngagementEvent } from '../living/eventStore.js'
 import { emitLivingEvent } from '../living/events.js'
 import { makeDecisionSnapshot } from '../living/schema.js'
@@ -17,28 +15,38 @@ import {
   resolveLivingProposalById,
   resolveLivingProposalByShareToken,
 } from '../living/resolvers.js'
+import { LIVING_EVENT } from '../living/types.js'
 import {
   studioCanCreateCommercialClose,
+  studioCanTransitionCommercialClose,
   studioCanViewCommercialClose,
 } from './permissions.js'
 import {
   makeCloseDecisionBinding,
+  makeCloseStatusHistoryEntry,
   makeCommercialClose,
   presentClientCommercialClose,
   presentCommercialClose,
 } from './schema.js'
+import { reconcileCommercialCloseFollowup } from './signals.js'
 import {
   findCommercialClose,
   findCommercialCloseByDecision,
   findCommercialCloseByProposal,
   insertCommercialClose,
   listCommercialClosesForProposal,
+  replaceCommercialClose,
 } from './store.js'
 import {
+  assertCommercialCloseTransition,
+  allowedCommercialCloseTransitions,
+} from './transitions.js'
+import {
   COMMERCIAL_CLOSE_CAPABILITIES,
+  COMMERCIAL_CLOSE_EVENT,
   COMMERCIAL_CLOSE_STATUS,
+  isTerminalCommercialCloseStatus,
 } from './types.js'
-import { LIVING_EVENT } from '../living/types.js'
 
 function scopedCompany(companyId) {
   return String(companyId ?? '').trim() || DEFAULT_COMPANY_ID
@@ -58,6 +66,18 @@ function assertCapability() {
   if (!COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseDomain) {
     throw new ValidationError('Commercial close domain is not enabled.', [
       { field: 'capabilities', message: 'commercialCloseDomain capability is off.' },
+    ])
+  }
+}
+
+function assertStateMachine() {
+  assertCapability()
+  if (!COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseStateMachine) {
+    throw new ValidationError('Commercial close state machine is not enabled.', [
+      {
+        field: 'capabilities',
+        message: 'commercialCloseStateMachine capability is off.',
+      },
     ])
   }
 }
@@ -87,7 +107,6 @@ function findLockedSessionForProposal(proposalId, companyId) {
     (session) => session.decisionLocked && session.decisionSnapshot,
   )
   if (locked.length === 0) return null
-  // Prefer the session matching the proposal share token when available.
   const proposal = resolveLivingProposalById(proposalId, companyId)
   if (proposal?.shareToken) {
     const byToken = locked.find((session) => session.shareToken === proposal.shareToken)
@@ -138,8 +157,6 @@ export function assertValidCloseDecision(session, proposal) {
   const proposalCompany =
     String(proposal.companyId ?? DEFAULT_COMPANY_ID).trim() || DEFAULT_COMPANY_ID
   const sessionCompany = String(session.companyId ?? '').trim()
-  // Enforce company isolation when both sides declare a company.
-  // Sessions for proposals without companyId may use a local/default tag.
   if (
     sessionCompany &&
     proposal.companyId &&
@@ -189,6 +206,16 @@ export function assertValidCloseDecision(session, proposal) {
   return snapshot
 }
 
+function studioPayload(close) {
+  return {
+    close: presentCommercialClose(close),
+    allowedTransitions: close
+      ? allowedCommercialCloseTransitions(close.status)
+      : [],
+    capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
+  }
+}
+
 function emitCloseOpenedEvent({ proposal, session, close, actorId }) {
   if (!proposal?.shareToken) return
   try {
@@ -222,6 +249,52 @@ function emitCloseOpenedEvent({ proposal, session, close, actorId }) {
   }
 }
 
+function emitCloseTransitionEvent({ proposal, close, from, to, actorId, at }) {
+  if (!proposal?.shareToken) return null
+  try {
+    let type = LIVING_EVENT.CLOSE_STATE_CHANGED
+    if (to === COMMERCIAL_CLOSE_STATUS.CLOSED) type = LIVING_EVENT.CLOSE_COMPLETED
+    else if (to === COMMERCIAL_CLOSE_STATUS.CANCELLED) type = LIVING_EVENT.CLOSE_CANCELLED
+    else if (to === COMMERCIAL_CLOSE_STATUS.EXPIRED) type = LIVING_EVENT.CLOSE_EXPIRED
+
+    const record = insertLivingEngagementEvent(
+      makeLivingEngagementEvent({
+        companyId: close.companyId,
+        proposalId: close.proposalId,
+        shareToken: proposal.shareToken,
+        type,
+        sessionId: close.sessionId,
+        metadata: {
+          closeId: close.id,
+          from,
+          to,
+          source: 'commercial_close',
+          actorId: actorId || null,
+        },
+        at,
+      }),
+    )
+    emitLivingEvent(type, {
+      proposalId: close.proposalId,
+      shareToken: proposal.shareToken,
+      closeId: close.id,
+      from,
+      to,
+      eventId: record.id,
+    })
+    return {
+      id: record.id,
+      type,
+      from,
+      to,
+      at: record.at,
+      event: COMMERCIAL_CLOSE_EVENT.STATE_CHANGED,
+    }
+  } catch {
+    return null
+  }
+}
+
 /**
  * Studio: load close for a proposal (if any).
  */
@@ -235,10 +308,7 @@ export function getCommercialCloseForProposal({ companyId, proposalId, actor } =
   }
   requireProposal(scoped, proposalId)
   const close = findCommercialCloseByProposal(proposalId, scoped)
-  return {
-    close: presentCommercialClose(close),
-    capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
-  }
+  return studioPayload(close)
 }
 
 /**
@@ -262,10 +332,7 @@ export function getCommercialCloseById({ companyId, closeId, actor } = {}) {
   if (!close || close.companyId !== scoped) {
     throw new NotFoundError('Commercial close not found.')
   }
-  return {
-    close: presentCommercialClose(close),
-    capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
-  }
+  return studioPayload(close)
 }
 
 /**
@@ -315,27 +382,24 @@ export function createCommercialCloseFromAcceptedDecision({
   )
   if (existing) {
     return {
-      close: presentCommercialClose(existing),
+      ...studioPayload(existing),
       created: false,
-      capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
     }
   }
 
-  // Also treat one open close per proposal as the active close for H15.1.
   const byProposal = findCommercialCloseByProposal(proposal.id, scoped)
-  if (byProposal && byProposal.status === COMMERCIAL_CLOSE_STATUS.OPEN) {
+  if (byProposal && !isTerminalCommercialCloseStatus(byProposal.status)) {
     if (
       byProposal.sessionId === session.id &&
       byProposal.decision?.acceptedAt === snapshot.acceptedAt
     ) {
       return {
-        close: presentCommercialClose(byProposal),
+        ...studioPayload(byProposal),
         created: false,
-        capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
       }
     }
-    throw new ValidationError('An open commercial close already exists for this proposal.', [
-      { field: 'status', message: 'Only one open commercial close is allowed per proposal.' },
+    throw new ValidationError('An active commercial close already exists for this proposal.', [
+      { field: 'status', message: 'Only one active commercial close is allowed per proposal.' },
     ])
   }
 
@@ -356,6 +420,7 @@ export function createCommercialCloseFromAcceptedDecision({
       decision,
       openedByActorId: user.id,
       openedAt: new Date().toISOString(),
+      statusHistory: [],
     }),
   )
 
@@ -367,10 +432,110 @@ export function createCommercialCloseFromAcceptedDecision({
   })
 
   return {
-    close: presentCommercialClose(close),
+    ...studioPayload(close),
     created: true,
-    capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
   }
+}
+
+/**
+ * Studio-only: transition commercial close status.
+ * Never mutates proposal content or the immutable decision binding.
+ */
+export function transitionCommercialClose({
+  companyId,
+  closeId,
+  actor,
+  to,
+} = {}) {
+  assertStateMachine()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanTransitionCommercialClose(user)) {
+    throw new ForbiddenError('You do not have permission to transition commercial closes.')
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+  const target = String(to ?? '').trim()
+  if (!target) {
+    throw new ValidationError('Target status is required.', [
+      { field: 'to', message: 'to is required.' },
+    ])
+  }
+
+  const existing = findCommercialClose(id)
+  if (!existing || existing.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  const from = existing.status
+  assertCommercialCloseTransition(from, target)
+
+  // Decision binding must remain frozen.
+  const decision = makeCloseDecisionBinding(existing.decision)
+  const at = new Date().toISOString()
+  const historyEntry = makeCloseStatusHistoryEntry({
+    from,
+    to: target,
+    at,
+    actorId: user.id,
+  })
+
+  const patch = {
+    ...existing,
+    decision,
+    status: target,
+    statusHistory: [...existing.statusHistory, historyEntry],
+    lastTransitionAt: at,
+    lastTransitionByActorId: user.id,
+    updatedAt: at,
+  }
+  if (target === COMMERCIAL_CLOSE_STATUS.CLOSED) patch.closedAt = at
+  if (target === COMMERCIAL_CLOSE_STATUS.CANCELLED) patch.cancelledAt = at
+  if (target === COMMERCIAL_CLOSE_STATUS.EXPIRED) patch.expiredAt = at
+
+  const saved = replaceCommercialClose(existing.id, makeCommercialClose(patch))
+  const proposal = resolveLivingProposalById(saved.proposalId, scoped)
+  const transition = emitCloseTransitionEvent({
+    proposal,
+    close: saved,
+    from,
+    to: target,
+    actorId: user.id,
+    at,
+  })
+
+  reconcileCommercialCloseFollowup({
+    companyId: scoped,
+    proposalId: saved.proposalId,
+    closeId: saved.id,
+    status: target,
+    ownerActorId: user.id,
+    now: at,
+  })
+
+  return {
+    ...studioPayload(saved),
+    transition: {
+      from,
+      to: target,
+      at,
+      actorId: user.id,
+      event: transition,
+    },
+  }
+}
+
+/**
+ * Public clients must never transition commercial close state.
+ */
+export function clientCommercialCloseTransitionDenied() {
+  throw new ForbiddenError('Commercial close transitions are studio-only.')
 }
 
 /**
@@ -411,6 +576,7 @@ export function getClientCommercialCloseSummary({ shareToken } = {}) {
     close: presentClientCommercialClose(close),
     capabilities: {
       commercialCloseDomain: COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseDomain,
+      commercialCloseStateMachine: COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseStateMachine,
       digitalSignature: false,
       paymentProcessing: false,
     },
