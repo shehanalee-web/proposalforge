@@ -260,9 +260,11 @@ export function livingPlugin() {
     if (!url.startsWith('/api/living')) return next()
 
     const method = req.method || 'GET'
-    ensureStore()
 
     try {
+      // Hydrate inside try/catch so persisted close/payment event types that fail
+      // schema validation return JSON errors instead of crashing the process.
+      ensureStore()
       if (method === 'GET' && matchRoute(url, '/api/living/capabilities')) {
         return json(res, 200, { capabilities: LIVING_CAPABILITIES })
       }

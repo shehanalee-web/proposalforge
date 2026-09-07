@@ -237,9 +237,9 @@ export function forgePlugin() {
     if (!url.startsWith('/api/forge')) return next()
 
     const method = req.method || 'GET'
-    ensureStore()
 
     try {
+      ensureStore()
       if (url.startsWith('/api/forge/public')) {
         return clientForgeApiDenied()
       }

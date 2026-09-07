@@ -229,9 +229,9 @@ export function interactionsPlugin() {
     if (!url.startsWith('/api/interactions')) return next()
 
     const method = req.method || 'GET'
-    ensureStore()
 
     try {
+      ensureStore()
       if (method === 'GET' && matchRoute(url, '/api/interactions/capabilities')) {
         return json(res, 200, { capabilities: INTERACTION_CAPABILITIES })
       }
