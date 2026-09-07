@@ -23,6 +23,10 @@ export const FOLLOWUP_REASON = Object.freeze({
   ACCEPTED_NEXT_STEP: 'accepted_next_step',
   OVERDUE_TASK: 'overdue_task',
   COMMERCIAL_SELECTION: 'commercial_selection',
+  /** H15.2 — commercial close awaits signature (architectural, not vendor). */
+  CLOSE_SIGNATURE_PENDING: 'close_signature_pending',
+  /** H15.2 — commercial close awaits payment (architectural, not vendor). */
+  CLOSE_PAYMENT_PENDING: 'close_payment_pending',
   MANUAL: 'manual',
 })
 
@@ -35,6 +39,7 @@ export const FOLLOWUP_SOURCE = Object.freeze({
   INTERACTION: 'interaction',
   EXPIRY: 'expiry',
   LIVING: 'living',
+  COMMERCIAL_CLOSE: 'commercial_close',
   MANUAL: 'manual',
 })
 

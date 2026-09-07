@@ -11,6 +11,7 @@ import {
  *
  * Stores an immutable copy of the H14 decision snapshot plus identity
  * anchors. Does not clone proposal blocks or offer definitions.
+ * H15.2 adds status history for the close state machine.
  */
 
 function asString(value) {
@@ -31,6 +32,26 @@ function nowIso() {
 function asOptionalId(value) {
   const id = asString(value).trim()
   return id || null
+}
+
+/**
+ * @param {object} [input]
+ */
+export function makeCloseStatusHistoryEntry(input = {}) {
+  return Object.freeze({
+    id: asString(input.id).trim() || createRecordId('cchst'),
+    from: asString(input.from).trim() || null,
+    to: asString(input.to).trim(),
+    at: asIso(input.at, nowIso()),
+    actorId: asOptionalId(input.actorId),
+  })
+}
+
+function asStatusHistory(value) {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter((entry) => entry && typeof entry === 'object')
+    .map((entry) => makeCloseStatusHistoryEntry(entry))
 }
 
 /**
@@ -78,6 +99,8 @@ export function makeCommercialClose(input = {}) {
       ? makeCloseDecisionBinding(input.decision)
       : makeCloseDecisionBinding(input.decisionSnapshot ?? {})
 
+  const statusHistory = asStatusHistory(input.statusHistory)
+
   return {
     id: asString(input.id).trim() || createRecordId('cclose'),
     companyId: asString(input.companyId).trim() || decision.companyId || DEFAULT_COMPANY_ID,
@@ -85,8 +108,14 @@ export function makeCommercialClose(input = {}) {
     sessionId: asString(input.sessionId).trim() || decision.sessionId,
     status,
     decision,
+    statusHistory,
     openedAt,
     openedByActorId: asOptionalId(input.openedByActorId),
+    lastTransitionAt: asIso(input.lastTransitionAt, null),
+    lastTransitionByActorId: asOptionalId(input.lastTransitionByActorId),
+    closedAt: asIso(input.closedAt, null),
+    cancelledAt: asIso(input.cancelledAt, null),
+    expiredAt: asIso(input.expiredAt, null),
     createdAt,
     updatedAt: asIso(input.updatedAt, createdAt),
   }
@@ -97,6 +126,7 @@ export function cloneCommercialClose(record) {
   return {
     ...next,
     decision: makeCloseDecisionBinding(next.decision),
+    statusHistory: next.statusHistory.map((entry) => makeCloseStatusHistoryEntry(entry)),
   }
 }
 
@@ -134,8 +164,20 @@ export function presentCommercialClose(record) {
       currency: next.decision.currency,
       acceptedAt: next.decision.acceptedAt,
     },
+    statusHistory: next.statusHistory.map((entry) => ({
+      id: entry.id,
+      from: entry.from,
+      to: entry.to,
+      at: entry.at,
+      actorId: entry.actorId,
+    })),
     openedAt: next.openedAt,
     openedByActorId: next.openedByActorId,
+    lastTransitionAt: next.lastTransitionAt,
+    lastTransitionByActorId: next.lastTransitionByActorId,
+    closedAt: next.closedAt,
+    cancelledAt: next.cancelledAt,
+    expiredAt: next.expiredAt,
     createdAt: next.createdAt,
     updatedAt: next.updatedAt,
   }

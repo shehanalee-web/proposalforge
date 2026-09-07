@@ -23,8 +23,15 @@ export function studioCanViewCommercialClose(user) {
 }
 
 /**
- * Only owner / admin may open (create) a commercial close in H15.1.
+ * Only owner / admin may open (create) a commercial close.
  */
 export function studioCanCreateCommercialClose(user) {
+  return isOwnerOrAdmin(user)
+}
+
+/**
+ * Only owner / admin may transition commercial close state (H15.2).
+ */
+export function studioCanTransitionCommercialClose(user) {
   return isOwnerOrAdmin(user)
 }

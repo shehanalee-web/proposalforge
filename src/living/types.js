@@ -22,6 +22,14 @@ export const LIVING_EVENT = Object.freeze({
   REPUBLISHED: 'republished',
   /** Studio-only: H15 commercial close opened (recorded via living event store). */
   CLOSE_OPENED: 'close.opened',
+  /** Studio-only: H15.2 commercial close state transition. */
+  CLOSE_STATE_CHANGED: 'close.state_changed',
+  /** Studio-only: H15.2 commercial close reached closed. */
+  CLOSE_COMPLETED: 'close.completed',
+  /** Studio-only: H15.2 commercial close cancelled. */
+  CLOSE_CANCELLED: 'close.cancelled',
+  /** Studio-only: H15.2 commercial close expired. */
+  CLOSE_EXPIRED: 'close.expired',
 })
 
 export const LIVING_EVENTS = Object.freeze(Object.values(LIVING_EVENT))
@@ -30,6 +38,10 @@ export const LIVING_EVENTS = Object.freeze(Object.values(LIVING_EVENT))
 export const LIVING_STUDIO_ONLY_EVENTS = Object.freeze([
   LIVING_EVENT.REPUBLISHED,
   LIVING_EVENT.CLOSE_OPENED,
+  LIVING_EVENT.CLOSE_STATE_CHANGED,
+  LIVING_EVENT.CLOSE_COMPLETED,
+  LIVING_EVENT.CLOSE_CANCELLED,
+  LIVING_EVENT.CLOSE_EXPIRED,
 ])
 
 export const LIVING_PUBLICATION_SOURCE = Object.freeze({

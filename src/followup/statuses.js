@@ -47,6 +47,8 @@ export const FOLLOWUP_REASON_LABELS = Object.freeze({
   [FOLLOWUP_REASON.ACCEPTED_NEXT_STEP]: 'Accepted handoff',
   [FOLLOWUP_REASON.OVERDUE_TASK]: 'Overdue task',
   [FOLLOWUP_REASON.COMMERCIAL_SELECTION]: 'Commercial selection',
+  [FOLLOWUP_REASON.CLOSE_SIGNATURE_PENDING]: 'Signature pending',
+  [FOLLOWUP_REASON.CLOSE_PAYMENT_PENDING]: 'Payment pending',
   [FOLLOWUP_REASON.MANUAL]: 'Manual',
 })
 
@@ -59,6 +61,8 @@ export const FOLLOWUP_REASON_ACTIONS = Object.freeze({
   [FOLLOWUP_REASON.ACCEPTED_NEXT_STEP]: 'Complete the next handoff',
   [FOLLOWUP_REASON.OVERDUE_TASK]: 'Complete overdue task',
   [FOLLOWUP_REASON.COMMERCIAL_SELECTION]: 'Follow up with client',
+  [FOLLOWUP_REASON.CLOSE_SIGNATURE_PENDING]: 'Request or complete signature',
+  [FOLLOWUP_REASON.CLOSE_PAYMENT_PENDING]: 'Collect payment',
   [FOLLOWUP_REASON.MANUAL]: 'Follow up',
 })
 
@@ -77,7 +81,9 @@ export function followupQueueBucket(record, now = Date.now()) {
   if (
     record.reason === FOLLOWUP_REASON.CLIENT_INTERACTION ||
     record.reason === FOLLOWUP_REASON.CHANGES_REQUESTED ||
-    record.reason === FOLLOWUP_REASON.COMMERCIAL_SELECTION
+    record.reason === FOLLOWUP_REASON.COMMERCIAL_SELECTION ||
+    record.reason === FOLLOWUP_REASON.CLOSE_SIGNATURE_PENDING ||
+    record.reason === FOLLOWUP_REASON.CLOSE_PAYMENT_PENDING
   ) {
     return 'client_feedback'
   }
