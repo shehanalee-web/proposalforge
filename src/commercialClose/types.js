@@ -1,11 +1,12 @@
 /**
- * H15.1–H15.4 — Commercial Close Domain contracts.
+ * H15.1–H15.5 — Commercial Close Domain contracts.
  *
  * Post-acceptance business object bound to the H14 decision snapshot.
  * H15.2 adds an authoritative vendor-neutral close state machine.
  * H15.3 adds a provider-neutral internal signature path owned by CommercialClose.
  * H15.4 adds a provider-neutral internal payment path owned by CommercialClose.
- * Real signature/payment vendors arrive in later slices.
+ * H15.5 adds provider-neutral contract + invoice architecture owned by CommercialClose.
+ * Real signature/payment/invoice vendors arrive in later slices.
  */
 
 export const COMMERCIAL_CLOSE_STATUS = Object.freeze({
@@ -117,6 +118,79 @@ export const CLOSE_PAYMENT_KIND = Object.freeze({
 
 export const CLOSE_PAYMENT_KINDS = Object.freeze(Object.values(CLOSE_PAYMENT_KIND))
 
+/** Provider-neutral contract lifecycle on CommercialClose (H15.5). */
+export const CLOSE_CONTRACT_STATUS = Object.freeze({
+  NOT_REQUESTED: 'not_requested',
+  DRAFT: 'draft',
+  ISSUED: 'issued',
+  VOID: 'void',
+})
+
+export const CLOSE_CONTRACT_STATUSES = Object.freeze(
+  Object.values(CLOSE_CONTRACT_STATUS),
+)
+
+export const CLOSE_CONTRACT_STATUS_LABELS = Object.freeze({
+  [CLOSE_CONTRACT_STATUS.NOT_REQUESTED]: 'Not requested',
+  [CLOSE_CONTRACT_STATUS.DRAFT]: 'Draft',
+  [CLOSE_CONTRACT_STATUS.ISSUED]: 'Issued',
+  [CLOSE_CONTRACT_STATUS.VOID]: 'Void',
+})
+
+/** Only `internal` is supported in H15.5. */
+export const CLOSE_CONTRACT_METHOD = Object.freeze({
+  INTERNAL: 'internal',
+})
+
+export const CLOSE_CONTRACT_METHODS = Object.freeze(
+  Object.values(CLOSE_CONTRACT_METHOD),
+)
+
+export const CLOSE_CONTRACT_PARTY_ROLE = Object.freeze({
+  CLIENT: 'client',
+  STUDIO: 'studio',
+})
+
+export const CLOSE_CONTRACT_PARTY_ROLES = Object.freeze(
+  Object.values(CLOSE_CONTRACT_PARTY_ROLE),
+)
+
+/** Provider-neutral invoice lifecycle on CommercialClose (H15.5). */
+export const CLOSE_INVOICE_STATUS = Object.freeze({
+  NOT_REQUESTED: 'not_requested',
+  DRAFT: 'draft',
+  ISSUED: 'issued',
+  VOID: 'void',
+})
+
+export const CLOSE_INVOICE_STATUSES = Object.freeze(
+  Object.values(CLOSE_INVOICE_STATUS),
+)
+
+export const CLOSE_INVOICE_STATUS_LABELS = Object.freeze({
+  [CLOSE_INVOICE_STATUS.NOT_REQUESTED]: 'Not requested',
+  [CLOSE_INVOICE_STATUS.DRAFT]: 'Draft',
+  [CLOSE_INVOICE_STATUS.ISSUED]: 'Issued',
+  [CLOSE_INVOICE_STATUS.VOID]: 'Void',
+})
+
+/** Only `internal` is supported in H15.5. */
+export const CLOSE_INVOICE_METHOD = Object.freeze({
+  INTERNAL: 'internal',
+})
+
+export const CLOSE_INVOICE_METHODS = Object.freeze(
+  Object.values(CLOSE_INVOICE_METHOD),
+)
+
+export const CLOSE_INVOICE_KIND = Object.freeze({
+  FULL: 'full',
+  DEPOSIT: 'deposit',
+  BALANCE: 'balance',
+})
+
+export const CLOSE_INVOICE_KINDS = Object.freeze(Object.values(CLOSE_INVOICE_KIND))
+
 /** Studio audit events recorded via living engagement store (no new event store). */
 export const COMMERCIAL_CLOSE_EVENT = Object.freeze({
   OPENED: 'close.opened',
@@ -128,6 +202,8 @@ export const COMMERCIAL_CLOSE_EVENT = Object.freeze({
   SIGNATURE_COMPLETED: 'signature.completed',
   PAYMENT_REQUESTED: 'payment.requested',
   PAYMENT_COMPLETED: 'payment.completed',
+  CONTRACT_CREATED: 'contract.created',
+  INVOICE_CREATED: 'invoice.created',
 })
 
 export const COMMERCIAL_CLOSE_EVENTS = Object.freeze(
@@ -135,15 +211,17 @@ export const COMMERCIAL_CLOSE_EVENTS = Object.freeze(
 )
 
 /**
- * Honest H15.4 capability surface.
- * commercialClosePaymentPath = internal architecture only.
- * Vendor / payment-processing flags remain false.
+ * Honest H15.5 capability surface.
+ * commercialCloseContractPath / commercialCloseInvoicePath = internal architecture only.
+ * Vendor / payment-processing / accounting flags remain false.
  */
 export const COMMERCIAL_CLOSE_CAPABILITIES = Object.freeze({
   commercialCloseDomain: true,
   commercialCloseStateMachine: true,
   commercialCloseSignaturePath: true,
   commercialClosePaymentPath: true,
+  commercialCloseContractPath: true,
+  commercialCloseInvoicePath: true,
   digitalSignature: false,
   paymentProcessing: false,
   thirdPartyIntegrations: false,

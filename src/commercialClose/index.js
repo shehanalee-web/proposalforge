@@ -20,6 +20,20 @@ export {
   CLOSE_PAYMENT_METHODS,
   CLOSE_PAYMENT_KIND,
   CLOSE_PAYMENT_KINDS,
+  CLOSE_CONTRACT_STATUS,
+  CLOSE_CONTRACT_STATUSES,
+  CLOSE_CONTRACT_STATUS_LABELS,
+  CLOSE_CONTRACT_METHOD,
+  CLOSE_CONTRACT_METHODS,
+  CLOSE_CONTRACT_PARTY_ROLE,
+  CLOSE_CONTRACT_PARTY_ROLES,
+  CLOSE_INVOICE_STATUS,
+  CLOSE_INVOICE_STATUSES,
+  CLOSE_INVOICE_STATUS_LABELS,
+  CLOSE_INVOICE_METHOD,
+  CLOSE_INVOICE_METHODS,
+  CLOSE_INVOICE_KIND,
+  CLOSE_INVOICE_KINDS,
   isTerminalCommercialCloseStatus,
 } from './types.js'
 export {
@@ -58,6 +72,25 @@ export {
   presentClientClosePayment,
 } from './paymentSchema.js'
 export {
+  makeCloseContract,
+  makeCloseContractFromDecision,
+  makeCloseContractParty,
+  makeCloseContractRequest,
+  makeCloseContractRecord,
+  makeCloseContractBinding,
+  presentCloseContract,
+  presentClientCloseContract,
+} from './contractSchema.js'
+export {
+  makeCloseInvoice,
+  makeCloseInvoiceFromDecision,
+  makeCloseInvoiceRequest,
+  makeCloseInvoiceRecord,
+  makeCloseInvoiceBinding,
+  presentCloseInvoice,
+  presentClientCloseInvoice,
+} from './invoiceSchema.js'
+export {
   configureCommercialCloseStore,
   resetCommercialCloseStore,
   allCommercialCloses,
@@ -75,6 +108,8 @@ export {
   studioCanTransitionCommercialClose,
   studioCanManageCommercialCloseSignature,
   studioCanManageCommercialClosePayment,
+  studioCanManageCommercialCloseContract,
+  studioCanManageCommercialCloseInvoice,
 } from './permissions.js'
 export { reconcileCommercialCloseFollowup } from './signals.js'
 export {
@@ -98,4 +133,10 @@ export {
   completeInternalCommercialClosePayment,
   recordClientBridgePayment,
   getCommercialClosePayment,
+  requestCommercialCloseContract,
+  issueCommercialCloseContract,
+  getCommercialCloseContract,
+  requestCommercialCloseInvoice,
+  issueCommercialCloseInvoice,
+  getCommercialCloseInvoice,
 } from './repository.js'

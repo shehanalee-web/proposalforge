@@ -49,3 +49,17 @@ export function studioCanManageCommercialCloseSignature(user) {
 export function studioCanManageCommercialClosePayment(user) {
   return isOwnerOrAdmin(user)
 }
+
+/**
+ * Only owner / admin may request or issue studio-authorized contract records (H15.5).
+ */
+export function studioCanManageCommercialCloseContract(user) {
+  return isOwnerOrAdmin(user)
+}
+
+/**
+ * Only owner / admin may request or issue studio-authorized invoice records (H15.5).
+ */
+export function studioCanManageCommercialCloseInvoice(user) {
+  return isOwnerOrAdmin(user)
+}

@@ -12,6 +12,16 @@ import {
   presentClosePayment,
 } from './paymentSchema.js'
 import {
+  makeCloseContractFromDecision,
+  presentClientCloseContract,
+  presentCloseContract,
+} from './contractSchema.js'
+import {
+  makeCloseInvoiceFromDecision,
+  presentClientCloseInvoice,
+  presentCloseInvoice,
+} from './invoiceSchema.js'
+import {
   COMMERCIAL_CLOSE_STATUS,
   COMMERCIAL_CLOSE_STATUSES,
 } from './types.js'
@@ -24,6 +34,7 @@ import {
  * H15.2 adds status history for the close state machine.
  * H15.3 adds provider-neutral signature request/evidence on the close.
  * H15.4 adds provider-neutral payment request/evidence on the close.
+ * H15.5 adds provider-neutral contract + invoice architecture on the close.
  */
 
 function asString(value) {
@@ -114,12 +125,7 @@ export function makeCommercialClose(input = {}) {
   const statusHistory = asStatusHistory(input.statusHistory)
   const signature = makeCloseSignature(input.signature ?? {})
   const paymentSeed = input.payment ?? {}
-  const payment = makeClosePaymentFromDecision(
-    { decision, id: asString(input.id).trim() },
-    paymentSeed,
-  )
-
-  return {
+  const base = {
     id: asString(input.id).trim() || createRecordId('cclose'),
     companyId: asString(input.companyId).trim() || decision.companyId || DEFAULT_COMPANY_ID,
     proposalId: asString(input.proposalId).trim() || decision.proposalId,
@@ -127,7 +133,25 @@ export function makeCommercialClose(input = {}) {
     status,
     decision,
     signature,
+  }
+  const payment = makeClosePaymentFromDecision(
+    { ...base, decision },
+    paymentSeed,
+  )
+  const contract = makeCloseContractFromDecision(
+    { ...base, decision, payment },
+    input.contract ?? {},
+  )
+  const invoice = makeCloseInvoiceFromDecision(
+    { ...base, decision, payment },
+    input.invoice ?? {},
+  )
+
+  return {
+    ...base,
     payment,
+    contract,
+    invoice,
     statusHistory,
     openedAt,
     openedByActorId: asOptionalId(input.openedByActorId),
@@ -148,6 +172,8 @@ export function cloneCommercialClose(record) {
     decision: makeCloseDecisionBinding(next.decision),
     signature: makeCloseSignature(next.signature),
     payment: makeClosePaymentFromDecision(next, next.payment),
+    contract: makeCloseContractFromDecision(next, next.contract),
+    invoice: makeCloseInvoiceFromDecision(next, next.invoice),
     statusHistory: next.statusHistory.map((entry) => makeCloseStatusHistoryEntry(entry)),
   }
 }
@@ -188,6 +214,8 @@ export function presentCommercialClose(record) {
     },
     signature: presentCloseSignature(next.signature),
     payment: presentClosePayment(next.payment),
+    contract: presentCloseContract(next.contract),
+    invoice: presentCloseInvoice(next.invoice),
     statusHistory: next.statusHistory.map((entry) => ({
       id: entry.id,
       from: entry.from,
@@ -234,6 +262,8 @@ export function presentClientCommercialClose(record) {
     },
     signature: presentClientCloseSignature(next.signature),
     payment: presentClientClosePayment(next.payment),
+    contract: presentClientCloseContract(next.contract),
+    invoice: presentClientCloseInvoice(next.invoice),
     openedAt: next.openedAt,
   }
 }
