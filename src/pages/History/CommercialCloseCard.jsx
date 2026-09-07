@@ -4,6 +4,8 @@ import { DEFAULT_COMPANY_ID } from '../../knowledge/types.js'
 import { DEFAULT_ACTOR_ID } from '../../workflow/actors.js'
 import { PROPOSAL_STATUS } from '../../models/proposal.js'
 import {
+  CLOSE_CONTRACT_STATUS_LABELS,
+  CLOSE_INVOICE_STATUS_LABELS,
   CLOSE_PAYMENT_STATUS_LABELS,
   CLOSE_SIGNATURE_STATUS_LABELS,
   COMMERCIAL_CLOSE_STATUS,
@@ -40,8 +42,9 @@ const ACTION_LABELS = Object.freeze({
 })
 
 /**
- * Studio surface for H15.1–H15.4 Commercial Close.
- * Opens a close, advances the state machine, and records internal signatures/payments.
+ * Studio surface for H15.1–H15.5 Commercial Close.
+ * Opens a close, advances the state machine, records internal signatures/payments,
+ * and inspects provider-neutral contract/invoice architecture.
  */
 export function CommercialCloseCard({ proposal }) {
   const [state, setState] = useState(null)
@@ -275,10 +278,120 @@ export function CommercialCloseCard({ proposal }) {
     }
   }
 
+  async function handleRequestContract() {
+    const closeId = state?.close?.id
+    if (!closeId || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const response = await fetch(
+        `/api/commercial-close/${encodeURIComponent(closeId)}/contract/request`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ companyId, actorId }),
+        },
+      )
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setError(payload.message || 'Could not request contract.')
+        return
+      }
+      setState(payload)
+    } catch {
+      setError('Could not request contract.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleIssueContract() {
+    const closeId = state?.close?.id
+    if (!closeId || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const response = await fetch(
+        `/api/commercial-close/${encodeURIComponent(closeId)}/contract/issue`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ companyId, actorId }),
+        },
+      )
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setError(payload.message || 'Could not issue contract.')
+        return
+      }
+      setState(payload)
+    } catch {
+      setError('Could not issue contract.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleRequestInvoice() {
+    const closeId = state?.close?.id
+    if (!closeId || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const response = await fetch(
+        `/api/commercial-close/${encodeURIComponent(closeId)}/invoice/request`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ companyId, actorId }),
+        },
+      )
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setError(payload.message || 'Could not request invoice.')
+        return
+      }
+      setState(payload)
+    } catch {
+      setError('Could not request invoice.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleIssueInvoice() {
+    const closeId = state?.close?.id
+    if (!closeId || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const response = await fetch(
+        `/api/commercial-close/${encodeURIComponent(closeId)}/invoice/issue`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ companyId, actorId }),
+        },
+      )
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setError(payload.message || 'Could not issue invoice.')
+        return
+      }
+      setState(payload)
+    } catch {
+      setError('Could not issue invoice.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const close = state?.close
   const decision = close?.decision
   const signature = close?.signature
   const payment = close?.payment
+  const contract = close?.contract
+  const invoice = close?.invoice
   const allowed = (state?.allowedTransitions ?? []).filter(
     (to) =>
       to !== COMMERCIAL_CLOSE_STATUS.SIGNED &&
@@ -307,9 +420,13 @@ export function CommercialCloseCard({ proposal }) {
     (close.status === COMMERCIAL_CLOSE_STATUS.OPEN ||
       close.status === COMMERCIAL_CLOSE_STATUS.SIGNED ||
       close.status === COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING)
+  const canManageArtifacts =
+    close &&
+    close.status !== COMMERCIAL_CLOSE_STATUS.CANCELLED &&
+    close.status !== COMMERCIAL_CLOSE_STATUS.EXPIRED
 
   return (
-    <Card title="Commercial close" kicker="H15.4">
+    <Card title="Commercial close" kicker="H15.5">
       {error ? <p className={styles.note}>{error}</p> : null}
       <dl className={styles.facts}>
         <Fact label="Status">
@@ -370,6 +487,23 @@ export function CommercialCloseCard({ proposal }) {
         <Fact label="Payment method">
           {payment?.method || (payment?.required ? 'internal' : '—')}
         </Fact>
+        <Fact label="Contract status">
+          {contract
+            ? CLOSE_CONTRACT_STATUS_LABELS[contract.status] ?? contract.status
+            : '—'}
+        </Fact>
+        <Fact label="Contract number">{contract?.record?.number || '—'}</Fact>
+        <Fact label="Invoice status">
+          {invoice
+            ? CLOSE_INVOICE_STATUS_LABELS[invoice.status] ?? invoice.status
+            : '—'}
+        </Fact>
+        <Fact label="Invoice number">{invoice?.record?.number || '—'}</Fact>
+        <Fact label="Invoice remaining">
+          {invoice?.amountRemaining != null
+            ? formatCurrency(invoice.amountRemaining, invoice.currency)
+            : '—'}
+        </Fact>
       </dl>
 
       {!close ? (
@@ -383,8 +517,8 @@ export function CommercialCloseCard({ proposal }) {
             {busy ? 'Opening…' : 'Open commercial close'}
           </button>
           <p className={styles.note}>
-            Binds the locked living decision for later signature and payment.
-            External providers are not connected yet.
+            Binds the locked living decision for later signature, payment, contract,
+            and invoice records. External providers are not connected yet.
           </p>
         </div>
       ) : (
@@ -432,6 +566,46 @@ export function CommercialCloseCard({ proposal }) {
                 {busy ? 'Working…' : 'Record internal payment'}
               </button>
             ) : null}
+            {canManageArtifacts && contract?.status !== 'issued' ? (
+              <button
+                type="button"
+                className={styles.publish}
+                onClick={handleRequestContract}
+                disabled={busy}
+              >
+                {busy ? 'Working…' : 'Draft contract'}
+              </button>
+            ) : null}
+            {canManageArtifacts && contract?.status !== 'issued' ? (
+              <button
+                type="button"
+                className={styles.publish}
+                onClick={handleIssueContract}
+                disabled={busy}
+              >
+                {busy ? 'Working…' : 'Issue contract'}
+              </button>
+            ) : null}
+            {canManageArtifacts && invoice?.status !== 'issued' ? (
+              <button
+                type="button"
+                className={styles.publish}
+                onClick={handleRequestInvoice}
+                disabled={busy}
+              >
+                {busy ? 'Working…' : 'Draft invoice'}
+              </button>
+            ) : null}
+            {canManageArtifacts && invoice?.status !== 'issued' ? (
+              <button
+                type="button"
+                className={styles.publish}
+                onClick={handleIssueInvoice}
+                disabled={busy}
+              >
+                {busy ? 'Working…' : 'Issue invoice'}
+              </button>
+            ) : null}
             {allowed.map((to) => (
               <button
                 key={to}
@@ -447,14 +621,17 @@ export function CommercialCloseCard({ proposal }) {
             !canRequest &&
             !canComplete &&
             !canRequestPayment &&
-            !canCompletePayment ? (
+            !canCompletePayment &&
+            !(canManageArtifacts && contract?.status !== 'issued') &&
+            !(canManageArtifacts && invoice?.status !== 'issued') ? (
               <p className={styles.muted}>No further transitions from this state.</p>
             ) : null}
           </div>
           <p className={styles.note}>
-            Architectural signature and payment paths only. DocuSign, Stripe, and
-            other vendors remain disconnected — digitalSignature, paymentProcessing,
-            and paymentVendors stay false.
+            Architectural signature, payment, contract, and invoice paths only.
+            DocuSign, Stripe, accounting vendors, and other providers remain
+            disconnected — digitalSignature, paymentProcessing, paymentVendors,
+            and thirdPartyIntegrations stay false.
           </p>
           {evidence.length > 0 ? (
             <div className={styles.audit}>
@@ -493,6 +670,56 @@ export function CommercialCloseCard({ proposal }) {
                     <span>{item.paidAt ? formatDateTime(item.paidAt) : '—'}</span>
                   </li>
                 ))}
+              </ul>
+            </div>
+          ) : null}
+          {contract?.record ? (
+            <div className={styles.audit}>
+              <p className={styles.kicker}>Contract record</p>
+              <ul>
+                <li>
+                  <span>
+                    {contract.record.number || contract.record.id} ·{' '}
+                    {formatCurrency(
+                      contract.record.totalAmount,
+                      contract.record.currency,
+                    )}
+                    {contract.record.binding?.proposalVersion != null
+                      ? ` · rev ${contract.record.binding.proposalVersion}`
+                      : ''}
+                  </span>
+                  <span>
+                    {contract.record.issuedAt
+                      ? formatDateTime(contract.record.issuedAt)
+                      : '—'}
+                  </span>
+                </li>
+              </ul>
+            </div>
+          ) : null}
+          {invoice?.record ? (
+            <div className={styles.audit}>
+              <p className={styles.kicker}>Invoice record</p>
+              <ul>
+                <li>
+                  <span>
+                    {invoice.record.number || invoice.record.id} ·{' '}
+                    {formatCurrency(invoice.record.total, invoice.record.currency)} ·
+                    remaining{' '}
+                    {formatCurrency(
+                      invoice.record.amountRemaining,
+                      invoice.record.currency,
+                    )}
+                    {invoice.record.binding?.proposalVersion != null
+                      ? ` · rev ${invoice.record.binding.proposalVersion}`
+                      : ''}
+                  </span>
+                  <span>
+                    {invoice.record.issuedAt
+                      ? formatDateTime(invoice.record.issuedAt)
+                      : '—'}
+                  </span>
+                </li>
               </ul>
             </div>
           ) : null}

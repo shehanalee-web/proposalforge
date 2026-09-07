@@ -29,10 +29,16 @@ import {
   createCommercialCloseFromAcceptedDecision,
   getClientCommercialCloseSummary,
   getCommercialCloseById,
+  getCommercialCloseContract,
   getCommercialCloseForProposal,
+  getCommercialCloseInvoice,
   getCommercialClosePayment,
   getCommercialCloseSignature,
+  issueCommercialCloseContract,
+  issueCommercialCloseInvoice,
   replaceCommercialCloses,
+  requestCommercialCloseContract,
+  requestCommercialCloseInvoice,
   requestCommercialClosePayment,
   requestCommercialCloseSignature,
   transitionCommercialClose,
@@ -161,18 +167,23 @@ export function commercialClosePlugin() {
     if (ready) return
 
     // Direct dependency on living event contracts so Vite server restarts
-    // re-bundle H15.4 payment types before hydrating living-events.json.
+    // re-bundle H15.4/H15.5 event types before hydrating living-events.json.
     if (
       !LIVING_EVENTS.includes(LIVING_EVENT.PAYMENT_REQUESTED) ||
-      !LIVING_EVENTS.includes(LIVING_EVENT.PAYMENT_COMPLETED)
+      !LIVING_EVENTS.includes(LIVING_EVENT.PAYMENT_COMPLETED) ||
+      !LIVING_EVENTS.includes(LIVING_EVENT.CONTRACT_CREATED) ||
+      !LIVING_EVENTS.includes(LIVING_EVENT.INVOICE_CREATED)
     ) {
-      throw new ValidationError('Commercial close payment living events are not registered.', [
-        {
-          field: 'type',
-          message:
-            'payment.requested and payment.completed must exist in LIVING_EVENTS before hydration.',
-        },
-      ])
+      throw new ValidationError(
+        'Commercial close living events are not registered.',
+        [
+          {
+            field: 'type',
+            message:
+              'payment/contract/invoice living events must exist in LIVING_EVENTS before hydration.',
+          },
+        ],
+      )
     }
 
     const storedSessions = readJson(livingFile, null)
@@ -407,6 +418,137 @@ export function commercialClosePlugin() {
           200,
           getCommercialClosePayment({
             closeId: paymentGet.closeId,
+            companyId: companyFrom(null, query),
+            actor: actorFrom(null, query),
+          }),
+        )
+      }
+
+      const contractRequest = matchRoute(
+        url,
+        '/api/commercial-close/:closeId/contract/request',
+      )
+      if (contractRequest) {
+        if (method !== 'POST') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        const raw = await readBody(req)
+        const body = raw.length ? JSON.parse(raw.toString('utf8') || '{}') : {}
+        return json(
+          res,
+          200,
+          requestCommercialCloseContract({
+            closeId: contractRequest.closeId,
+            companyId: companyFrom(body, query),
+            actor: actorFrom(body, query),
+          }),
+        )
+      }
+
+      const contractIssue = matchRoute(
+        url,
+        '/api/commercial-close/:closeId/contract/issue',
+      )
+      if (contractIssue) {
+        if (method !== 'POST') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        const raw = await readBody(req)
+        const body = raw.length ? JSON.parse(raw.toString('utf8') || '{}') : {}
+        return json(
+          res,
+          200,
+          issueCommercialCloseContract({
+            closeId: contractIssue.closeId,
+            companyId: companyFrom(body, query),
+            actor: actorFrom(body, query),
+            number: body.number,
+            title: body.title,
+            parties: body.parties,
+            effectiveAt: body.effectiveAt,
+          }),
+        )
+      }
+
+      const contractGet = matchRoute(url, '/api/commercial-close/:closeId/contract')
+      if (contractGet) {
+        if (method !== 'GET') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        return json(
+          res,
+          200,
+          getCommercialCloseContract({
+            closeId: contractGet.closeId,
+            companyId: companyFrom(null, query),
+            actor: actorFrom(null, query),
+          }),
+        )
+      }
+
+      const invoiceRequest = matchRoute(
+        url,
+        '/api/commercial-close/:closeId/invoice/request',
+      )
+      if (invoiceRequest) {
+        if (method !== 'POST') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        const raw = await readBody(req)
+        const body = raw.length ? JSON.parse(raw.toString('utf8') || '{}') : {}
+        return json(
+          res,
+          200,
+          requestCommercialCloseInvoice({
+            closeId: invoiceRequest.closeId,
+            companyId: companyFrom(body, query),
+            actor: actorFrom(body, query),
+            kind: body.kind,
+          }),
+        )
+      }
+
+      const invoiceIssue = matchRoute(
+        url,
+        '/api/commercial-close/:closeId/invoice/issue',
+      )
+      if (invoiceIssue) {
+        if (method !== 'POST') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        const raw = await readBody(req)
+        const body = raw.length ? JSON.parse(raw.toString('utf8') || '{}') : {}
+        return json(
+          res,
+          200,
+          issueCommercialCloseInvoice({
+            closeId: invoiceIssue.closeId,
+            companyId: companyFrom(body, query),
+            actor: actorFrom(body, query),
+            number: body.number,
+            kind: body.kind,
+            dueAt: body.dueAt,
+            issuedAt: body.issuedAt,
+          }),
+        )
+      }
+
+      const invoiceGet = matchRoute(url, '/api/commercial-close/:closeId/invoice')
+      if (invoiceGet) {
+        if (method !== 'GET') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        return json(
+          res,
+          200,
+          getCommercialCloseInvoice({
+            closeId: invoiceGet.closeId,
             companyId: companyFrom(null, query),
             actor: actorFrom(null, query),
           }),

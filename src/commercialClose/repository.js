@@ -18,6 +18,8 @@ import {
 import { LIVING_EVENT } from '../living/types.js'
 import {
   studioCanCreateCommercialClose,
+  studioCanManageCommercialCloseContract,
+  studioCanManageCommercialCloseInvoice,
   studioCanManageCommercialClosePayment,
   studioCanManageCommercialCloseSignature,
   studioCanTransitionCommercialClose,
@@ -48,6 +50,21 @@ import {
   presentClosePayment,
   resolveClosePaymentAmounts,
 } from './paymentSchema.js'
+import {
+  makeCloseContractBinding,
+  makeCloseContractFromDecision,
+  makeCloseContractParty,
+  makeCloseContractRecord,
+  makeCloseContractRequest,
+  presentCloseContract,
+} from './contractSchema.js'
+import {
+  makeCloseInvoiceBinding,
+  makeCloseInvoiceFromDecision,
+  makeCloseInvoiceRecord,
+  makeCloseInvoiceRequest,
+  presentCloseInvoice,
+} from './invoiceSchema.js'
 import { reconcileCommercialCloseFollowup } from './signals.js'
 import {
   findCommercialClose,
@@ -62,6 +79,13 @@ import {
   allowedCommercialCloseTransitions,
 } from './transitions.js'
 import {
+  CLOSE_CONTRACT_METHOD,
+  CLOSE_CONTRACT_PARTY_ROLE,
+  CLOSE_CONTRACT_STATUS,
+  CLOSE_INVOICE_KIND,
+  CLOSE_INVOICE_KINDS,
+  CLOSE_INVOICE_METHOD,
+  CLOSE_INVOICE_STATUS,
   CLOSE_PAYMENT_KIND,
   CLOSE_PAYMENT_KINDS,
   CLOSE_PAYMENT_METHOD,
@@ -133,6 +157,30 @@ function assertPaymentPath() {
   }
 }
 
+function assertContractPath() {
+  assertStateMachine()
+  if (!COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseContractPath) {
+    throw new ValidationError('Commercial close contract path is not enabled.', [
+      {
+        field: 'capabilities',
+        message: 'commercialCloseContractPath capability is off.',
+      },
+    ])
+  }
+}
+
+function assertInvoicePath() {
+  assertStateMachine()
+  if (!COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseInvoicePath) {
+    throw new ValidationError('Commercial close invoice path is not enabled.', [
+      {
+        field: 'capabilities',
+        message: 'commercialCloseInvoicePath capability is off.',
+      },
+    ])
+  }
+}
+
 function bindingFromClose(close) {
   return makeCloseSignatureBinding({
     closeId: close.id,
@@ -150,6 +198,32 @@ function paymentBindingFromClose(close) {
     closeId: close.id,
     sessionId: close.sessionId,
     proposalId: close.proposalId,
+    acceptedAt: close.decision?.acceptedAt,
+    publicationId: close.decision?.publicationId,
+    snapshotNumber: close.decision?.snapshotNumber,
+    proposalVersion: close.decision?.proposalVersion,
+  })
+}
+
+function contractBindingFromClose(close) {
+  return makeCloseContractBinding({
+    closeId: close.id,
+    sessionId: close.sessionId,
+    proposalId: close.proposalId,
+    companyId: close.companyId,
+    acceptedAt: close.decision?.acceptedAt,
+    publicationId: close.decision?.publicationId,
+    snapshotNumber: close.decision?.snapshotNumber,
+    proposalVersion: close.decision?.proposalVersion,
+  })
+}
+
+function invoiceBindingFromClose(close) {
+  return makeCloseInvoiceBinding({
+    closeId: close.id,
+    sessionId: close.sessionId,
+    proposalId: close.proposalId,
+    companyId: close.companyId,
     acceptedAt: close.decision?.acceptedAt,
     publicationId: close.decision?.publicationId,
     snapshotNumber: close.decision?.snapshotNumber,
@@ -289,6 +363,50 @@ function emitPaymentEvent({ proposal, close, type, actorId, at, extra = {} }) {
           closeId: close.id,
           source: 'commercial_close',
           method: CLOSE_PAYMENT_METHOD.INTERNAL,
+          actorId: actorId || null,
+          ...extra,
+        },
+        at,
+      }),
+    )
+    emitLivingEvent(type, {
+      proposalId: close.proposalId,
+      shareToken: proposal.shareToken,
+      closeId: close.id,
+      eventId: record.id,
+    })
+    return {
+      id: record.id,
+      type,
+      at: record.at,
+    }
+  } catch {
+    return null
+  }
+}
+
+function emitArtifactEvent({
+  proposal,
+  close,
+  type,
+  actorId,
+  at,
+  method,
+  extra = {},
+}) {
+  if (!proposal?.shareToken) return null
+  try {
+    const record = insertLivingEngagementEvent(
+      makeLivingEngagementEvent({
+        companyId: close.companyId,
+        proposalId: close.proposalId,
+        shareToken: proposal.shareToken,
+        type,
+        sessionId: close.sessionId,
+        metadata: {
+          closeId: close.id,
+          source: 'commercial_close',
+          method: method || 'internal',
           actorId: actorId || null,
           ...extra,
         },
@@ -1979,6 +2097,537 @@ export function getCommercialClosePayment({ companyId, closeId, actor } = {}) {
 
   return {
     payment: presentClosePayment(close.payment),
+    closeId: close.id,
+    status: close.status,
+    capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
+  }
+}
+
+function shortArtifactSuffix(closeId) {
+  const raw = String(closeId ?? '').replace(/[^a-zA-Z0-9]/g, '')
+  return (raw.slice(-6) || 'close').toUpperCase()
+}
+
+function buildContractRequest(close, actorId) {
+  return makeCloseContractFromDecision(close, {
+    required: true,
+    status: CLOSE_CONTRACT_STATUS.DRAFT,
+    method: CLOSE_CONTRACT_METHOD.INTERNAL,
+    request: makeCloseContractRequest({
+      method: CLOSE_CONTRACT_METHOD.INTERNAL,
+      status: CLOSE_CONTRACT_STATUS.DRAFT,
+      createdByActorId: actorId || null,
+      binding: contractBindingFromClose(close),
+    }),
+    record: close.contract?.record ?? null,
+    completedAt: null,
+  })
+}
+
+function buildInvoiceRequest(close, actorId, kind = CLOSE_INVOICE_KIND.FULL) {
+  const amounts = resolveClosePaymentAmounts(close.decision ?? {}, close.payment ?? {})
+  const nextKind = CLOSE_INVOICE_KINDS.includes(kind) ? kind : CLOSE_INVOICE_KIND.FULL
+  return makeCloseInvoiceFromDecision(close, {
+    required: true,
+    status: CLOSE_INVOICE_STATUS.DRAFT,
+    method: CLOSE_INVOICE_METHOD.INTERNAL,
+    kind: nextKind,
+    request: makeCloseInvoiceRequest({
+      method: CLOSE_INVOICE_METHOD.INTERNAL,
+      status: CLOSE_INVOICE_STATUS.DRAFT,
+      kind: nextKind,
+      currency: amounts.currency,
+      total: amounts.requiredAmount,
+      createdByActorId: actorId || null,
+      binding: invoiceBindingFromClose(close),
+    }),
+    record: close.invoice?.record ?? null,
+    completedAt: null,
+  })
+}
+
+/**
+ * Studio: create/update contract draft request (no state-machine change).
+ */
+export function requestCommercialCloseContract({ companyId, closeId, actor } = {}) {
+  assertContractPath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanManageCommercialCloseContract(user)) {
+    throw new ForbiddenError(
+      'You do not have permission to manage commercial-close contracts.',
+    )
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const existing = findCommercialClose(id)
+  if (!existing || existing.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  if (isTerminalCommercialCloseStatus(existing.status)) {
+    throw new ValidationError('Cannot request a contract on a terminal close.', [
+      {
+        field: 'status',
+        message: `Cannot request contract while status is ${existing.status}.`,
+      },
+    ])
+  }
+
+  if (existing.contract?.status === CLOSE_CONTRACT_STATUS.ISSUED && existing.contract?.record) {
+    return {
+      ...studioPayload(existing),
+      created: false,
+      duplicate: true,
+    }
+  }
+
+  const at = new Date().toISOString()
+  const refreshed = replaceCommercialClose(
+    existing.id,
+    makeCommercialClose({
+      ...existing,
+      decision: makeCloseDecisionBinding(existing.decision),
+      signature: makeCloseSignature(existing.signature),
+      payment: makeClosePaymentFromDecision(existing, existing.payment),
+      contract: buildContractRequest(existing, user.id),
+      invoice: makeCloseInvoiceFromDecision(existing, existing.invoice),
+      updatedAt: at,
+    }),
+  )
+
+  return {
+    ...studioPayload(refreshed),
+    created: existing.contract?.status === CLOSE_CONTRACT_STATUS.NOT_REQUESTED,
+    duplicate: false,
+  }
+}
+
+/**
+ * Studio: issue an immutable contractual-close record bound to the decision.
+ */
+export function issueCommercialCloseContract({
+  companyId,
+  closeId,
+  actor,
+  number,
+  title,
+  parties,
+  effectiveAt,
+} = {}) {
+  assertContractPath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanManageCommercialCloseContract(user)) {
+    throw new ForbiddenError(
+      'You do not have permission to manage commercial-close contracts.',
+    )
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const existing = findCommercialClose(id)
+  if (!existing || existing.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  if (isTerminalCommercialCloseStatus(existing.status)) {
+    throw new ValidationError('Cannot issue a contract on a terminal close.', [
+      {
+        field: 'status',
+        message: `Cannot issue contract while status is ${existing.status}.`,
+      },
+    ])
+  }
+
+  if (existing.contract?.status === CLOSE_CONTRACT_STATUS.ISSUED && existing.contract?.record) {
+    return {
+      ...studioPayload(existing),
+      created: false,
+      duplicate: true,
+      contract: presentCloseContract(existing.contract),
+    }
+  }
+
+  const proposal = requireProposal(scoped, existing.proposalId)
+  const at = new Date().toISOString()
+  const decisionTotal =
+    existing.decision?.selectedTotal != null &&
+    Number.isFinite(Number(existing.decision.selectedTotal))
+      ? Number(existing.decision.selectedTotal)
+      : 0
+  const currency = String(existing.decision?.currency ?? 'USD').trim() || 'USD'
+
+  const nextParties = Array.isArray(parties) && parties.length
+    ? parties.map((party) => makeCloseContractParty(party))
+    : [
+        makeCloseContractParty({
+          displayName: String(proposal?.clientName ?? '').trim() || 'Client',
+          email: String(proposal?.clientEmail ?? '').trim(),
+          role: CLOSE_CONTRACT_PARTY_ROLE.CLIENT,
+        }),
+        makeCloseContractParty({
+          displayName: String(user.name ?? '').trim() || 'Studio',
+          email: String(user.email ?? '').trim(),
+          role: CLOSE_CONTRACT_PARTY_ROLE.STUDIO,
+        }),
+      ]
+
+  const record = makeCloseContractRecord({
+    number:
+      String(number ?? '').trim() ||
+      `CTR-${shortArtifactSuffix(existing.id)}`,
+    title: String(title ?? '').trim() || 'Commercial close contract',
+    status: CLOSE_CONTRACT_STATUS.ISSUED,
+    method: CLOSE_CONTRACT_METHOD.INTERNAL,
+    currency,
+    totalAmount: decisionTotal,
+    parties: nextParties,
+    effectiveAt: effectiveAt || at,
+    issuedAt: at,
+    issuedByActorId: user.id,
+    binding: contractBindingFromClose(existing),
+  })
+
+  const contract = makeCloseContractFromDecision(existing, {
+    required: true,
+    status: CLOSE_CONTRACT_STATUS.ISSUED,
+    method: CLOSE_CONTRACT_METHOD.INTERNAL,
+    request:
+      existing.contract?.request ||
+      makeCloseContractRequest({
+        method: CLOSE_CONTRACT_METHOD.INTERNAL,
+        status: CLOSE_CONTRACT_STATUS.ISSUED,
+        createdByActorId: user.id,
+        binding: contractBindingFromClose(existing),
+      }),
+    record,
+    completedAt: at,
+  })
+
+  const saved = replaceCommercialClose(
+    existing.id,
+    makeCommercialClose({
+      ...existing,
+      decision: makeCloseDecisionBinding(existing.decision),
+      signature: makeCloseSignature(existing.signature),
+      payment: makeClosePaymentFromDecision(existing, existing.payment),
+      contract,
+      invoice: makeCloseInvoiceFromDecision(existing, existing.invoice),
+      updatedAt: at,
+    }),
+  )
+
+  emitArtifactEvent({
+    proposal,
+    close: saved,
+    type: LIVING_EVENT.CONTRACT_CREATED,
+    actorId: user.id,
+    at,
+    method: CLOSE_CONTRACT_METHOD.INTERNAL,
+    extra: {
+      contractId: record.id,
+      contractNumber: record.number,
+      totalAmount: record.totalAmount,
+      currency: record.currency,
+    },
+  })
+
+  return {
+    ...studioPayload(saved),
+    created: true,
+    duplicate: false,
+    contract: presentCloseContract(saved.contract),
+  }
+}
+
+/**
+ * Studio: retrieve contract record for a close.
+ */
+export function getCommercialCloseContract({ companyId, closeId, actor } = {}) {
+  assertContractPath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanViewCommercialClose(user)) {
+    throw new ForbiddenError('You do not have permission to view commercial closes.')
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const close = findCommercialClose(id)
+  if (!close || close.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  return {
+    contract: presentCloseContract(close.contract),
+    closeId: close.id,
+    status: close.status,
+    capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
+  }
+}
+
+/**
+ * Studio: create/update invoice draft request (no state-machine change).
+ */
+export function requestCommercialCloseInvoice({
+  companyId,
+  closeId,
+  actor,
+  kind,
+} = {}) {
+  assertInvoicePath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanManageCommercialCloseInvoice(user)) {
+    throw new ForbiddenError(
+      'You do not have permission to manage commercial-close invoices.',
+    )
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const existing = findCommercialClose(id)
+  if (!existing || existing.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  if (isTerminalCommercialCloseStatus(existing.status)) {
+    throw new ValidationError('Cannot request an invoice on a terminal close.', [
+      {
+        field: 'status',
+        message: `Cannot request invoice while status is ${existing.status}.`,
+      },
+    ])
+  }
+
+  if (existing.invoice?.status === CLOSE_INVOICE_STATUS.ISSUED && existing.invoice?.record) {
+    return {
+      ...studioPayload(existing),
+      created: false,
+      duplicate: true,
+    }
+  }
+
+  const at = new Date().toISOString()
+  const nextKind = CLOSE_INVOICE_KINDS.includes(kind)
+    ? kind
+    : existing.invoice?.kind || CLOSE_INVOICE_KIND.FULL
+  const refreshed = replaceCommercialClose(
+    existing.id,
+    makeCommercialClose({
+      ...existing,
+      decision: makeCloseDecisionBinding(existing.decision),
+      signature: makeCloseSignature(existing.signature),
+      payment: makeClosePaymentFromDecision(existing, existing.payment),
+      contract: makeCloseContractFromDecision(existing, existing.contract),
+      invoice: buildInvoiceRequest(existing, user.id, nextKind),
+      updatedAt: at,
+    }),
+  )
+
+  return {
+    ...studioPayload(refreshed),
+    created: existing.invoice?.status === CLOSE_INVOICE_STATUS.NOT_REQUESTED,
+    duplicate: false,
+  }
+}
+
+/**
+ * Studio: issue an invoice record bound to the immutable decision totals.
+ */
+export function issueCommercialCloseInvoice({
+  companyId,
+  closeId,
+  actor,
+  number,
+  kind,
+  dueAt,
+  issuedAt,
+} = {}) {
+  assertInvoicePath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanManageCommercialCloseInvoice(user)) {
+    throw new ForbiddenError(
+      'You do not have permission to manage commercial-close invoices.',
+    )
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const existing = findCommercialClose(id)
+  if (!existing || existing.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  if (isTerminalCommercialCloseStatus(existing.status)) {
+    throw new ValidationError('Cannot issue an invoice on a terminal close.', [
+      {
+        field: 'status',
+        message: `Cannot issue invoice while status is ${existing.status}.`,
+      },
+    ])
+  }
+
+  if (existing.invoice?.status === CLOSE_INVOICE_STATUS.ISSUED && existing.invoice?.record) {
+    return {
+      ...studioPayload(existing),
+      created: false,
+      duplicate: true,
+      invoice: presentCloseInvoice(existing.invoice),
+    }
+  }
+
+  const proposal = requireProposal(scoped, existing.proposalId)
+  let at = new Date().toISOString()
+  if (issuedAt != null && String(issuedAt).trim()) {
+    const parsed = new Date(issuedAt)
+    if (Number.isNaN(parsed.getTime())) {
+      throw new ValidationError('issuedAt is invalid.', [
+        { field: 'issuedAt', message: 'issuedAt must be a valid date.' },
+      ])
+    }
+    at = parsed.toISOString()
+  }
+
+  const amounts = resolveClosePaymentAmounts(existing.decision ?? {}, existing.payment ?? {})
+  const nextKind = CLOSE_INVOICE_KINDS.includes(kind)
+    ? kind
+    : existing.invoice?.kind || CLOSE_INVOICE_KIND.FULL
+
+  const record = makeCloseInvoiceRecord({
+    number:
+      String(number ?? '').trim() ||
+      `INV-${shortArtifactSuffix(existing.id)}`,
+    status: CLOSE_INVOICE_STATUS.ISSUED,
+    method: CLOSE_INVOICE_METHOD.INTERNAL,
+    kind: nextKind,
+    currency: amounts.currency,
+    total: amounts.requiredAmount,
+    amountPaid: amounts.recordedAmount,
+    amountRemaining: amounts.remainingAmount,
+    issuedAt: at,
+    dueAt: dueAt || null,
+    issuedByActorId: user.id,
+    binding: invoiceBindingFromClose(existing),
+  })
+
+  const invoice = makeCloseInvoiceFromDecision(existing, {
+    required: true,
+    status: CLOSE_INVOICE_STATUS.ISSUED,
+    method: CLOSE_INVOICE_METHOD.INTERNAL,
+    kind: nextKind,
+    request:
+      existing.invoice?.request ||
+      makeCloseInvoiceRequest({
+        method: CLOSE_INVOICE_METHOD.INTERNAL,
+        status: CLOSE_INVOICE_STATUS.ISSUED,
+        kind: nextKind,
+        currency: amounts.currency,
+        total: amounts.requiredAmount,
+        createdByActorId: user.id,
+        binding: invoiceBindingFromClose(existing),
+      }),
+    record,
+    completedAt: at,
+  })
+
+  const saved = replaceCommercialClose(
+    existing.id,
+    makeCommercialClose({
+      ...existing,
+      decision: makeCloseDecisionBinding(existing.decision),
+      signature: makeCloseSignature(existing.signature),
+      payment: makeClosePaymentFromDecision(existing, existing.payment),
+      contract: makeCloseContractFromDecision(existing, existing.contract),
+      invoice,
+      updatedAt: at,
+    }),
+  )
+
+  emitArtifactEvent({
+    proposal,
+    close: saved,
+    type: LIVING_EVENT.INVOICE_CREATED,
+    actorId: user.id,
+    at,
+    method: CLOSE_INVOICE_METHOD.INTERNAL,
+    extra: {
+      invoiceId: record.id,
+      invoiceNumber: record.number,
+      total: record.total,
+      amountPaid: record.amountPaid,
+      amountRemaining: record.amountRemaining,
+      currency: record.currency,
+    },
+  })
+
+  return {
+    ...studioPayload(saved),
+    created: true,
+    duplicate: false,
+    invoice: presentCloseInvoice(saved.invoice),
+  }
+}
+
+/**
+ * Studio: retrieve invoice record for a close.
+ */
+export function getCommercialCloseInvoice({ companyId, closeId, actor } = {}) {
+  assertInvoicePath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanViewCommercialClose(user)) {
+    throw new ForbiddenError('You do not have permission to view commercial closes.')
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const close = findCommercialClose(id)
+  if (!close || close.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  return {
+    invoice: presentCloseInvoice(close.invoice),
     closeId: close.id,
     status: close.status,
     capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
