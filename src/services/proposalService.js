@@ -106,7 +106,10 @@ import {
 } from '../models/commercialQueues.js'
 import * as activityStore from './activityStore.js'
 import { captureLivingAcceptanceDecision } from '../living/repository.js'
-import { bridgeInternalSignatureToCommercialClose } from '../commercialClose/bridge.js'
+import {
+  bridgeInternalPaymentToCommercialClose,
+  bridgeInternalSignatureToCommercialClose,
+} from '../commercialClose/bridge.js'
 
 /**
  * Public data access layer for proposals.
@@ -1967,7 +1970,31 @@ export async function updateProposalPayment(id, patch = {}) {
     },
     now,
   )
-  return present(await store.replace(existing.id, updated))
+  const saved = present(await store.replace(existing.id, updated))
+
+  if (becamePaid) {
+    try {
+      const companyId =
+        String(existing.companyId ?? '').trim() ||
+        String(saved.companyId ?? '').trim()
+      bridgeInternalPaymentToCommercialClose({
+        proposalId: existing.id,
+        companyId,
+        payerDisplayName: String(existing.clientName ?? '').trim() || 'Client',
+        amount: payment.paidAmount,
+        currency: payment.currency,
+        paidAt: now,
+        kind: 'full',
+        transactionReference: payment.transactionReference || payment.id,
+        legacyProposalPaymentId: payment.id,
+        evidenceRef: payment.transactionReference || payment.id,
+      })
+    } catch {
+      // Bridge is best-effort; proposal payment remains the legacy surface.
+    }
+  }
+
+  return saved
 }
 
 export async function updateShareAccess(id, patch = {}) {
@@ -2224,7 +2251,29 @@ export async function payClientProposal(token, input = {}) {
     now,
   )
 
-  return present(await store.replace(existing.id, updated))
+  const saved = present(await store.replace(existing.id, updated))
+
+  try {
+    const companyId =
+      String(existing.companyId ?? '').trim() ||
+      String(saved.companyId ?? '').trim()
+    bridgeInternalPaymentToCommercialClose({
+      proposalId: existing.id,
+      companyId,
+      payerDisplayName: String(existing.clientName ?? '').trim() || 'Client',
+      amount,
+      currency: payment.currency,
+      paidAt: now,
+      kind: kind === 'deposit' ? 'deposit' : 'full',
+      transactionReference: payment.transactionReference,
+      legacyProposalPaymentId: payment.id,
+      evidenceRef: payment.transactionReference || payment.id,
+    })
+  } catch {
+    // Bridge is best-effort; proposal payment remains the legacy surface.
+  }
+
+  return saved
 }
 
 /** Restore seed data. Intended for tests and development tooling. */

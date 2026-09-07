@@ -4,6 +4,7 @@ import { DEFAULT_COMPANY_ID } from '../../knowledge/types.js'
 import { DEFAULT_ACTOR_ID } from '../../workflow/actors.js'
 import { PROPOSAL_STATUS } from '../../models/proposal.js'
 import {
+  CLOSE_PAYMENT_STATUS_LABELS,
   CLOSE_SIGNATURE_STATUS_LABELS,
   COMMERCIAL_CLOSE_STATUS,
   COMMERCIAL_CLOSE_STATUS_LABELS,
@@ -39,8 +40,8 @@ const ACTION_LABELS = Object.freeze({
 })
 
 /**
- * Studio surface for H15.1–H15.3 Commercial Close.
- * Opens a close, advances the state machine, and records internal signatures.
+ * Studio surface for H15.1–H15.4 Commercial Close.
+ * Opens a close, advances the state machine, and records internal signatures/payments.
  */
 export function CommercialCloseCard({ proposal }) {
   const [state, setState] = useState(null)
@@ -128,6 +129,12 @@ export function CommercialCloseCard({ proposal }) {
     if (to === COMMERCIAL_CLOSE_STATUS.SIGNED) {
       return handleCompleteSignature()
     }
+    if (to === COMMERCIAL_CLOSE_STATUS.PAID) {
+      return handleCompletePayment()
+    }
+    if (to === COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING) {
+      return handleRequestPayment()
+    }
     setBusy(true)
     setError(null)
     try {
@@ -210,16 +217,78 @@ export function CommercialCloseCard({ proposal }) {
     }
   }
 
+  async function handleRequestPayment() {
+    const closeId = state?.close?.id
+    if (!closeId || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const response = await fetch(
+        `/api/commercial-close/${encodeURIComponent(closeId)}/payment/request`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ companyId, actorId }),
+        },
+      )
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setError(payload.message || 'Could not request payment.')
+        return
+      }
+      setState(payload)
+    } catch {
+      setError('Could not request payment.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleCompletePayment() {
+    const closeId = state?.close?.id
+    if (!closeId || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const response = await fetch(
+        `/api/commercial-close/${encodeURIComponent(closeId)}/payment/complete`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            companyId,
+            actorId,
+            payerDisplayName: proposal?.clientName || 'Client',
+          }),
+        },
+      )
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setError(payload.message || 'Could not complete internal payment.')
+        return
+      }
+      setState(payload)
+    } catch {
+      setError('Could not complete internal payment.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const close = state?.close
   const decision = close?.decision
   const signature = close?.signature
+  const payment = close?.payment
   const allowed = (state?.allowedTransitions ?? []).filter(
     (to) =>
       to !== COMMERCIAL_CLOSE_STATUS.SIGNED &&
-      to !== COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING,
+      to !== COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING &&
+      to !== COMMERCIAL_CLOSE_STATUS.PAID &&
+      to !== COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING,
   )
   const history = close?.statusHistory ?? []
   const evidence = signature?.evidence ?? []
+  const paymentEvidence = payment?.evidence ?? []
   const canRequest =
     close &&
     (close.status === COMMERCIAL_CLOSE_STATUS.OPEN ||
@@ -228,9 +297,19 @@ export function CommercialCloseCard({ proposal }) {
     close &&
     (close.status === COMMERCIAL_CLOSE_STATUS.OPEN ||
       close.status === COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING)
+  const canRequestPayment =
+    close &&
+    (close.status === COMMERCIAL_CLOSE_STATUS.OPEN ||
+      close.status === COMMERCIAL_CLOSE_STATUS.SIGNED ||
+      close.status === COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING)
+  const canCompletePayment =
+    close &&
+    (close.status === COMMERCIAL_CLOSE_STATUS.OPEN ||
+      close.status === COMMERCIAL_CLOSE_STATUS.SIGNED ||
+      close.status === COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING)
 
   return (
-    <Card title="Commercial close" kicker="H15.3">
+    <Card title="Commercial close" kicker="H15.4">
       {error ? <p className={styles.note}>{error}</p> : null}
       <dl className={styles.facts}>
         <Fact label="Status">
@@ -269,6 +348,27 @@ export function CommercialCloseCard({ proposal }) {
         </Fact>
         <Fact label="Signature method">
           {signature?.method || (signature?.required ? 'internal' : '—')}
+        </Fact>
+        <Fact label="Payment required">
+          {payment ? (payment.required ? 'Yes' : 'No') : '—'}
+        </Fact>
+        <Fact label="Payment status">
+          {payment
+            ? CLOSE_PAYMENT_STATUS_LABELS[payment.status] ?? payment.status
+            : '—'}
+        </Fact>
+        <Fact label="Expected amount">
+          {payment?.requiredAmount != null
+            ? formatCurrency(payment.requiredAmount, payment.currency)
+            : '—'}
+        </Fact>
+        <Fact label="Recorded amount">
+          {payment?.recordedAmount != null
+            ? formatCurrency(payment.recordedAmount, payment.currency)
+            : '—'}
+        </Fact>
+        <Fact label="Payment method">
+          {payment?.method || (payment?.required ? 'internal' : '—')}
         </Fact>
       </dl>
 
@@ -310,6 +410,28 @@ export function CommercialCloseCard({ proposal }) {
                 {busy ? 'Working…' : 'Record internal signature'}
               </button>
             ) : null}
+            {canRequestPayment &&
+            (close.status === COMMERCIAL_CLOSE_STATUS.SIGNED ||
+              close.status === COMMERCIAL_CLOSE_STATUS.OPEN) ? (
+              <button
+                type="button"
+                className={styles.publish}
+                onClick={handleRequestPayment}
+                disabled={busy}
+              >
+                {busy ? 'Working…' : 'Request payment'}
+              </button>
+            ) : null}
+            {canCompletePayment ? (
+              <button
+                type="button"
+                className={styles.publish}
+                onClick={handleCompletePayment}
+                disabled={busy}
+              >
+                {busy ? 'Working…' : 'Record internal payment'}
+              </button>
+            ) : null}
             {allowed.map((to) => (
               <button
                 key={to}
@@ -321,13 +443,18 @@ export function CommercialCloseCard({ proposal }) {
                 {ACTION_LABELS[to] || COMMERCIAL_CLOSE_STATUS_LABELS[to] || to}
               </button>
             ))}
-            {allowed.length === 0 && !canRequest && !canComplete ? (
+            {allowed.length === 0 &&
+            !canRequest &&
+            !canComplete &&
+            !canRequestPayment &&
+            !canCompletePayment ? (
               <p className={styles.muted}>No further transitions from this state.</p>
             ) : null}
           </div>
           <p className={styles.note}>
-            Architectural signature path only. DocuSign and other vendors remain
-            disconnected — digitalSignature and signatureVendors stay false.
+            Architectural signature and payment paths only. DocuSign, Stripe, and
+            other vendors remain disconnected — digitalSignature, paymentProcessing,
+            and paymentVendors stay false.
           </p>
           {evidence.length > 0 ? (
             <div className={styles.audit}>
@@ -342,6 +469,28 @@ export function CommercialCloseCard({ proposal }) {
                         : ''}
                     </span>
                     <span>{item.signedAt ? formatDateTime(item.signedAt) : '—'}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {paymentEvidence.length > 0 ? (
+            <div className={styles.audit}>
+              <p className={styles.kicker}>Payment evidence</p>
+              <ul>
+                {paymentEvidence.map((item) => (
+                  <li key={item.id}>
+                    <span>
+                      {item.payerDisplayName || 'Payer'} ·{' '}
+                      {formatCurrency(item.amount, item.currency)} · {item.method}
+                      {item.transactionReference
+                        ? ` · ${item.transactionReference}`
+                        : ''}
+                      {item.binding?.proposalVersion != null
+                        ? ` · rev ${item.binding.proposalVersion}`
+                        : ''}
+                    </span>
+                    <span>{item.paidAt ? formatDateTime(item.paidAt) : '—'}</span>
                   </li>
                 ))}
               </ul>

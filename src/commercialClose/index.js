@@ -13,6 +13,13 @@ export {
   CLOSE_SIGNATURE_METHODS,
   CLOSE_SIGNATURE_PARTY_ROLE,
   CLOSE_SIGNATURE_PARTY_ROLES,
+  CLOSE_PAYMENT_STATUS,
+  CLOSE_PAYMENT_STATUSES,
+  CLOSE_PAYMENT_STATUS_LABELS,
+  CLOSE_PAYMENT_METHOD,
+  CLOSE_PAYMENT_METHODS,
+  CLOSE_PAYMENT_KIND,
+  CLOSE_PAYMENT_KINDS,
   isTerminalCommercialCloseStatus,
 } from './types.js'
 export {
@@ -40,6 +47,17 @@ export {
   presentClientCloseSignature,
 } from './signatureSchema.js'
 export {
+  makeClosePayment,
+  makeClosePaymentFromDecision,
+  makeClosePaymentRequest,
+  makeClosePaymentEvidence,
+  makeClosePaymentBinding,
+  resolveClosePaymentAmounts,
+  hasValidPaymentEvidence,
+  presentClosePayment,
+  presentClientClosePayment,
+} from './paymentSchema.js'
+export {
   configureCommercialCloseStore,
   resetCommercialCloseStore,
   allCommercialCloses,
@@ -56,9 +74,13 @@ export {
   studioCanCreateCommercialClose,
   studioCanTransitionCommercialClose,
   studioCanManageCommercialCloseSignature,
+  studioCanManageCommercialClosePayment,
 } from './permissions.js'
 export { reconcileCommercialCloseFollowup } from './signals.js'
-export { bridgeInternalSignatureToCommercialClose } from './bridge.js'
+export {
+  bridgeInternalSignatureToCommercialClose,
+  bridgeInternalPaymentToCommercialClose,
+} from './bridge.js'
 export {
   assertValidCloseDecision,
   getCommercialCloseForProposal,
@@ -72,4 +94,8 @@ export {
   completeInternalCommercialCloseSignature,
   recordClientBridgeSignature,
   getCommercialCloseSignature,
+  requestCommercialClosePayment,
+  completeInternalCommercialClosePayment,
+  recordClientBridgePayment,
+  getCommercialClosePayment,
 } from './repository.js'

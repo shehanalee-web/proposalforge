@@ -18,6 +18,7 @@ import {
 import { LIVING_EVENT } from '../living/types.js'
 import {
   studioCanCreateCommercialClose,
+  studioCanManageCommercialClosePayment,
   studioCanManageCommercialCloseSignature,
   studioCanTransitionCommercialClose,
   studioCanViewCommercialClose,
@@ -38,6 +39,15 @@ import {
   makeCloseSignatureRequest,
   presentCloseSignature,
 } from './signatureSchema.js'
+import {
+  hasValidPaymentEvidence,
+  makeClosePaymentBinding,
+  makeClosePaymentEvidence,
+  makeClosePaymentFromDecision,
+  makeClosePaymentRequest,
+  presentClosePayment,
+  resolveClosePaymentAmounts,
+} from './paymentSchema.js'
 import { reconcileCommercialCloseFollowup } from './signals.js'
 import {
   findCommercialClose,
@@ -52,6 +62,10 @@ import {
   allowedCommercialCloseTransitions,
 } from './transitions.js'
 import {
+  CLOSE_PAYMENT_KIND,
+  CLOSE_PAYMENT_KINDS,
+  CLOSE_PAYMENT_METHOD,
+  CLOSE_PAYMENT_STATUS,
   CLOSE_SIGNATURE_METHOD,
   CLOSE_SIGNATURE_PARTY_ROLE,
   CLOSE_SIGNATURE_STATUS,
@@ -107,8 +121,32 @@ function assertSignaturePath() {
   }
 }
 
+function assertPaymentPath() {
+  assertStateMachine()
+  if (!COMMERCIAL_CLOSE_CAPABILITIES.commercialClosePaymentPath) {
+    throw new ValidationError('Commercial close payment path is not enabled.', [
+      {
+        field: 'capabilities',
+        message: 'commercialClosePaymentPath capability is off.',
+      },
+    ])
+  }
+}
+
 function bindingFromClose(close) {
   return makeCloseSignatureBinding({
+    closeId: close.id,
+    sessionId: close.sessionId,
+    proposalId: close.proposalId,
+    acceptedAt: close.decision?.acceptedAt,
+    publicationId: close.decision?.publicationId,
+    snapshotNumber: close.decision?.snapshotNumber,
+    proposalVersion: close.decision?.proposalVersion,
+  })
+}
+
+function paymentBindingFromClose(close) {
+  return makeClosePaymentBinding({
     closeId: close.id,
     sessionId: close.sessionId,
     proposalId: close.proposalId,
@@ -145,6 +183,32 @@ function buildSignatureRequest(close, actorId, parties) {
   })
 }
 
+function buildPaymentRequest(close, actorId, kind = CLOSE_PAYMENT_KIND.FULL) {
+  const amounts = resolveClosePaymentAmounts(close.decision ?? {}, close.payment ?? {})
+  return makeClosePaymentFromDecision(close, {
+    required: true,
+    status: CLOSE_PAYMENT_STATUS.PENDING,
+    method: CLOSE_PAYMENT_METHOD.INTERNAL,
+    kind: CLOSE_PAYMENT_KINDS.includes(kind) ? kind : CLOSE_PAYMENT_KIND.FULL,
+    currency: amounts.currency,
+    requiredAmount: amounts.requiredAmount,
+    recordedAmount: amounts.recordedAmount,
+    remainingAmount: amounts.remainingAmount,
+    request: makeClosePaymentRequest({
+      method: CLOSE_PAYMENT_METHOD.INTERNAL,
+      status: CLOSE_PAYMENT_STATUS.PENDING,
+      kind: CLOSE_PAYMENT_KINDS.includes(kind) ? kind : CLOSE_PAYMENT_KIND.FULL,
+      currency: amounts.currency,
+      requiredAmount: amounts.requiredAmount,
+      remainingAmount: amounts.remainingAmount,
+      createdByActorId: actorId || null,
+      binding: paymentBindingFromClose(close),
+    }),
+    evidence: close.payment?.evidence ?? [],
+    completedAt: null,
+  })
+}
+
 function evidenceAlreadyRecorded(signature, input) {
   const list = signature?.evidence ?? []
   const legacyId = String(input.legacyProposalSignatureId ?? '').trim()
@@ -153,6 +217,23 @@ function evidenceAlreadyRecorded(signature, input) {
     return true
   }
   if (evidenceRef && list.some((item) => item.evidenceRef === evidenceRef)) {
+    return true
+  }
+  return false
+}
+
+function paymentEvidenceAlreadyRecorded(payment, input) {
+  const list = payment?.evidence ?? []
+  const legacyId = String(input.legacyProposalPaymentId ?? '').trim()
+  const evidenceRef = String(input.evidenceRef ?? '').trim()
+  const txn = String(input.transactionReference ?? '').trim()
+  if (legacyId && list.some((item) => item.legacyProposalPaymentId === legacyId)) {
+    return true
+  }
+  if (evidenceRef && list.some((item) => item.evidenceRef === evidenceRef)) {
+    return true
+  }
+  if (txn && list.some((item) => item.transactionReference === txn)) {
     return true
   }
   return false
@@ -172,6 +253,42 @@ function emitSignatureEvent({ proposal, close, type, actorId, at, extra = {} }) 
           closeId: close.id,
           source: 'commercial_close',
           method: CLOSE_SIGNATURE_METHOD.INTERNAL,
+          actorId: actorId || null,
+          ...extra,
+        },
+        at,
+      }),
+    )
+    emitLivingEvent(type, {
+      proposalId: close.proposalId,
+      shareToken: proposal.shareToken,
+      closeId: close.id,
+      eventId: record.id,
+    })
+    return {
+      id: record.id,
+      type,
+      at: record.at,
+    }
+  } catch {
+    return null
+  }
+}
+
+function emitPaymentEvent({ proposal, close, type, actorId, at, extra = {} }) {
+  if (!proposal?.shareToken) return null
+  try {
+    const record = insertLivingEngagementEvent(
+      makeLivingEngagementEvent({
+        companyId: close.companyId,
+        proposalId: close.proposalId,
+        shareToken: proposal.shareToken,
+        type,
+        sessionId: close.sessionId,
+        metadata: {
+          closeId: close.id,
+          source: 'commercial_close',
+          method: CLOSE_PAYMENT_METHOD.INTERNAL,
           actorId: actorId || null,
           ...extra,
         },
@@ -553,6 +670,7 @@ export function createCommercialCloseFromAcceptedDecision({
  * Studio-only: transition commercial close status.
  * Never mutates proposal content or the immutable decision binding.
  * H15.3: transition to `signed` requires valid signature evidence.
+ * H15.4: transition to `paid` requires valid payment evidence.
  */
 export function transitionCommercialClose({
   companyId,
@@ -605,6 +723,22 @@ export function transitionCommercialClose({
     }
   }
 
+  if (target === COMMERCIAL_CLOSE_STATUS.PAID) {
+    assertPaymentPath()
+    if (!hasValidPaymentEvidence(existing)) {
+      throw new ValidationError(
+        'Paid requires valid commercial-close payment evidence.',
+        [
+          {
+            field: 'payment',
+            message:
+              'Record an internal payment before transitioning to paid.',
+          },
+        ],
+      )
+    }
+  }
+
   // Decision binding must remain frozen.
   const decision = makeCloseDecisionBinding(existing.decision)
   const at = new Date().toISOString()
@@ -640,10 +774,29 @@ export function transitionCommercialClose({
     }
   }
 
+  let payment = makeClosePaymentFromDecision(existing, existing.payment)
+  if (target === COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING) {
+    assertPaymentPath()
+    if (
+      !payment.request ||
+      payment.status === CLOSE_PAYMENT_STATUS.NOT_REQUESTED
+    ) {
+      payment = buildPaymentRequest(existing, user.id, payment.kind)
+    } else {
+      payment = makeClosePaymentFromDecision(existing, {
+        ...payment,
+        required: true,
+        status: CLOSE_PAYMENT_STATUS.PENDING,
+        method: CLOSE_PAYMENT_METHOD.INTERNAL,
+      })
+    }
+  }
+
   const patch = {
     ...existing,
     decision,
     signature,
+    payment,
     status: target,
     statusHistory: [...existing.statusHistory, historyEntry],
     lastTransitionAt: at,
@@ -673,6 +826,21 @@ export function transitionCommercialClose({
       actorId: user.id,
       at,
       extra: { requestId: saved.signature?.request?.id || null },
+    })
+  }
+
+  if (target === COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING) {
+    emitPaymentEvent({
+      proposal,
+      close: saved,
+      type: LIVING_EVENT.PAYMENT_REQUESTED,
+      actorId: user.id,
+      at,
+      extra: {
+        requestId: saved.payment?.request?.id || null,
+        requiredAmount: saved.payment?.requiredAmount,
+        currency: saved.payment?.currency,
+      },
     })
   }
 
@@ -744,9 +912,11 @@ export function getClientCommercialCloseSummary({ shareToken } = {}) {
       commercialCloseDomain: COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseDomain,
       commercialCloseStateMachine: COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseStateMachine,
       commercialCloseSignaturePath: COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseSignaturePath,
+      commercialClosePaymentPath: COMMERCIAL_CLOSE_CAPABILITIES.commercialClosePaymentPath,
       digitalSignature: false,
       signatureVendors: false,
       paymentProcessing: false,
+      paymentVendors: false,
     },
   }
 }
@@ -1208,6 +1378,607 @@ export function getCommercialCloseSignature({ companyId, closeId, actor } = {}) 
 
   return {
     signature: presentCloseSignature(close.signature),
+    closeId: close.id,
+    status: close.status,
+    capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
+  }
+}
+
+/**
+ * Apply internal payment evidence and move close toward paid.
+ * Shared by studio complete + client bridge. Does not write proposals.json.
+ * Amounts are anchored to the immutable CommercialClose decision.
+ *
+ * @param {object} existing
+ * @param {{
+ *   payerDisplayName?: string,
+ *   payerReference?: string,
+ *   amount?: number,
+ *   currency?: string,
+ *   paidAt?: string,
+ *   kind?: string,
+ *   transactionReference?: string | null,
+ *   evidenceRef?: string | null,
+ *   legacyProposalPaymentId?: string | null,
+ *   payerActorId?: string | null,
+ *   transitionActorId?: string | null,
+ * }} evidenceInput
+ */
+function applyInternalPaymentEvidenceAndPay(existing, evidenceInput) {
+  if (hasValidPaymentEvidence(existing)) {
+    return {
+      close: existing,
+      created: false,
+      duplicate: true,
+    }
+  }
+
+  if (paymentEvidenceAlreadyRecorded(existing.payment, evidenceInput)) {
+    throw new ValidationError('Payment evidence already recorded for this request.', [
+      { field: 'evidence', message: 'Duplicate payment evidence is not allowed.' },
+    ])
+  }
+
+  const at = asIsoOrNow(evidenceInput.paidAt)
+  let working = existing
+  const proposal = resolveLivingProposalById(working.proposalId, working.companyId)
+  const decisionAmounts = resolveClosePaymentAmounts(
+    working.decision ?? {},
+    working.payment ?? {},
+  )
+
+  // Ensure a payment request exists (signed|open → payment_pending).
+  if (
+    working.status === COMMERCIAL_CLOSE_STATUS.OPEN ||
+    working.status === COMMERCIAL_CLOSE_STATUS.SIGNED
+  ) {
+    assertCommercialCloseTransition(
+      working.status,
+      COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING,
+    )
+    const fromStatus = working.status
+    const kind = CLOSE_PAYMENT_KINDS.includes(evidenceInput.kind)
+      ? evidenceInput.kind
+      : CLOSE_PAYMENT_KIND.FULL
+    const payment = buildPaymentRequest(
+      working,
+      evidenceInput.transitionActorId || null,
+      kind,
+    )
+    const historyEntry = makeCloseStatusHistoryEntry({
+      from: fromStatus,
+      to: COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING,
+      at,
+      actorId: evidenceInput.transitionActorId || null,
+    })
+    working = replaceCommercialClose(
+      working.id,
+      makeCommercialClose({
+        ...working,
+        decision: makeCloseDecisionBinding(working.decision),
+        signature: makeCloseSignature(working.signature),
+        payment,
+        status: COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING,
+        statusHistory: [...working.statusHistory, historyEntry],
+        lastTransitionAt: at,
+        lastTransitionByActorId: evidenceInput.transitionActorId || null,
+        updatedAt: at,
+      }),
+    )
+    emitCloseTransitionEvent({
+      proposal,
+      close: working,
+      from: fromStatus,
+      to: COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING,
+      actorId: evidenceInput.transitionActorId || null,
+      at,
+    })
+    emitPaymentEvent({
+      proposal,
+      close: working,
+      type: LIVING_EVENT.PAYMENT_REQUESTED,
+      actorId: evidenceInput.transitionActorId || null,
+      at,
+      extra: {
+        requestId: working.payment?.request?.id || null,
+        requiredAmount: working.payment?.requiredAmount,
+        currency: working.payment?.currency,
+      },
+    })
+    reconcileCommercialCloseFollowup({
+      companyId: working.companyId,
+      proposalId: working.proposalId,
+      closeId: working.id,
+      status: COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING,
+      ownerActorId: evidenceInput.transitionActorId || undefined,
+      now: at,
+    })
+  }
+
+  if (working.status !== COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING) {
+    throw new ValidationError('Commercial close is not awaiting payment.', [
+      {
+        field: 'status',
+        message: `Cannot record payment while status is ${working.status}.`,
+      },
+    ])
+  }
+
+  const amounts = resolveClosePaymentAmounts(
+    working.decision ?? {},
+    working.payment ?? {},
+  )
+  const providedAmount =
+    evidenceInput.amount == null || evidenceInput.amount === ''
+      ? amounts.remainingAmount
+      : Number(evidenceInput.amount)
+  if (!Number.isFinite(providedAmount) || providedAmount <= 0) {
+    throw new ValidationError('Payment amount must be a positive number.', [
+      { field: 'amount', message: 'A positive payment amount is required.' },
+    ])
+  }
+
+  const currency =
+    amounts.currency ||
+    String(evidenceInput.currency ?? '').trim() ||
+    'USD'
+  if (
+    evidenceInput.currency != null &&
+    String(evidenceInput.currency).trim() &&
+    String(evidenceInput.currency).trim() !== currency
+  ) {
+    throw new ValidationError('Payment currency must match the close decision.', [
+      {
+        field: 'currency',
+        message: `Expected ${currency} from the locked commercial decision.`,
+      },
+    ])
+  }
+
+  // Reject amounts that invent a different commercial total than the decision.
+  if (providedAmount - amounts.remainingAmount > 1e-9) {
+    throw new ValidationError(
+      'Payment amount cannot exceed the remaining decision total.',
+      [
+        {
+          field: 'amount',
+          message: `Remaining amount bound to the decision is ${amounts.remainingAmount}.`,
+        },
+      ],
+    )
+  }
+
+  const payerDisplayName =
+    String(evidenceInput.payerDisplayName ?? '').trim() ||
+    String(proposal?.clientName ?? '').trim() ||
+    'Client'
+
+  const kind = CLOSE_PAYMENT_KINDS.includes(evidenceInput.kind)
+    ? evidenceInput.kind
+    : working.payment?.kind || CLOSE_PAYMENT_KIND.FULL
+
+  const evidence = makeClosePaymentEvidence({
+    payerActorId: evidenceInput.payerActorId || null,
+    payerDisplayName,
+    payerReference: evidenceInput.payerReference || '',
+    amount: providedAmount,
+    currency,
+    paidAt: at,
+    method: CLOSE_PAYMENT_METHOD.INTERNAL,
+    kind,
+    transactionReference: evidenceInput.transactionReference || '',
+    evidenceRef: evidenceInput.evidenceRef || null,
+    legacyProposalPaymentId: evidenceInput.legacyProposalPaymentId || null,
+    valid: true,
+    binding: paymentBindingFromClose(working),
+  })
+
+  const nextEvidence = [...(working.payment?.evidence ?? []), evidence]
+  const nextAmounts = resolveClosePaymentAmounts(working.decision ?? {}, {
+    evidence: nextEvidence,
+  })
+
+  // H15.4: require full settlement against the decision total before paid.
+  if (nextAmounts.remainingAmount > 1e-9) {
+    const payment = makeClosePaymentFromDecision(working, {
+      ...working.payment,
+      required: true,
+      status: CLOSE_PAYMENT_STATUS.PENDING,
+      method: CLOSE_PAYMENT_METHOD.INTERNAL,
+      kind,
+      currency: nextAmounts.currency,
+      requiredAmount: nextAmounts.requiredAmount,
+      recordedAmount: nextAmounts.recordedAmount,
+      remainingAmount: nextAmounts.remainingAmount,
+      request:
+        working.payment?.request ||
+        makeClosePaymentRequest({
+          method: CLOSE_PAYMENT_METHOD.INTERNAL,
+          status: CLOSE_PAYMENT_STATUS.PENDING,
+          kind,
+          currency: nextAmounts.currency,
+          requiredAmount: nextAmounts.requiredAmount,
+          remainingAmount: nextAmounts.remainingAmount,
+          createdByActorId: evidenceInput.transitionActorId || null,
+          binding: paymentBindingFromClose(working),
+        }),
+      evidence: nextEvidence,
+      completedAt: null,
+    })
+    const savedPartial = replaceCommercialClose(
+      working.id,
+      makeCommercialClose({
+        ...working,
+        decision: makeCloseDecisionBinding(working.decision),
+        signature: makeCloseSignature(working.signature),
+        payment,
+        updatedAt: at,
+      }),
+    )
+    return {
+      close: savedPartial,
+      created: true,
+      duplicate: false,
+      evidence,
+      settled: false,
+    }
+  }
+
+  const payment = makeClosePaymentFromDecision(working, {
+    ...working.payment,
+    required: true,
+    status: CLOSE_PAYMENT_STATUS.COMPLETED,
+    method: CLOSE_PAYMENT_METHOD.INTERNAL,
+    kind,
+    currency: nextAmounts.currency,
+    requiredAmount: nextAmounts.requiredAmount,
+    recordedAmount: nextAmounts.recordedAmount,
+    remainingAmount: 0,
+    request:
+      working.payment?.request ||
+      makeClosePaymentRequest({
+        method: CLOSE_PAYMENT_METHOD.INTERNAL,
+        status: CLOSE_PAYMENT_STATUS.COMPLETED,
+        kind,
+        currency: nextAmounts.currency,
+        requiredAmount: nextAmounts.requiredAmount,
+        remainingAmount: 0,
+        createdByActorId: evidenceInput.transitionActorId || null,
+        binding: paymentBindingFromClose(working),
+      }),
+    evidence: nextEvidence,
+    completedAt: at,
+  })
+
+  assertCommercialCloseTransition(
+    working.status,
+    COMMERCIAL_CLOSE_STATUS.PAID,
+  )
+
+  const historyEntry = makeCloseStatusHistoryEntry({
+    from: working.status,
+    to: COMMERCIAL_CLOSE_STATUS.PAID,
+    at,
+    actorId: evidenceInput.transitionActorId || null,
+  })
+
+  const saved = replaceCommercialClose(
+    working.id,
+    makeCommercialClose({
+      ...working,
+      decision: makeCloseDecisionBinding(working.decision),
+      signature: makeCloseSignature(working.signature),
+      payment,
+      status: COMMERCIAL_CLOSE_STATUS.PAID,
+      statusHistory: [...working.statusHistory, historyEntry],
+      lastTransitionAt: at,
+      lastTransitionByActorId: evidenceInput.transitionActorId || null,
+      updatedAt: at,
+    }),
+  )
+
+  emitCloseTransitionEvent({
+    proposal,
+    close: saved,
+    from: COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING,
+    to: COMMERCIAL_CLOSE_STATUS.PAID,
+    actorId: evidenceInput.transitionActorId || null,
+    at,
+  })
+  emitPaymentEvent({
+    proposal,
+    close: saved,
+    type: LIVING_EVENT.PAYMENT_COMPLETED,
+    actorId: evidenceInput.transitionActorId || null,
+    at,
+    extra: {
+      evidenceId: evidence.id,
+      method: CLOSE_PAYMENT_METHOD.INTERNAL,
+      amount: evidence.amount,
+      currency: evidence.currency,
+      requiredAmount: decisionAmounts.requiredAmount,
+    },
+  })
+  reconcileCommercialCloseFollowup({
+    companyId: saved.companyId,
+    proposalId: saved.proposalId,
+    closeId: saved.id,
+    status: COMMERCIAL_CLOSE_STATUS.PAID,
+    ownerActorId: evidenceInput.transitionActorId || undefined,
+    now: at,
+  })
+
+  return {
+    close: saved,
+    created: true,
+    duplicate: false,
+    evidence,
+    settled: true,
+  }
+}
+
+/**
+ * Studio: create/update payment request and move to payment_pending.
+ */
+export function requestCommercialClosePayment({
+  companyId,
+  closeId,
+  actor,
+  kind,
+} = {}) {
+  assertPaymentPath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanManageCommercialClosePayment(user)) {
+    throw new ForbiddenError(
+      'You do not have permission to request commercial-close payments.',
+    )
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const existing = findCommercialClose(id)
+  if (!existing || existing.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  if (
+    existing.status !== COMMERCIAL_CLOSE_STATUS.OPEN &&
+    existing.status !== COMMERCIAL_CLOSE_STATUS.SIGNED &&
+    existing.status !== COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING
+  ) {
+    throw new ValidationError(
+      'Payment can only be requested from open, signed, or payment pending.',
+      [
+        {
+          field: 'status',
+          message: `Cannot request payment while status is ${existing.status}.`,
+        },
+      ],
+    )
+  }
+
+  const nextKind = CLOSE_PAYMENT_KINDS.includes(kind)
+    ? kind
+    : existing.payment?.kind || CLOSE_PAYMENT_KIND.FULL
+
+  if (existing.status === COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING) {
+    const payment = buildPaymentRequest(existing, user.id, nextKind)
+    const refreshed = replaceCommercialClose(
+      existing.id,
+      makeCommercialClose({
+        ...existing,
+        decision: makeCloseDecisionBinding(existing.decision),
+        signature: makeCloseSignature(existing.signature),
+        payment,
+        updatedAt: new Date().toISOString(),
+      }),
+    )
+    return {
+      ...studioPayload(refreshed),
+      created: false,
+    }
+  }
+
+  // Seed request fields before transition so payment_pending carries them.
+  const seeded = replaceCommercialClose(
+    existing.id,
+    makeCommercialClose({
+      ...existing,
+      decision: makeCloseDecisionBinding(existing.decision),
+      signature: makeCloseSignature(existing.signature),
+      payment: buildPaymentRequest(existing, user.id, nextKind),
+      updatedAt: new Date().toISOString(),
+    }),
+  )
+
+  return transitionCommercialClose({
+    companyId: scoped,
+    closeId: seeded.id,
+    actor: user,
+    to: COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING,
+  })
+}
+
+/**
+ * Studio: record internal payment evidence and transition to paid when settled.
+ */
+export function completeInternalCommercialClosePayment({
+  companyId,
+  closeId,
+  actor,
+  payerDisplayName,
+  payerReference,
+  amount,
+  currency,
+  paidAt,
+  kind,
+  transactionReference,
+  evidenceRef,
+  legacyProposalPaymentId,
+} = {}) {
+  assertPaymentPath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanManageCommercialClosePayment(user)) {
+    throw new ForbiddenError(
+      'You do not have permission to complete commercial-close payments.',
+    )
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const existing = findCommercialClose(id)
+  if (!existing || existing.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  const providedName =
+    payerDisplayName === undefined || payerDisplayName === null
+      ? null
+      : String(payerDisplayName).trim()
+  if (payerDisplayName != null && !String(payerDisplayName).trim()) {
+    throw new ValidationError('Payer display name is required.', [
+      { field: 'payerDisplayName', message: 'A payer name is required.' },
+    ])
+  }
+
+  const result = applyInternalPaymentEvidenceAndPay(existing, {
+    payerDisplayName:
+      providedName || String(user.name ?? '').trim() || undefined,
+    payerReference,
+    amount,
+    currency,
+    paidAt,
+    kind,
+    transactionReference,
+    evidenceRef,
+    legacyProposalPaymentId,
+    payerActorId: user.id,
+    transitionActorId: user.id,
+  })
+
+  return {
+    ...studioPayload(result.close),
+    created: result.created,
+    duplicate: result.duplicate,
+    settled: result.settled !== false,
+    evidence: result.evidence
+      ? presentClosePayment(result.close.payment)?.evidence?.slice(-1)?.[0]
+      : null,
+  }
+}
+
+/**
+ * Client bridge entry: record internal payment without studio actor auth.
+ * Token-scoped callers must already have validated the share action.
+ * Never writes proposals.json.
+ */
+export function recordClientBridgePayment({
+  companyId,
+  proposalId,
+  payerDisplayName,
+  payerReference,
+  amount,
+  currency,
+  paidAt,
+  kind,
+  transactionReference,
+  evidenceRef,
+  legacyProposalPaymentId,
+} = {}) {
+  assertPaymentPath()
+  const scoped = scopedCompany(companyId)
+  const pid = String(proposalId ?? '').trim()
+  if (!pid) return null
+
+  const closes = listCommercialClosesForProposal(pid, scoped)
+  const active =
+    closes.find(
+      (item) =>
+        !isTerminalCommercialCloseStatus(item.status) &&
+        (item.status === COMMERCIAL_CLOSE_STATUS.OPEN ||
+          item.status === COMMERCIAL_CLOSE_STATUS.SIGNED ||
+          item.status === COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING),
+    ) ?? null
+
+  if (!active) {
+    const alreadyPaid = closes.find(
+      (item) =>
+        (item.status === COMMERCIAL_CLOSE_STATUS.PAID ||
+          item.status === COMMERCIAL_CLOSE_STATUS.CLOSED) &&
+        hasValidPaymentEvidence(item),
+    )
+    if (alreadyPaid) {
+      return {
+        close: presentClientCommercialClose(alreadyPaid),
+        created: false,
+        duplicate: true,
+      }
+    }
+    return null
+  }
+
+  const result = applyInternalPaymentEvidenceAndPay(active, {
+    payerDisplayName,
+    payerReference,
+    amount,
+    currency,
+    paidAt,
+    kind,
+    transactionReference,
+    evidenceRef,
+    legacyProposalPaymentId,
+    payerActorId: null,
+    transitionActorId: null,
+  })
+
+  return {
+    close: presentClientCommercialClose(result.close),
+    created: result.created,
+    duplicate: result.duplicate,
+    settled: result.settled !== false,
+  }
+}
+
+/**
+ * Studio: retrieve payment evidence for a close.
+ */
+export function getCommercialClosePayment({ companyId, closeId, actor } = {}) {
+  assertPaymentPath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanViewCommercialClose(user)) {
+    throw new ForbiddenError('You do not have permission to view commercial closes.')
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const close = findCommercialClose(id)
+  if (!close || close.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  return {
+    payment: presentClosePayment(close.payment),
     closeId: close.id,
     status: close.status,
     capabilities: COMMERCIAL_CLOSE_CAPABILITIES,

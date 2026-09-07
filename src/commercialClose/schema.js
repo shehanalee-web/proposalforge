@@ -7,6 +7,11 @@ import {
   presentCloseSignature,
 } from './signatureSchema.js'
 import {
+  makeClosePaymentFromDecision,
+  presentClientClosePayment,
+  presentClosePayment,
+} from './paymentSchema.js'
+import {
   COMMERCIAL_CLOSE_STATUS,
   COMMERCIAL_CLOSE_STATUSES,
 } from './types.js'
@@ -18,6 +23,7 @@ import {
  * anchors. Does not clone proposal blocks or offer definitions.
  * H15.2 adds status history for the close state machine.
  * H15.3 adds provider-neutral signature request/evidence on the close.
+ * H15.4 adds provider-neutral payment request/evidence on the close.
  */
 
 function asString(value) {
@@ -107,6 +113,11 @@ export function makeCommercialClose(input = {}) {
 
   const statusHistory = asStatusHistory(input.statusHistory)
   const signature = makeCloseSignature(input.signature ?? {})
+  const paymentSeed = input.payment ?? {}
+  const payment = makeClosePaymentFromDecision(
+    { decision, id: asString(input.id).trim() },
+    paymentSeed,
+  )
 
   return {
     id: asString(input.id).trim() || createRecordId('cclose'),
@@ -116,6 +127,7 @@ export function makeCommercialClose(input = {}) {
     status,
     decision,
     signature,
+    payment,
     statusHistory,
     openedAt,
     openedByActorId: asOptionalId(input.openedByActorId),
@@ -135,6 +147,7 @@ export function cloneCommercialClose(record) {
     ...next,
     decision: makeCloseDecisionBinding(next.decision),
     signature: makeCloseSignature(next.signature),
+    payment: makeClosePaymentFromDecision(next, next.payment),
     statusHistory: next.statusHistory.map((entry) => makeCloseStatusHistoryEntry(entry)),
   }
 }
@@ -174,6 +187,7 @@ export function presentCommercialClose(record) {
       acceptedAt: next.decision.acceptedAt,
     },
     signature: presentCloseSignature(next.signature),
+    payment: presentClosePayment(next.payment),
     statusHistory: next.statusHistory.map((entry) => ({
       id: entry.id,
       from: entry.from,
@@ -219,6 +233,7 @@ export function presentClientCommercialClose(record) {
       decisionLocked: true,
     },
     signature: presentClientCloseSignature(next.signature),
+    payment: presentClientClosePayment(next.payment),
     openedAt: next.openedAt,
   }
 }

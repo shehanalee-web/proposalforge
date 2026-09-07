@@ -36,6 +36,7 @@ import {
   COMMERCIAL_CLOSE_STATUS,
   createCommercialCloseFromAcceptedDecision,
   clientCommercialCloseTransitionDenied,
+  completeInternalCommercialClosePayment,
   completeInternalCommercialCloseSignature,
   getClientCommercialCloseSummary,
   presentClientCommercialClose,
@@ -218,6 +219,7 @@ assert(
   COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseDomain === true &&
     COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseStateMachine === true &&
     COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseSignaturePath === true &&
+    COMMERCIAL_CLOSE_CAPABILITIES.commercialClosePaymentPath === true &&
     COMMERCIAL_CLOSE_CAPABILITIES.digitalSignature === false &&
     COMMERCIAL_CLOSE_CAPABILITIES.paymentProcessing === false &&
     COMMERCIAL_CLOSE_CAPABILITIES.thirdPartyIntegrations === false &&
@@ -412,11 +414,25 @@ assert(
     ),
 )
 
-const paid = transitionCommercialClose({
+// H15.4: paid requires evidence — bare transition must fail, then complete via internal path
+let barePaidRejected = false
+try {
+  transitionCommercialClose({
+    companyId: studio,
+    closeId: created.close.id,
+    actor: owner,
+    to: COMMERCIAL_CLOSE_STATUS.PAID,
+  })
+} catch (error) {
+  barePaidRejected = error instanceof ValidationError
+}
+assert('2c. paid without evidence rejected', barePaidRejected)
+
+const paid = completeInternalCommercialClosePayment({
   companyId: studio,
   closeId: created.close.id,
   actor: owner,
-  to: COMMERCIAL_CLOSE_STATUS.PAID,
+  payerDisplayName: 'Jordan Lee',
 })
 const closed = transitionCommercialClose({
   companyId: studio,
