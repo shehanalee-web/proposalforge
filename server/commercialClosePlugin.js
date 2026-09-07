@@ -13,6 +13,7 @@ import {
   replaceLivingSessions,
 } from '../src/living/store.js'
 import { configureLivingResolvers } from '../src/living/resolvers.js'
+import { LIVING_EVENT, LIVING_EVENTS } from '../src/living/types.js'
 import {
   allFollowupRecords,
   configureFollowupStore,
@@ -159,6 +160,21 @@ export function commercialClosePlugin() {
   function ensureStore() {
     if (ready) return
 
+    // Direct dependency on living event contracts so Vite server restarts
+    // re-bundle H15.4 payment types before hydrating living-events.json.
+    if (
+      !LIVING_EVENTS.includes(LIVING_EVENT.PAYMENT_REQUESTED) ||
+      !LIVING_EVENTS.includes(LIVING_EVENT.PAYMENT_COMPLETED)
+    ) {
+      throw new ValidationError('Commercial close payment living events are not registered.', [
+        {
+          field: 'type',
+          message:
+            'payment.requested and payment.completed must exist in LIVING_EVENTS before hydration.',
+        },
+      ])
+    }
+
     const storedSessions = readJson(livingFile, null)
     if (Array.isArray(storedSessions)) {
       replaceLivingSessions(storedSessions)
@@ -213,9 +229,11 @@ export function commercialClosePlugin() {
     if (!url.startsWith('/api/commercial-close')) return next()
 
     const method = req.method || 'GET'
-    ensureStore()
 
     try {
+      // Hydrate inside try/catch so unknown persisted event types surface as
+      // ValidationError responses instead of crashing the Vite process.
+      ensureStore()
       if (method === 'GET' && matchRoute(url, '/api/commercial-close/capabilities')) {
         return json(res, 200, { capabilities: COMMERCIAL_CLOSE_CAPABILITIES })
       }

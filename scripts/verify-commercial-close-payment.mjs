@@ -22,6 +22,8 @@ import { WORKFLOW_ISOLATION_COMPANY_ID } from '../src/workflow/types.js'
 import { ForbiddenError, ValidationError } from '../src/services/errors.js'
 import {
   LIVING_EVENT,
+  LIVING_EVENTS,
+  LIVING_STUDIO_ONLY_EVENTS,
   applyLivingDecisions,
   captureLivingAcceptanceDecision,
   configureLivingResolvers,
@@ -30,6 +32,8 @@ import {
   resetLivingPublicationStore,
   resetLivingStore,
   allLivingEngagementEvents,
+  replaceLivingEngagementEvents,
+  makeLivingEngagementEvent,
 } from '../src/living/index.js'
 import {
   CLOSE_PAYMENT_KIND,
@@ -260,6 +264,16 @@ assert(
 )
 
 assert(
+  '26b. payment living events registered for hydration',
+  LIVING_EVENT.PAYMENT_REQUESTED === 'payment.requested' &&
+    LIVING_EVENT.PAYMENT_COMPLETED === 'payment.completed' &&
+    LIVING_EVENTS.includes('payment.requested') &&
+    LIVING_EVENTS.includes('payment.completed') &&
+    LIVING_STUDIO_ONLY_EVENTS.includes(LIVING_EVENT.PAYMENT_REQUESTED) &&
+    LIVING_STUDIO_ONLY_EVENTS.includes(LIVING_EVENT.PAYMENT_COMPLETED),
+)
+
+assert(
   '27. no vendor SDK usage',
   !sourceOf('src', 'commercialClose', 'paymentSchema.js').includes('stripe') &&
     !sourceOf('src', 'commercialClose', 'repository.js').includes('@stripe') &&
@@ -485,6 +499,36 @@ assert(
       event.type === LIVING_EVENT.PAYMENT_COMPLETED &&
       event.metadata.closeId === created.close.id,
   ),
+)
+
+// Persist + rehydrate payment events through the living event store (runtime crash path).
+const persistedPaymentEvents = allLivingEngagementEvents().filter((event) =>
+  String(event.type || '').startsWith('payment.'),
+)
+assert(
+  '10c. payment events present before rehydration',
+  persistedPaymentEvents.some((event) => event.type === 'payment.requested') &&
+    persistedPaymentEvents.some((event) => event.type === 'payment.completed'),
+)
+const rehydrated = replaceLivingEngagementEvents(
+  allLivingEngagementEvents().map((event) => ({ ...event })),
+)
+assert(
+  '10d. payment events hydrate without ValidationError',
+  rehydrated.some((event) => event.type === 'payment.requested') &&
+    rehydrated.some((event) => event.type === 'payment.completed') &&
+    makeLivingEngagementEvent({
+      type: 'payment.requested',
+      proposalId: proposal.id,
+      shareToken: proposal.shareToken,
+      companyId: studio,
+    }).type === 'payment.requested' &&
+    makeLivingEngagementEvent({
+      type: 'payment.completed',
+      proposalId: proposal.id,
+      shareToken: proposal.shareToken,
+      companyId: studio,
+    }).type === 'payment.completed',
 )
 
 assert(
