@@ -4,6 +4,7 @@ import { DEFAULT_COMPANY_ID } from '../../knowledge/types.js'
 import { DEFAULT_ACTOR_ID } from '../../workflow/actors.js'
 import { PROPOSAL_STATUS } from '../../models/proposal.js'
 import {
+  CLOSE_SIGNATURE_STATUS_LABELS,
   COMMERCIAL_CLOSE_STATUS,
   COMMERCIAL_CLOSE_STATUS_LABELS,
 } from '../../commercialClose/types.js'
@@ -30,7 +31,6 @@ function Fact({ label, children }) {
 
 const ACTION_LABELS = Object.freeze({
   [COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING]: 'Request signature',
-  [COMMERCIAL_CLOSE_STATUS.SIGNED]: 'Mark signed',
   [COMMERCIAL_CLOSE_STATUS.PAYMENT_PENDING]: 'Request payment',
   [COMMERCIAL_CLOSE_STATUS.PAID]: 'Mark paid',
   [COMMERCIAL_CLOSE_STATUS.CLOSED]: 'Mark closed',
@@ -39,8 +39,8 @@ const ACTION_LABELS = Object.freeze({
 })
 
 /**
- * Studio surface for H15.1–H15.2 Commercial Close.
- * Opens a close and advances the vendor-neutral state machine.
+ * Studio surface for H15.1–H15.3 Commercial Close.
+ * Opens a close, advances the state machine, and records internal signatures.
  */
 export function CommercialCloseCard({ proposal }) {
   const [state, setState] = useState(null)
@@ -125,6 +125,9 @@ export function CommercialCloseCard({ proposal }) {
   async function handleTransition(to) {
     const closeId = state?.close?.id
     if (!closeId || busy || !to) return
+    if (to === COMMERCIAL_CLOSE_STATUS.SIGNED) {
+      return handleCompleteSignature()
+    }
     setBusy(true)
     setError(null)
     try {
@@ -149,13 +152,85 @@ export function CommercialCloseCard({ proposal }) {
     }
   }
 
+  async function handleRequestSignature() {
+    const closeId = state?.close?.id
+    if (!closeId || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const response = await fetch(
+        `/api/commercial-close/${encodeURIComponent(closeId)}/signature/request`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ companyId, actorId }),
+        },
+      )
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setError(payload.message || 'Could not request signature.')
+        return
+      }
+      setState(payload)
+    } catch {
+      setError('Could not request signature.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleCompleteSignature() {
+    const closeId = state?.close?.id
+    if (!closeId || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      const response = await fetch(
+        `/api/commercial-close/${encodeURIComponent(closeId)}/signature/complete`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            companyId,
+            actorId,
+            signerDisplayName: proposal?.clientName || 'Client',
+          }),
+        },
+      )
+      const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setError(payload.message || 'Could not complete internal signature.')
+        return
+      }
+      setState(payload)
+    } catch {
+      setError('Could not complete internal signature.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const close = state?.close
   const decision = close?.decision
-  const allowed = state?.allowedTransitions ?? []
+  const signature = close?.signature
+  const allowed = (state?.allowedTransitions ?? []).filter(
+    (to) =>
+      to !== COMMERCIAL_CLOSE_STATUS.SIGNED &&
+      to !== COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING,
+  )
   const history = close?.statusHistory ?? []
+  const evidence = signature?.evidence ?? []
+  const canRequest =
+    close &&
+    (close.status === COMMERCIAL_CLOSE_STATUS.OPEN ||
+      close.status === COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING)
+  const canComplete =
+    close &&
+    (close.status === COMMERCIAL_CLOSE_STATUS.OPEN ||
+      close.status === COMMERCIAL_CLOSE_STATUS.SIGNATURE_PENDING)
 
   return (
-    <Card title="Commercial close" kicker="H15.2">
+    <Card title="Commercial close" kicker="H15.3">
       {error ? <p className={styles.note}>{error}</p> : null}
       <dl className={styles.facts}>
         <Fact label="Status">
@@ -184,6 +259,17 @@ export function CommercialCloseCard({ proposal }) {
         <Fact label="Proposal version">
           {decision?.proposalVersion != null ? decision.proposalVersion : '—'}
         </Fact>
+        <Fact label="Signature required">
+          {signature ? (signature.required ? 'Yes' : 'No') : '—'}
+        </Fact>
+        <Fact label="Signature status">
+          {signature
+            ? CLOSE_SIGNATURE_STATUS_LABELS[signature.status] ?? signature.status
+            : '—'}
+        </Fact>
+        <Fact label="Signature method">
+          {signature?.method || (signature?.required ? 'internal' : '—')}
+        </Fact>
       </dl>
 
       {!close ? (
@@ -204,6 +290,26 @@ export function CommercialCloseCard({ proposal }) {
       ) : (
         <>
           <div className={styles.row} style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+            {canRequest && close.status === COMMERCIAL_CLOSE_STATUS.OPEN ? (
+              <button
+                type="button"
+                className={styles.publish}
+                onClick={handleRequestSignature}
+                disabled={busy}
+              >
+                {busy ? 'Working…' : 'Request signature'}
+              </button>
+            ) : null}
+            {canComplete ? (
+              <button
+                type="button"
+                className={styles.publish}
+                onClick={handleCompleteSignature}
+                disabled={busy}
+              >
+                {busy ? 'Working…' : 'Record internal signature'}
+              </button>
+            ) : null}
             {allowed.map((to) => (
               <button
                 key={to}
@@ -215,14 +321,32 @@ export function CommercialCloseCard({ proposal }) {
                 {ACTION_LABELS[to] || COMMERCIAL_CLOSE_STATUS_LABELS[to] || to}
               </button>
             ))}
-            {allowed.length === 0 ? (
+            {allowed.length === 0 && !canRequest && !canComplete ? (
               <p className={styles.muted}>No further transitions from this state.</p>
             ) : null}
           </div>
           <p className={styles.note}>
-            Architectural states only. DocuSign, Stripe, and other vendors remain
-            disconnected — capability flags stay false.
+            Architectural signature path only. DocuSign and other vendors remain
+            disconnected — digitalSignature and signatureVendors stay false.
           </p>
+          {evidence.length > 0 ? (
+            <div className={styles.audit}>
+              <p className={styles.kicker}>Signature evidence</p>
+              <ul>
+                {evidence.map((item) => (
+                  <li key={item.id}>
+                    <span>
+                      {item.signerDisplayName || 'Signer'} · {item.method}
+                      {item.binding?.proposalVersion != null
+                        ? ` · rev ${item.binding.proposalVersion}`
+                        : ''}
+                    </span>
+                    <span>{item.signedAt ? formatDateTime(item.signedAt) : '—'}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {history.length > 0 ? (
             <div className={styles.audit}>
               <p className={styles.kicker}>State history</p>

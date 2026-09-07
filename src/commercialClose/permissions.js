@@ -35,3 +35,10 @@ export function studioCanCreateCommercialClose(user) {
 export function studioCanTransitionCommercialClose(user) {
   return isOwnerOrAdmin(user)
 }
+
+/**
+ * Only owner / admin may request or complete studio-authorized signature actions (H15.3).
+ */
+export function studioCanManageCommercialCloseSignature(user) {
+  return isOwnerOrAdmin(user)
+}

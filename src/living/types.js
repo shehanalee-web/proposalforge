@@ -30,6 +30,10 @@ export const LIVING_EVENT = Object.freeze({
   CLOSE_CANCELLED: 'close.cancelled',
   /** Studio-only: H15.2 commercial close expired. */
   CLOSE_EXPIRED: 'close.expired',
+  /** H15.3: commercial-close signature requested (living engagement store). */
+  SIGNATURE_REQUESTED: 'signature.requested',
+  /** H15.3: commercial-close signature completed (living engagement store). */
+  SIGNATURE_COMPLETED: 'signature.completed',
 })
 
 export const LIVING_EVENTS = Object.freeze(Object.values(LIVING_EVENT))
@@ -42,6 +46,8 @@ export const LIVING_STUDIO_ONLY_EVENTS = Object.freeze([
   LIVING_EVENT.CLOSE_COMPLETED,
   LIVING_EVENT.CLOSE_CANCELLED,
   LIVING_EVENT.CLOSE_EXPIRED,
+  LIVING_EVENT.SIGNATURE_REQUESTED,
+  LIVING_EVENT.SIGNATURE_COMPLETED,
 ])
 
 export const LIVING_PUBLICATION_SOURCE = Object.freeze({

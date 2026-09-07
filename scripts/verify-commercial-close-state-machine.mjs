@@ -36,6 +36,7 @@ import {
   COMMERCIAL_CLOSE_STATUS,
   createCommercialCloseFromAcceptedDecision,
   clientCommercialCloseTransitionDenied,
+  completeInternalCommercialCloseSignature,
   getClientCommercialCloseSummary,
   presentClientCommercialClose,
   resetCommercialCloseStore,
@@ -216,6 +217,7 @@ assert(
   '0. state machine capability honest',
   COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseDomain === true &&
     COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseStateMachine === true &&
+    COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseSignaturePath === true &&
     COMMERCIAL_CLOSE_CAPABILITIES.digitalSignature === false &&
     COMMERCIAL_CLOSE_CAPABILITIES.paymentProcessing === false &&
     COMMERCIAL_CLOSE_CAPABILITIES.thirdPartyIntegrations === false &&
@@ -361,12 +363,34 @@ assert('5. company isolation', crossDenied)
 
 // Continue happy path and preserve decision
 const decisionSnapshot = { ...toSig.close.decision }
-const signed = transitionCommercialClose({
+
+// H15.3: signed requires evidence — bare transition must fail, then complete via internal path
+let bareSignedRejected = false
+try {
+  transitionCommercialClose({
+    companyId: studio,
+    closeId: created.close.id,
+    actor: owner,
+    to: COMMERCIAL_CLOSE_STATUS.SIGNED,
+  })
+} catch (error) {
+  bareSignedRejected = error instanceof ValidationError
+}
+assert('2b. signed without evidence rejected', bareSignedRejected)
+
+const signed = completeInternalCommercialCloseSignature({
   companyId: studio,
   closeId: created.close.id,
   actor: owner,
-  to: COMMERCIAL_CLOSE_STATUS.SIGNED,
+  signerDisplayName: 'Jordan Lee',
 })
+assert(
+  '1c. internal signature completes to signed',
+  signed.close.status === COMMERCIAL_CLOSE_STATUS.SIGNED &&
+    signed.close.signature?.status === 'completed' &&
+    (signed.close.signature?.evidence?.length ?? 0) >= 1,
+)
+
 const payPending = transitionCommercialClose({
   companyId: studio,
   closeId: created.close.id,

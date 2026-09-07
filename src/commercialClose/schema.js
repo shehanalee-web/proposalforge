@@ -2,6 +2,11 @@ import { createRecordId } from '../models/ids.js'
 import { DEFAULT_COMPANY_ID } from '../knowledge/types.js'
 import { makeDecisionSnapshot } from '../living/schema.js'
 import {
+  makeCloseSignature,
+  presentClientCloseSignature,
+  presentCloseSignature,
+} from './signatureSchema.js'
+import {
   COMMERCIAL_CLOSE_STATUS,
   COMMERCIAL_CLOSE_STATUSES,
 } from './types.js'
@@ -12,6 +17,7 @@ import {
  * Stores an immutable copy of the H14 decision snapshot plus identity
  * anchors. Does not clone proposal blocks or offer definitions.
  * H15.2 adds status history for the close state machine.
+ * H15.3 adds provider-neutral signature request/evidence on the close.
  */
 
 function asString(value) {
@@ -100,6 +106,7 @@ export function makeCommercialClose(input = {}) {
       : makeCloseDecisionBinding(input.decisionSnapshot ?? {})
 
   const statusHistory = asStatusHistory(input.statusHistory)
+  const signature = makeCloseSignature(input.signature ?? {})
 
   return {
     id: asString(input.id).trim() || createRecordId('cclose'),
@@ -108,6 +115,7 @@ export function makeCommercialClose(input = {}) {
     sessionId: asString(input.sessionId).trim() || decision.sessionId,
     status,
     decision,
+    signature,
     statusHistory,
     openedAt,
     openedByActorId: asOptionalId(input.openedByActorId),
@@ -126,6 +134,7 @@ export function cloneCommercialClose(record) {
   return {
     ...next,
     decision: makeCloseDecisionBinding(next.decision),
+    signature: makeCloseSignature(next.signature),
     statusHistory: next.statusHistory.map((entry) => makeCloseStatusHistoryEntry(entry)),
   }
 }
@@ -164,6 +173,7 @@ export function presentCommercialClose(record) {
       currency: next.decision.currency,
       acceptedAt: next.decision.acceptedAt,
     },
+    signature: presentCloseSignature(next.signature),
     statusHistory: next.statusHistory.map((entry) => ({
       id: entry.id,
       from: entry.from,
@@ -208,6 +218,7 @@ export function presentClientCommercialClose(record) {
       acceptedAt: next.decision.acceptedAt,
       decisionLocked: true,
     },
+    signature: presentClientCloseSignature(next.signature),
     openedAt: next.openedAt,
   }
 }

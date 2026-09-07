@@ -6,6 +6,13 @@ export {
   COMMERCIAL_CLOSE_STATUSES,
   COMMERCIAL_CLOSE_STATUS_LABELS,
   COMMERCIAL_CLOSE_TERMINAL_STATUSES,
+  CLOSE_SIGNATURE_STATUS,
+  CLOSE_SIGNATURE_STATUSES,
+  CLOSE_SIGNATURE_STATUS_LABELS,
+  CLOSE_SIGNATURE_METHOD,
+  CLOSE_SIGNATURE_METHODS,
+  CLOSE_SIGNATURE_PARTY_ROLE,
+  CLOSE_SIGNATURE_PARTY_ROLES,
   isTerminalCommercialCloseStatus,
 } from './types.js'
 export {
@@ -23,6 +30,16 @@ export {
   presentClientCommercialClose,
 } from './schema.js'
 export {
+  makeCloseSignature,
+  makeCloseSignatureParty,
+  makeCloseSignatureRequest,
+  makeCloseSignatureEvidence,
+  makeCloseSignatureBinding,
+  hasValidSignatureEvidence,
+  presentCloseSignature,
+  presentClientCloseSignature,
+} from './signatureSchema.js'
+export {
   configureCommercialCloseStore,
   resetCommercialCloseStore,
   allCommercialCloses,
@@ -38,8 +55,10 @@ export {
   studioCanViewCommercialClose,
   studioCanCreateCommercialClose,
   studioCanTransitionCommercialClose,
+  studioCanManageCommercialCloseSignature,
 } from './permissions.js'
 export { reconcileCommercialCloseFollowup } from './signals.js'
+export { bridgeInternalSignatureToCommercialClose } from './bridge.js'
 export {
   assertValidCloseDecision,
   getCommercialCloseForProposal,
@@ -49,4 +68,8 @@ export {
   clientCommercialCloseTransitionDenied,
   getClientCommercialCloseSummary,
   listProposalCommercialCloses,
+  requestCommercialCloseSignature,
+  completeInternalCommercialCloseSignature,
+  recordClientBridgeSignature,
+  getCommercialCloseSignature,
 } from './repository.js'
