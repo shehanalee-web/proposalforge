@@ -24,6 +24,7 @@ import {
 import { LivingEngagementCard } from './LivingEngagementCard.jsx'
 import { LivingPublicationCard } from './LivingPublicationCard.jsx'
 import { ForgeActionsCard } from './ForgeActionsCard.jsx'
+import { CommercialCloseCard } from './CommercialCloseCard.jsx'
 import styles from './ProposalDetailView.module.css'
 
 function MetaItem({ label, children }) {
@@ -348,6 +349,7 @@ function ProposalDetailView({
       <ProposalAnalyticsCard proposal={proposal} />
       <LivingPublicationCard proposal={proposal} />
       <LivingEngagementCard proposal={proposal} />
+      <CommercialCloseCard proposal={proposal} />
       <ForgeActionsCard proposal={proposal} />
       <ProposalCommentsSection
         proposal={proposal}

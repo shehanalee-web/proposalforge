@@ -6,6 +6,7 @@ import { interactionsPlugin } from './interactionsPlugin.js'
 import { knowledgePlugin } from './knowledgePlugin.js'
 import { livingPlugin } from './livingPlugin.js'
 import { forgePlugin } from './forgePlugin.js'
+import { commercialClosePlugin } from './commercialClosePlugin.js'
 import { localUploadsPlugin } from './localUploadsPlugin.js'
 import { portalPlugin } from './portalPlugin.js'
 import { workflowPlugin } from './workflowPlugin.js'
@@ -25,6 +26,7 @@ function getHandlers() {
     followupPlugin(),
     livingPlugin(),
     forgePlugin(),
+    commercialClosePlugin(),
   ]
   handlers = plugins.map((plugin) => plugin.handle)
   return handlers

@@ -20,12 +20,17 @@ export const LIVING_EVENT = Object.freeze({
   ACCEPTED: 'accepted',
   /** Studio-only: emitted when an immutable living publication is created. */
   REPUBLISHED: 'republished',
+  /** Studio-only: H15 commercial close opened (recorded via living event store). */
+  CLOSE_OPENED: 'close.opened',
 })
 
 export const LIVING_EVENTS = Object.freeze(Object.values(LIVING_EVENT))
 
-/** Event types clients may not POST. Recorded only by studio publish path. */
-export const LIVING_STUDIO_ONLY_EVENTS = Object.freeze([LIVING_EVENT.REPUBLISHED])
+/** Event types clients may not POST. Recorded only by studio paths. */
+export const LIVING_STUDIO_ONLY_EVENTS = Object.freeze([
+  LIVING_EVENT.REPUBLISHED,
+  LIVING_EVENT.CLOSE_OPENED,
+])
 
 export const LIVING_PUBLICATION_SOURCE = Object.freeze({
   AUTHORED: 'authored',

@@ -10,6 +10,7 @@ import { interactionsPlugin } from './server/interactionsPlugin.js'
 import { followupPlugin } from './server/followupPlugin.js'
 import { livingPlugin } from './server/livingPlugin.js'
 import { forgePlugin } from './server/forgePlugin.js'
+import { commercialClosePlugin } from './server/commercialClosePlugin.js'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -25,5 +26,6 @@ export default defineConfig({
     followupPlugin(),
     livingPlugin(),
     forgePlugin(),
+    commercialClosePlugin(),
   ],
 })
