@@ -146,7 +146,7 @@ export function reconcileCommercialCloseFollowup(input = {}) {
         reason: FOLLOWUP_REASON.CLOSE_PAYMENT_PENDING,
         ownerActorId,
         description:
-          'Commercial close is awaiting payment. External payment providers are not connected yet.',
+          'Commercial close is awaiting payment. Use the internal payment path; external payment providers are not connected yet.',
         now: input.now,
       })
     }

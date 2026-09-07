@@ -22,14 +22,17 @@ import {
   COMMERCIAL_CLOSE_CAPABILITIES,
   allCommercialCloses,
   clientCommercialCloseTransitionDenied,
+  completeInternalCommercialClosePayment,
   completeInternalCommercialCloseSignature,
   configureCommercialCloseStore,
   createCommercialCloseFromAcceptedDecision,
   getClientCommercialCloseSummary,
   getCommercialCloseById,
   getCommercialCloseForProposal,
+  getCommercialClosePayment,
   getCommercialCloseSignature,
   replaceCommercialCloses,
+  requestCommercialClosePayment,
   requestCommercialCloseSignature,
   transitionCommercialClose,
 } from '../src/commercialClose/index.js'
@@ -316,6 +319,76 @@ export function commercialClosePlugin() {
           200,
           getCommercialCloseSignature({
             closeId: signatureGet.closeId,
+            companyId: companyFrom(null, query),
+            actor: actorFrom(null, query),
+          }),
+        )
+      }
+
+      const paymentRequest = matchRoute(
+        url,
+        '/api/commercial-close/:closeId/payment/request',
+      )
+      if (paymentRequest) {
+        if (method !== 'POST') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        const raw = await readBody(req)
+        const body = raw.length ? JSON.parse(raw.toString('utf8') || '{}') : {}
+        return json(
+          res,
+          200,
+          requestCommercialClosePayment({
+            closeId: paymentRequest.closeId,
+            companyId: companyFrom(body, query),
+            actor: actorFrom(body, query),
+            kind: body.kind,
+          }),
+        )
+      }
+
+      const paymentComplete = matchRoute(
+        url,
+        '/api/commercial-close/:closeId/payment/complete',
+      )
+      if (paymentComplete) {
+        if (method !== 'POST') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        const raw = await readBody(req)
+        const body = raw.length ? JSON.parse(raw.toString('utf8') || '{}') : {}
+        return json(
+          res,
+          200,
+          completeInternalCommercialClosePayment({
+            closeId: paymentComplete.closeId,
+            companyId: companyFrom(body, query),
+            actor: actorFrom(body, query),
+            payerDisplayName: body.payerDisplayName,
+            payerReference: body.payerReference,
+            amount: body.amount,
+            currency: body.currency,
+            paidAt: body.paidAt,
+            kind: body.kind,
+            transactionReference: body.transactionReference,
+            evidenceRef: body.evidenceRef,
+          }),
+        )
+      }
+
+      const paymentGet = matchRoute(url, '/api/commercial-close/:closeId/payment')
+      if (paymentGet) {
+        if (method !== 'GET') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        return json(
+          res,
+          200,
+          getCommercialClosePayment({
+            closeId: paymentGet.closeId,
             companyId: companyFrom(null, query),
             actor: actorFrom(null, query),
           }),

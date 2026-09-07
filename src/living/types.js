@@ -34,6 +34,10 @@ export const LIVING_EVENT = Object.freeze({
   SIGNATURE_REQUESTED: 'signature.requested',
   /** H15.3: commercial-close signature completed (living engagement store). */
   SIGNATURE_COMPLETED: 'signature.completed',
+  /** H15.4: commercial-close payment requested (living engagement store). */
+  PAYMENT_REQUESTED: 'payment.requested',
+  /** H15.4: commercial-close payment completed (living engagement store). */
+  PAYMENT_COMPLETED: 'payment.completed',
 })
 
 export const LIVING_EVENTS = Object.freeze(Object.values(LIVING_EVENT))
@@ -48,6 +52,8 @@ export const LIVING_STUDIO_ONLY_EVENTS = Object.freeze([
   LIVING_EVENT.CLOSE_EXPIRED,
   LIVING_EVENT.SIGNATURE_REQUESTED,
   LIVING_EVENT.SIGNATURE_COMPLETED,
+  LIVING_EVENT.PAYMENT_REQUESTED,
+  LIVING_EVENT.PAYMENT_COMPLETED,
 ])
 
 export const LIVING_PUBLICATION_SOURCE = Object.freeze({
