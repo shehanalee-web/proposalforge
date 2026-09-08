@@ -2,7 +2,8 @@
  * H16.1 Integration Foundation verification.
  *
  * Never writes data/proposals.json.
- * No vendor SDKs, OAuth, network I/O, event intake, rules, or live webhooks.
+ * No vendor SDKs, OAuth, network I/O, rules, delivery, or live webhooks.
+ * H16.2 may enable eventIntake; execution flags stay false.
  */
 import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -115,9 +116,8 @@ assert(
 )
 
 assert(
-  '2. future H16 capabilities remain false',
-  INTEGRATION_CAPABILITIES.eventIntake === false &&
-    INTEGRATION_CAPABILITIES.automationRules === false &&
+  '2. future H16 execution capabilities remain false',
+  INTEGRATION_CAPABILITIES.automationRules === false &&
     INTEGRATION_CAPABILITIES.deliveryExecution === false &&
     INTEGRATION_CAPABILITIES.emailDelivery === false &&
     INTEGRATION_CAPABILITIES.crm === false &&
@@ -337,10 +337,9 @@ function pathExists(relativePath) {
 }
 
 assert(
-  'foundation file layout stays minimal (no events/rules/outbox/delivery/crm/calendar/messaging)',
+  'foundation file layout stays minimal (no rules/outbox/delivery/crm/calendar/messaging)',
   !integrationSources.includes('evaluateAutomationRule') &&
     !integrationSources.includes('processOutbox') &&
-    !pathExists('src/integrations/events.js') &&
     !pathExists('src/integrations/rules.js') &&
     !pathExists('src/integrations/outbox') &&
     !pathExists('src/integrations/delivery') &&

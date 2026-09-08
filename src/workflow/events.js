@@ -1,7 +1,9 @@
 import { WORKFLOW_EVENT } from './types.js'
+import { fanoutWorkflowEmission } from '../integrations/events/fanout.js'
 
 /**
  * Future systems subscribe to these names. Horizon 10 does not deliver them.
+ * H16.2 fans out into automation intake when eventIntake is enabled.
  */
 export const WORKFLOW_NOTIFICATION_EVENTS = Object.freeze([
   WORKFLOW_EVENT.STATUS_CHANGED,
@@ -22,6 +24,7 @@ export const WORKFLOW_NOTIFICATION_EVENTS = Object.freeze([
   WORKFLOW_EVENT.APPROVAL_REQUESTED,
 ])
 
-export function emitWorkflowEvent(_event) {
+export function emitWorkflowEvent(event) {
+  fanoutWorkflowEmission(event)
   return null
 }
