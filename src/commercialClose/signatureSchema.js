@@ -11,6 +11,7 @@ import {
 /**
  * Provider-neutral CommercialClose signature request + evidence (H15.3).
  * Internal is the only supported method. No vendor SDKs.
+ * H15.6 adds optional nullable provider reference fields (backward compatible).
  */
 
 function asString(value) {
@@ -31,6 +32,32 @@ function nowIso() {
 function asOptionalId(value) {
   const id = asString(value).trim()
   return id || null
+}
+
+function asOptionalProviderRef(value) {
+  if (!value || typeof value !== 'object') return null
+  const providerId = asString(value.providerId).trim()
+  const providerKind = asString(value.providerKind).trim()
+  const externalId = asString(value.externalId).trim()
+  if (!providerId && !providerKind && !externalId) return null
+  return Object.freeze({
+    providerId,
+    providerKind: providerKind || null,
+    externalId,
+    externalStatus: asString(value.externalStatus).trim() || null,
+    externalCreatedAt: asIso(value.externalCreatedAt, null),
+    externalUpdatedAt: asIso(value.externalUpdatedAt, null),
+  })
+}
+
+function asOptionalProviderFields(input = {}) {
+  return {
+    providerId: asOptionalId(input.providerId),
+    providerKind: asString(input.providerKind).trim() || null,
+    providerRef: asOptionalProviderRef(input.providerRef),
+    providerEventId: asOptionalId(input.providerEventId),
+    providerOccurredAt: asIso(input.providerOccurredAt, null),
+  }
 }
 
 /**
@@ -80,6 +107,7 @@ export function makeCloseSignatureRequest(input = {}) {
     ? input.method
     : CLOSE_SIGNATURE_METHOD.INTERNAL
   const binding = makeCloseSignatureBinding(input.binding ?? input)
+  const provider = asOptionalProviderFields(input)
   return Object.freeze({
     id: asString(input.id).trim() || createRecordId('csigr'),
     status: CLOSE_SIGNATURE_STATUSES.includes(input.status)
@@ -89,6 +117,7 @@ export function makeCloseSignatureRequest(input = {}) {
     createdAt: asIso(input.createdAt, nowIso()),
     createdByActorId: asOptionalId(input.createdByActorId),
     binding,
+    ...provider,
   })
 }
 
@@ -102,6 +131,7 @@ export function makeCloseSignatureEvidence(input = {}) {
     ? input.method
     : CLOSE_SIGNATURE_METHOD.INTERNAL
   const binding = makeCloseSignatureBinding(input.binding ?? input)
+  const provider = asOptionalProviderFields(input)
   return Object.freeze({
     id: asString(input.id).trim() || createRecordId('csige'),
     signerActorId: asOptionalId(input.signerActorId),
@@ -111,6 +141,7 @@ export function makeCloseSignatureEvidence(input = {}) {
     evidenceRef: asOptionalId(input.evidenceRef),
     legacyProposalSignatureId: asOptionalId(input.legacyProposalSignatureId),
     binding,
+    ...provider,
   })
 }
 
@@ -215,6 +246,13 @@ export function presentCloseSignature(signature) {
           createdAt: next.request.createdAt,
           createdByActorId: next.request.createdByActorId,
           binding: { ...next.request.binding },
+          providerId: next.request.providerId,
+          providerKind: next.request.providerKind,
+          providerRef: next.request.providerRef
+            ? { ...next.request.providerRef }
+            : null,
+          providerEventId: next.request.providerEventId,
+          providerOccurredAt: next.request.providerOccurredAt,
         }
       : null,
     evidence: next.evidence.map((item) => ({
@@ -226,6 +264,11 @@ export function presentCloseSignature(signature) {
       evidenceRef: item.evidenceRef,
       legacyProposalSignatureId: item.legacyProposalSignatureId,
       binding: { ...item.binding },
+      providerId: item.providerId,
+      providerKind: item.providerKind,
+      providerRef: item.providerRef ? { ...item.providerRef } : null,
+      providerEventId: item.providerEventId,
+      providerOccurredAt: item.providerOccurredAt,
     })),
     completedAt: next.completedAt,
   }

@@ -11,6 +11,7 @@ import {
 /**
  * Provider-neutral CommercialClose payment request + evidence (H15.4).
  * Internal/manual is the only supported method. No vendor SDKs.
+ * H15.6 adds optional nullable provider reference fields (backward compatible).
  */
 
 function asString(value) {
@@ -37,6 +38,32 @@ function asMoney(value, fallback = 0) {
   if (value == null || value === '') return fallback
   const next = Number(value)
   return Number.isFinite(next) ? next : fallback
+}
+
+function asOptionalProviderRef(value) {
+  if (!value || typeof value !== 'object') return null
+  const providerId = asString(value.providerId).trim()
+  const providerKind = asString(value.providerKind).trim()
+  const externalId = asString(value.externalId).trim()
+  if (!providerId && !providerKind && !externalId) return null
+  return Object.freeze({
+    providerId,
+    providerKind: providerKind || null,
+    externalId,
+    externalStatus: asString(value.externalStatus).trim() || null,
+    externalCreatedAt: asIso(value.externalCreatedAt, null),
+    externalUpdatedAt: asIso(value.externalUpdatedAt, null),
+  })
+}
+
+function asOptionalProviderFields(input = {}) {
+  return {
+    providerId: asOptionalId(input.providerId),
+    providerKind: asString(input.providerKind).trim() || null,
+    providerRef: asOptionalProviderRef(input.providerRef),
+    providerEventId: asOptionalId(input.providerEventId),
+    providerOccurredAt: asIso(input.providerOccurredAt, null),
+  }
 }
 
 /**
@@ -78,6 +105,7 @@ export function makeClosePaymentRequest(input = {}) {
     input.remainingAmount == null
       ? requiredAmount
       : asMoney(input.remainingAmount, requiredAmount)
+  const provider = asOptionalProviderFields(input)
   return Object.freeze({
     id: asString(input.id).trim() || createRecordId('cpayr'),
     status: CLOSE_PAYMENT_STATUSES.includes(input.status)
@@ -91,6 +119,7 @@ export function makeClosePaymentRequest(input = {}) {
     createdAt: asIso(input.createdAt, nowIso()),
     createdByActorId: asOptionalId(input.createdByActorId),
     binding,
+    ...provider,
   })
 }
 
@@ -107,6 +136,7 @@ export function makeClosePaymentEvidence(input = {}) {
     ? input.kind
     : CLOSE_PAYMENT_KIND.FULL
   const binding = makeClosePaymentBinding(input.binding ?? input)
+  const provider = asOptionalProviderFields(input)
   return Object.freeze({
     id: asString(input.id).trim() || createRecordId('cpaye'),
     payerActorId: asOptionalId(input.payerActorId),
@@ -122,6 +152,7 @@ export function makeClosePaymentEvidence(input = {}) {
     legacyProposalPaymentId: asOptionalId(input.legacyProposalPaymentId),
     valid: input.valid !== false,
     binding,
+    ...provider,
   })
 }
 
@@ -302,6 +333,13 @@ export function presentClosePayment(payment) {
           createdAt: next.request.createdAt,
           createdByActorId: next.request.createdByActorId,
           binding: { ...next.request.binding },
+          providerId: next.request.providerId,
+          providerKind: next.request.providerKind,
+          providerRef: next.request.providerRef
+            ? { ...next.request.providerRef }
+            : null,
+          providerEventId: next.request.providerEventId,
+          providerOccurredAt: next.request.providerOccurredAt,
         }
       : null,
     evidence: next.evidence.map((item) => ({
@@ -319,6 +357,11 @@ export function presentClosePayment(payment) {
       legacyProposalPaymentId: item.legacyProposalPaymentId,
       valid: item.valid,
       binding: { ...item.binding },
+      providerId: item.providerId,
+      providerKind: item.providerKind,
+      providerRef: item.providerRef ? { ...item.providerRef } : null,
+      providerEventId: item.providerEventId,
+      providerOccurredAt: item.providerOccurredAt,
     })),
     completedAt: next.completedAt,
   }
