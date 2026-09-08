@@ -42,9 +42,10 @@ const ACTION_LABELS = Object.freeze({
 })
 
 /**
- * Studio surface for H15.1–H15.5 Commercial Close.
+ * Studio surface for H15.1–H15.7 Commercial Close.
  * Opens a close, advances the state machine, records internal signatures/payments,
- * and inspects provider-neutral contract/invoice architecture.
+ * inspects provider-neutral contract/invoice architecture, and shows H15.7
+ * requirement-driven completion readiness.
  */
 export function CommercialCloseCard({ proposal }) {
   const [state, setState] = useState(null)
@@ -392,6 +393,7 @@ export function CommercialCloseCard({ proposal }) {
   const payment = close?.payment
   const contract = close?.contract
   const invoice = close?.invoice
+  const completion = state?.completion
   const allowed = (state?.allowedTransitions ?? []).filter(
     (to) =>
       to !== COMMERCIAL_CLOSE_STATUS.SIGNED &&
@@ -424,9 +426,13 @@ export function CommercialCloseCard({ proposal }) {
     close &&
     close.status !== COMMERCIAL_CLOSE_STATUS.CANCELLED &&
     close.status !== COMMERCIAL_CLOSE_STATUS.EXPIRED
+  const closeBlocked =
+    Boolean(completion) &&
+    !completion.alreadyComplete &&
+    completion.ready === false
 
   return (
-    <Card title="Commercial close" kicker="H15.5">
+    <Card title="Commercial close" kicker="H15.7">
       {error ? <p className={styles.note}>{error}</p> : null}
       <dl className={styles.facts}>
         <Fact label="Status">
@@ -441,6 +447,22 @@ export function CommercialCloseCard({ proposal }) {
         </Fact>
         <Fact label="Last transition">
           {close?.lastTransitionAt ? formatDateTime(close.lastTransitionAt) : '—'}
+        </Fact>
+        <Fact label="Completion ready">
+          {completion
+            ? completion.alreadyComplete
+              ? 'Completed'
+              : completion.ready
+                ? 'Yes'
+                : 'No'
+            : '—'}
+        </Fact>
+        <Fact label="Completion blockers">
+          {completion?.blockers?.length
+            ? completion.blockers.join(', ')
+            : completion
+              ? 'None'
+              : '—'}
         </Fact>
         <Fact label="Total">
           {decision?.selectedTotal != null
@@ -606,17 +628,33 @@ export function CommercialCloseCard({ proposal }) {
                 {busy ? 'Working…' : 'Issue invoice'}
               </button>
             ) : null}
-            {allowed.map((to) => (
-              <button
-                key={to}
-                type="button"
-                className={styles.publish}
-                onClick={() => handleTransition(to)}
-                disabled={busy}
-              >
-                {ACTION_LABELS[to] || COMMERCIAL_CLOSE_STATUS_LABELS[to] || to}
-              </button>
-            ))}
+            {allowed.map((to) => {
+              const isCloseAction = to === COMMERCIAL_CLOSE_STATUS.CLOSED
+              const disabled = busy || (isCloseAction && closeBlocked)
+              return (
+                <button
+                  key={to}
+                  type="button"
+                  className={styles.publish}
+                  onClick={() => handleTransition(to)}
+                  disabled={disabled}
+                  title={
+                    isCloseAction && closeBlocked
+                      ? completion?.reasons?.[0] ||
+                        'Completion requirements are not satisfied.'
+                      : undefined
+                  }
+                >
+                  {ACTION_LABELS[to] || COMMERCIAL_CLOSE_STATUS_LABELS[to] || to}
+                </button>
+              )
+            })}
+            {closeBlocked && allowed.includes(COMMERCIAL_CLOSE_STATUS.CLOSED) ? (
+              <p className={styles.note}>
+                {completion?.reasons?.[0] ||
+                  'Close is not ready to complete under current requirements.'}
+              </p>
+            ) : null}
             {allowed.length === 0 &&
             !canRequest &&
             !canComplete &&
@@ -628,10 +666,11 @@ export function CommercialCloseCard({ proposal }) {
             ) : null}
           </div>
           <p className={styles.note}>
-            Architectural signature, payment, contract, and invoice paths only.
-            DocuSign, Stripe, accounting vendors, and other providers remain
-            disconnected — digitalSignature, paymentProcessing, paymentVendors,
-            and thirdPartyIntegrations stay false.
+            Requirement-driven completion (H15.7): payment and artifacts are only
+            required when marked required on this close. DocuSign, Stripe,
+            accounting vendors, and other providers remain disconnected —
+            digitalSignature, paymentProcessing, paymentVendors, and
+            thirdPartyIntegrations stay false.
           </p>
           {evidence.length > 0 ? (
             <div className={styles.audit}>

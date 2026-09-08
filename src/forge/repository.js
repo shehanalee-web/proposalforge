@@ -21,6 +21,10 @@ import { listLivingEngagementEventsForProposal } from '../living/eventStore.js'
 import { getLivingPublicationState } from '../living/publicationRepository.js'
 import { deriveSelectedCommercialState } from '../living/totals.js'
 import { LIVING_CAPABILITIES } from '../living/types.js'
+import {
+  findCommercialCloseByProposal,
+  presentCommercialCloseCompletionSummary,
+} from '../commercialClose/index.js'
 import { buildForgeLivingSummary } from './summary.js'
 import { draftFollowupMessage, suggestForgeNextAction } from './suggest.js'
 import { FORGE_ACTION, FORGE_ACTIONS, FORGE_CAPABILITIES } from './types.js'
@@ -101,6 +105,8 @@ export function collectForgeContext({ companyId, proposalId, actor, now } = {}) 
     publication = null
   }
   const commercialState = deriveSelectedCommercialState(proposal, livingSession)
+  const closeRecord = findCommercialCloseByProposal(proposal.id, scoped)
+  const commercialCloseCompletion = presentCommercialCloseCompletionSummary(closeRecord)
 
   const summary = buildForgeLivingSummary({
     proposal,
@@ -110,6 +116,7 @@ export function collectForgeContext({ companyId, proposalId, actor, now } = {}) 
     followups: followupView.followups,
     publication,
     commercialState,
+    commercialCloseCompletion,
   })
   const suggestion = suggestForgeNextAction(summary)
 

@@ -113,6 +113,15 @@ export {
 } from './permissions.js'
 export { reconcileCommercialCloseFollowup } from './signals.js'
 export {
+  COMMERCIAL_CLOSE_COMPLETION_BLOCKER,
+  COMMERCIAL_CLOSE_COMPLETION_RESULT,
+  evaluateCommercialCloseCompletion,
+  reconcileCommercialCloseCompletion,
+  presentCommercialCloseCompletion,
+  presentCommercialCloseCompletionSummary,
+  assertCommercialCloseReadyToComplete,
+} from './completion.js'
+export {
   bridgeInternalSignatureToCommercialClose,
   bridgeInternalPaymentToCommercialClose,
 } from './bridge.js'
@@ -181,4 +190,6 @@ export {
   requestCommercialCloseInvoice,
   issueCommercialCloseInvoice,
   getCommercialCloseInvoice,
+  getCommercialCloseCompletion,
+  reconcileCommercialCloseCompletionForStudio,
 } from './repository.js'

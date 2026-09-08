@@ -34,8 +34,10 @@ import {
   getCommercialCloseInvoice,
   getCommercialClosePayment,
   getCommercialCloseSignature,
+  getCommercialCloseCompletion,
   issueCommercialCloseContract,
   issueCommercialCloseInvoice,
+  reconcileCommercialCloseCompletionForStudio,
   replaceCommercialCloses,
   requestCommercialCloseContract,
   requestCommercialCloseInvoice,
@@ -551,6 +553,49 @@ export function commercialClosePlugin() {
             closeId: invoiceGet.closeId,
             companyId: companyFrom(null, query),
             actor: actorFrom(null, query),
+          }),
+        )
+      }
+
+      const completionGet = matchRoute(
+        url,
+        '/api/commercial-close/:closeId/completion',
+      )
+      if (completionGet) {
+        if (method !== 'GET') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        return json(
+          res,
+          200,
+          getCommercialCloseCompletion({
+            closeId: completionGet.closeId,
+            companyId: companyFrom(null, query),
+            actor: actorFrom(null, query),
+          }),
+        )
+      }
+
+      const completionReconcile = matchRoute(
+        url,
+        '/api/commercial-close/:closeId/completion/reconcile',
+      )
+      if (completionReconcile) {
+        if (method !== 'POST') {
+          return json(res, 405, { message: 'Method not allowed.' })
+        }
+        const query = queryOf(url)
+        const raw = await readBody(req)
+        const body = raw.length ? JSON.parse(raw.toString('utf8') || '{}') : {}
+        return json(
+          res,
+          200,
+          reconcileCommercialCloseCompletionForStudio({
+            closeId: completionReconcile.closeId,
+            companyId: companyFrom(body, query),
+            actor: actorFrom(body, query),
+            providerSignals: body.providerSignals,
           }),
         )
       }

@@ -1,5 +1,5 @@
 /**
- * H15.1–H15.6 — Commercial Close Domain contracts.
+ * H15.1–H15.7 — Commercial Close Domain contracts.
  *
  * Post-acceptance business object bound to the H14 decision snapshot.
  * H15.2 adds an authoritative vendor-neutral close state machine.
@@ -7,6 +7,7 @@
  * H15.4 adds a provider-neutral internal payment path owned by CommercialClose.
  * H15.5 adds provider-neutral contract + invoice architecture owned by CommercialClose.
  * H15.6 adds provider-neutral adapter architecture (null/disabled adapters only).
+ * H15.7 adds requirement-driven completion / reconciliation for terminal `closed`.
  * Real signature/payment/invoice vendors arrive in later slices.
  */
 
@@ -212,8 +213,9 @@ export const COMMERCIAL_CLOSE_EVENTS = Object.freeze(
 )
 
 /**
- * Honest H15.6 capability surface.
+ * Honest H15.7 capability surface.
  * commercialCloseProviderAdapterArchitecture = scaffolding only (null adapters).
+ * commercialCloseCompletionReconciliation = requirement-driven close completion.
  * Vendor / payment-processing / webhook / accounting flags remain false.
  */
 export const COMMERCIAL_CLOSE_CAPABILITIES = Object.freeze({
@@ -224,6 +226,7 @@ export const COMMERCIAL_CLOSE_CAPABILITIES = Object.freeze({
   commercialCloseContractPath: true,
   commercialCloseInvoicePath: true,
   commercialCloseProviderAdapterArchitecture: true,
+  commercialCloseCompletionReconciliation: true,
   digitalSignature: false,
   paymentProcessing: false,
   thirdPartyIntegrations: false,
