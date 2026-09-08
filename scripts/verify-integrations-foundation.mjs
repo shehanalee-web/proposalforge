@@ -2,8 +2,9 @@
  * H16.1 Integration Foundation verification.
  *
  * Never writes data/proposals.json.
- * No vendor SDKs, OAuth, network I/O, rules, delivery, or live webhooks.
- * H16.2 may enable eventIntake; execution flags stay false.
+ * No vendor SDKs, OAuth, network I/O, delivery, or live webhooks.
+ * H16.2 may enable eventIntake; H16.3 may enable automationRules.
+ * Delivery/vendor/worker flags stay false.
  */
 import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -116,9 +117,8 @@ assert(
 )
 
 assert(
-  '2. future H16 execution capabilities remain false',
-  INTEGRATION_CAPABILITIES.automationRules === false &&
-    INTEGRATION_CAPABILITIES.deliveryExecution === false &&
+  '2. delivery/vendor/worker capabilities remain false',
+  INTEGRATION_CAPABILITIES.deliveryExecution === false &&
     INTEGRATION_CAPABILITIES.emailDelivery === false &&
     INTEGRATION_CAPABILITIES.crm === false &&
     INTEGRATION_CAPABILITIES.calendar === false &&
@@ -337,10 +337,8 @@ function pathExists(relativePath) {
 }
 
 assert(
-  'foundation file layout stays minimal (no rules/outbox/delivery/crm/calendar/messaging)',
-  !integrationSources.includes('evaluateAutomationRule') &&
-    !integrationSources.includes('processOutbox') &&
-    !pathExists('src/integrations/rules.js') &&
+  'foundation file layout stays minimal (no outbox/delivery/crm/calendar/messaging)',
+  !integrationSources.includes('processOutbox') &&
     !pathExists('src/integrations/outbox') &&
     !pathExists('src/integrations/delivery') &&
     !pathExists('src/integrations/crm') &&

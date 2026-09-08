@@ -8,6 +8,7 @@ import { livingPlugin } from './livingPlugin.js'
 import { forgePlugin } from './forgePlugin.js'
 import { commercialClosePlugin } from './commercialClosePlugin.js'
 import { integrationsIntakePlugin } from './integrationsIntakePlugin.js'
+import { integrationsRulesPlugin } from './integrationsRulesPlugin.js'
 import { localUploadsPlugin } from './localUploadsPlugin.js'
 import { portalPlugin } from './portalPlugin.js'
 import { workflowPlugin } from './workflowPlugin.js'
@@ -18,6 +19,7 @@ function getHandlers() {
   if (handlers) return handlers
   const plugins = [
     integrationsIntakePlugin(),
+    integrationsRulesPlugin(),
     localUploadsPlugin(),
     emailPlugin(),
     aiPlugin(),

@@ -2,8 +2,8 @@
  * H16.1 — Integration Foundation contracts.
  *
  * Vendor-neutral kinds, lifecycle, capabilities, and rejection reasons.
- * H16.2 enables eventIntake. Rules/delivery/vendors/workers stay off.
- * CommercialClose providers remain H15.6.
+ * H16.2 enables eventIntake. H16.3 enables automationRules.
+ * Delivery/vendors/workers stay off. CommercialClose providers remain H15.6.
  */
 
 export const INTEGRATION_KIND = Object.freeze({
@@ -57,13 +57,14 @@ export const INTEGRATION_REJECTION_REASON = Object.freeze({
 })
 
 /**
- * Honest H16.1 capability surface.
- * Only the foundation itself is true. All execution / vendor flags stay false.
+ * Honest H16 capability surface.
+ * Foundation + event intake + automation rules are true.
+ * Delivery / vendors / workers stay false.
  */
 export const INTEGRATION_CAPABILITIES = Object.freeze({
   integrationFoundation: true,
   eventIntake: true,
-  automationRules: false,
+  automationRules: true,
   deliveryExecution: false,
   emailDelivery: false,
   crm: false,
