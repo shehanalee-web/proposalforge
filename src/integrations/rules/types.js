@@ -14,6 +14,11 @@ export const AUTOMATION_RULE_ACTION_TYPE = Object.freeze({
   ASSIGN_FOLLOWUP: 'assign_followup',
   SCHEDULE_FOLLOWUP: 'schedule_followup',
   NOTIFY_STUDIO: 'notify_studio',
+  ENQUEUE_DELIVERY_INTENT: 'enqueue_delivery_intent',
+  ENQUEUE_OUTBOUND_WEBHOOK_INTENT: 'enqueue_outbound_webhook_intent',
+  ENQUEUE_CRM_INTENT: 'enqueue_crm_intent',
+  ENQUEUE_CALENDAR_INTENT: 'enqueue_calendar_intent',
+  ENQUEUE_MESSAGING_INTENT: 'enqueue_messaging_intent',
 })
 
 export const AUTOMATION_RULE_ACTION_TYPES = Object.freeze(
@@ -72,6 +77,7 @@ export const AUTOMATION_RULE_FAILURE_REASON = Object.freeze({
   MISSING_ACTOR: 'missing_actor',
   MISSING_PARAM: 'missing_param',
   INVALID_PARAM: 'invalid_param',
+  INTENTS_DISABLED: 'intents_disabled',
 })
 
 /** Safety caps for a single event evaluation. */

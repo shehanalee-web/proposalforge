@@ -1,5 +1,5 @@
 /**
- * H16.1–H16.3 — Integration Foundation + Event Intake + Automation Rules.
+ * H16.1–H16.4 — Foundation + Intake + Rules + Action Intents.
  *
  * Delivery execution, outbox, workers, and vendor SDKs remain out of scope.
  * CommercialClose provider adapters remain exclusively under H15.6.
@@ -167,3 +167,32 @@ export {
   deleteStudioAutomationRule,
   listStudioAutomationRuleRuns,
 } from './rules/index.js'
+
+export {
+  AUTOMATION_ACTION_INTENT_SCHEMA_VERSION,
+  AUTOMATION_ACTION_INTENT_STATUS,
+  AUTOMATION_ACTION_INTENT_STATUSES,
+  AUTOMATION_ACTION_INTENT_LIMITS,
+  AUTOMATION_ACTION_INTENT_CANCEL_REASON,
+  makeAutomationActionIntentIdempotencyKey,
+  makeAutomationActionIntent,
+  cloneAutomationActionIntent,
+  presentStudioAutomationActionIntent,
+  configureAutomationActionIntentStore,
+  allAutomationActionIntents,
+  replaceAutomationActionIntents,
+  resetAutomationActionIntentStore,
+  serializeAutomationActionIntents,
+  findAutomationActionIntentById,
+  findAutomationActionIntentByIdempotencyKey,
+  getAutomationActionIntentForCompany,
+  listAutomationActionIntentsForCompany,
+  recordAutomationActionIntent,
+  cancelAutomationActionIntent,
+  isDeferredEnqueueActionType,
+  kindForDeferredEnqueueAction,
+  recordDeferredAutomationActionIntent,
+  listStudioAutomationActionIntents,
+  getStudioAutomationActionIntent,
+  cancelStudioAutomationActionIntent,
+} from './intents/index.js'

@@ -23,6 +23,7 @@ import {
   AUTOMATION_RULE_LIMITS,
   AUTOMATION_RULE_RUN_STATUS,
 } from './types.js'
+import { createRecordId } from '../../models/ids.js'
 
 /** Sync evaluation depth — nested domain fan-out must not re-enter rules. */
 let evaluationDepth = 0
@@ -214,8 +215,10 @@ export function evaluateAutomationRulesForEvent(event, context = {}) {
       let failed = false
       let failureReason = null
       let primaryActionType = null
+      const ruleRunId = createRecordId('arun')
 
-      for (const action of rule.actions) {
+      for (let actionIndex = 0; actionIndex < rule.actions.length; actionIndex += 1) {
+        const action = rule.actions[actionIndex]
         if (actionCount >= AUTOMATION_RULE_LIMITS.MAX_TOTAL_ACTIONS) {
           actionResults.push(
             Object.freeze({
@@ -230,7 +233,10 @@ export function evaluateAutomationRulesForEvent(event, context = {}) {
         }
         actionCount += 1
         if (!primaryActionType) primaryActionType = action.type
-        const outcome = executeAutomationAction(rule, event, action)
+        const outcome = executeAutomationAction(rule, event, action, {
+          actionIndex,
+          ruleRunId,
+        })
         actionResults.push(outcome)
         if (!outcome.ok) {
           failed = true
@@ -242,6 +248,7 @@ export function evaluateAutomationRulesForEvent(event, context = {}) {
 
       const recorded = recordRun({
         ...baseRunFields(rule, event, evaluationDepth),
+        id: ruleRunId,
         actionType: primaryActionType,
         status: failed
           ? AUTOMATION_RULE_RUN_STATUS.FAILED
@@ -254,6 +261,9 @@ export function evaluateAutomationRulesForEvent(event, context = {}) {
           notificationId:
             actionResults.find((item) => item.result?.notificationId)?.result
               ?.notificationId ?? null,
+          intentId:
+            actionResults.find((item) => item.result?.intentId)?.result
+              ?.intentId ?? null,
         }),
       })
       produced.push(recorded.run)

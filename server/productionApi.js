@@ -9,6 +9,7 @@ import { forgePlugin } from './forgePlugin.js'
 import { commercialClosePlugin } from './commercialClosePlugin.js'
 import { integrationsIntakePlugin } from './integrationsIntakePlugin.js'
 import { integrationsRulesPlugin } from './integrationsRulesPlugin.js'
+import { integrationsIntentsPlugin } from './integrationsIntentsPlugin.js'
 import { localUploadsPlugin } from './localUploadsPlugin.js'
 import { portalPlugin } from './portalPlugin.js'
 import { workflowPlugin } from './workflowPlugin.js'
@@ -20,6 +21,7 @@ function getHandlers() {
   const plugins = [
     integrationsIntakePlugin(),
     integrationsRulesPlugin(),
+    integrationsIntentsPlugin(),
     localUploadsPlugin(),
     emailPlugin(),
     aiPlugin(),
