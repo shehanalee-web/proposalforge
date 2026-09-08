@@ -7,6 +7,7 @@ import { knowledgePlugin } from './knowledgePlugin.js'
 import { livingPlugin } from './livingPlugin.js'
 import { forgePlugin } from './forgePlugin.js'
 import { commercialClosePlugin } from './commercialClosePlugin.js'
+import { integrationsIntakePlugin } from './integrationsIntakePlugin.js'
 import { localUploadsPlugin } from './localUploadsPlugin.js'
 import { portalPlugin } from './portalPlugin.js'
 import { workflowPlugin } from './workflowPlugin.js'
@@ -16,6 +17,7 @@ let handlers = null
 function getHandlers() {
   if (handlers) return handlers
   const plugins = [
+    integrationsIntakePlugin(),
     localUploadsPlugin(),
     emailPlugin(),
     aiPlugin(),

@@ -92,7 +92,9 @@ export {
   resetLivingEventStore,
   allLivingEngagementEvents,
   replaceLivingEngagementEvents,
+  insertLivingEngagementEvent,
   listLivingEngagementEventsForProposal,
+  findLivingEngagementEventById,
 } from './eventStore.js'
 export {
   recordLivingEngagementEvent,

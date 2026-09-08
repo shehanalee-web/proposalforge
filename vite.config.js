@@ -11,11 +11,13 @@ import { followupPlugin } from './server/followupPlugin.js'
 import { livingPlugin } from './server/livingPlugin.js'
 import { forgePlugin } from './server/forgePlugin.js'
 import { commercialClosePlugin } from './server/commercialClosePlugin.js'
+import { integrationsIntakePlugin } from './server/integrationsIntakePlugin.js'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
+    integrationsIntakePlugin(),
     localUploadsPlugin(),
     emailPlugin(),
     aiPlugin(),

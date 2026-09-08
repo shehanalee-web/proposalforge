@@ -1,8 +1,8 @@
 /**
- * H16.1 — Integration Foundation public surface.
+ * H16.1–H16.2 — Integration Foundation + Event Intake public surface.
  *
- * Event intake, rules, outbox, delivery execution, and vendor SDKs are out of
- * scope. CommercialClose provider adapters remain exclusively under H15.6.
+ * Rules, outbox, delivery execution, and vendor SDKs remain out of scope.
+ * CommercialClose provider adapters remain exclusively under H15.6.
  */
 
 export {
@@ -67,3 +67,47 @@ export {
   refuseProposalContentMutation,
   rejectIntegrationBoundary,
 } from './boundaries.js'
+
+export {
+  AUTOMATION_EVENT_SCHEMA_VERSION,
+  AUTOMATION_SOURCE_DOMAIN,
+  AUTOMATION_SOURCE_DOMAINS,
+  AUTOMATION_INTAKE_SOURCE_DOMAINS,
+  AUTOMATION_INTAKE_STATUS,
+  AUTOMATION_INTAKE_STATUSES,
+  AUTOMATION_INTAKE_REASON,
+  AUTOMATION_CANONICAL_SOURCE,
+  sanitizeAutomationPayload,
+  makeAutomationEventSource,
+  makeAutomationEventCorrelation,
+  makeAutomationIdempotencyKey,
+  makeAutomationEvent,
+  cloneAutomationEvent,
+  presentClientAutomationEvent,
+  presentStudioAutomationEvent,
+  makeAutomationIntakeReceipt,
+  normalizeDomainEvent,
+  configureAutomationIntakeStore,
+  allAutomationEvents,
+  allAutomationIntakeReceipts,
+  replaceAutomationIntakeLedger,
+  resetAutomationIntakeStore,
+  serializeAutomationIntakeLedger,
+  findAutomationIntakeReceipt,
+  findAutomationEventById,
+  getAutomationEventById,
+  listAcceptedAutomationEventsForCompany,
+  listAutomationIntakeReceiptsForCompany,
+  recordAcceptedAutomationIntake,
+  recordAutomationIntakeReceiptOnly,
+  ingestAutomationEvent,
+  normalizeDomainEventForIntake,
+  startAutomationEventIntake,
+  stopAutomationEventIntake,
+  isAutomationEventIntakeRunning,
+  fanoutDomainEmission,
+  fanoutFollowupEmission,
+  fanoutWorkflowEmission,
+  fanoutPortalEmission,
+  fanoutInteractionEmission,
+} from './events/index.js'

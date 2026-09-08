@@ -1,5 +1,6 @@
 import { NOTIFICATION_TYPE } from '../models/notification.js'
 import { emitNotificationEvent } from '../collaboration/notify.js'
+import { fanoutFollowupEmission } from '../integrations/events/fanout.js'
 import { FOLLOWUP_EVENT } from './types.js'
 
 export const FOLLOWUP_NOTIFICATION_EVENTS = Object.freeze([
@@ -13,6 +14,7 @@ export const FOLLOWUP_NOTIFICATION_EVENTS = Object.freeze([
 /**
  * Horizon 13 does not send email, WhatsApp, or CRM events.
  * Due follow-ups may appear in the existing in-app notification bus.
+ * H16.2 may fan out into automation intake when eventIntake is enabled.
  */
 export function emitFollowupEvent(event) {
   if (event?.type === FOLLOWUP_EVENT.DUE) {
@@ -22,5 +24,6 @@ export function emitFollowupEvent(event) {
       detail: event.description || event.title || 'A proposal follow-up is due.',
     })
   }
+  fanoutFollowupEmission(event)
   return null
 }

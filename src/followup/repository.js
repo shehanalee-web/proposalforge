@@ -100,14 +100,25 @@ function existingKey(record) {
   return followupSignalKey(record.reason, record.reason === FOLLOWUP_REASON.OVERDUE_TASK ? record.sourceId : '')
 }
 
-function maybeNotifyDue(record, now) {
-  if (!isOpenFollowupStatus(record.status) || !isFollowupOverdue(record.dueAt, now)) return
+function emitFollowupRecordEvent(type, record, extra = {}) {
   emitFollowupEvent({
-    type: FOLLOWUP_EVENT.DUE,
+    type,
+    companyId: record.companyId,
+    followupId: record.id,
+    id: record.id,
     proposalId: record.proposalId,
     title: record.title,
     description: record.description,
+    reason: record.reason,
+    signalKey: existingKey(record),
+    actorId: record.ownerActorId,
+    ...extra,
   })
+}
+
+function maybeNotifyDue(record, now) {
+  if (!isOpenFollowupStatus(record.status) || !isFollowupOverdue(record.dueAt, now)) return
+  emitFollowupRecordEvent(FOLLOWUP_EVENT.DUE, record)
 }
 
 export function listFollowupSignals({ companyId, proposalId, actor, now } = {}) {
@@ -158,11 +169,7 @@ export function syncFollowupsForProposal({ companyId, proposalId, actor, now } =
           clock,
         ),
       )
-      emitFollowupEvent({
-        type: FOLLOWUP_EVENT.SIGNAL_RESOLVED,
-        proposalId: pid,
-        title: record.title,
-      })
+      emitFollowupRecordEvent(FOLLOWUP_EVENT.SIGNAL_RESOLVED, record)
     }
   }
 
@@ -366,11 +373,7 @@ export function createManualFollowup({
       sourceId: pid,
     }),
   )
-  emitFollowupEvent({
-    type: FOLLOWUP_EVENT.CREATED,
-    proposalId: pid,
-    title: record.title,
-  })
+  emitFollowupRecordEvent(FOLLOWUP_EVENT.CREATED, record)
   maybeNotifyDue(record, clock)
   return presentStudioFollowup(record, clock)
 }
@@ -391,7 +394,7 @@ export function startFollowup({ companyId, followupId, actor, now } = {}) {
       clock,
     ),
   )
-  emitFollowupEvent({ type: FOLLOWUP_EVENT.STARTED, proposalId: next.proposalId, title: next.title })
+  emitFollowupRecordEvent(FOLLOWUP_EVENT.STARTED, next)
   return presentStudioFollowup(next, clock)
 }
 
@@ -412,11 +415,7 @@ export function completeFollowup({ companyId, followupId, actor, now } = {}) {
       clock,
     ),
   )
-  emitFollowupEvent({
-    type: FOLLOWUP_EVENT.COMPLETED,
-    proposalId: next.proposalId,
-    title: next.title,
-  })
+  emitFollowupRecordEvent(FOLLOWUP_EVENT.COMPLETED, next)
   return presentStudioFollowup(next, clock)
 }
 
@@ -437,11 +436,7 @@ export function dismissFollowup({ companyId, followupId, actor, now } = {}) {
       clock,
     ),
   )
-  emitFollowupEvent({
-    type: FOLLOWUP_EVENT.DISMISSED,
-    proposalId: next.proposalId,
-    title: next.title,
-  })
+  emitFollowupRecordEvent(FOLLOWUP_EVENT.DISMISSED, next)
   return presentStudioFollowup(next, clock)
 }
 
@@ -466,7 +461,7 @@ export function assignFollowupOwner({ companyId, followupId, actor, ownerActorId
   }
   const clock = clockOf(now)
   const next = save(stamp({ ...record, ownerActorId: nextOwner }, clock))
-  emitFollowupEvent({ type: FOLLOWUP_EVENT.ASSIGNED, proposalId: next.proposalId, title: next.title })
+  emitFollowupRecordEvent(FOLLOWUP_EVENT.ASSIGNED, next)
   return presentStudioFollowup(next, clock)
 }
 
@@ -488,11 +483,7 @@ export function scheduleFollowup({ companyId, followupId, actor, dueAt, now } = 
   }
   const clock = clockOf(now)
   const next = save(stamp({ ...record, dueAt: nextDue }, clock))
-  emitFollowupEvent({
-    type: FOLLOWUP_EVENT.SCHEDULED,
-    proposalId: next.proposalId,
-    title: next.title,
-  })
+  emitFollowupRecordEvent(FOLLOWUP_EVENT.SCHEDULED, next)
   return presentStudioFollowup(next, clock)
 }
 

@@ -61,3 +61,10 @@ export function listLivingEngagementEventsForShareToken(shareToken) {
     (left, right) => String(right.at).localeCompare(String(left.at)),
   )
 }
+
+export function findLivingEngagementEventById(eventId) {
+  const id = String(eventId ?? '').trim()
+  if (!id) return undefined
+  const found = records.find((entry) => entry.id === id)
+  return found ? cloneLivingEngagementEvent(found) : undefined
+}
