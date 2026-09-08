@@ -53,6 +53,7 @@ function selectionTitles(proposal, session) {
 /**
  * Deterministic studio summary of living + H12 + H13 state.
  * Derived only — never a new source of truth.
+ * Optional commercialCloseCompletion is a thin projection from CommercialClose.
  */
 export function buildForgeLivingSummary({
   proposal,
@@ -62,6 +63,7 @@ export function buildForgeLivingSummary({
   followups = [],
   publication = null,
   commercialState = null,
+  commercialCloseCompletion = null,
 } = {}) {
   if (!proposal?.id) {
     return {
@@ -127,6 +129,16 @@ export function buildForgeLivingSummary({
     facts.push('Proposal is accepted.')
   } else {
     facts.push('Proposal has not been accepted yet.')
+  }
+  if (commercialCloseCompletion?.alreadyComplete) {
+    facts.push('Commercial close is completed.')
+  } else if (commercialCloseCompletion?.ready) {
+    facts.push('Commercial close is ready to complete.')
+  } else if (commercialCloseCompletion?.status) {
+    facts.push(
+      commercialCloseCompletion.reasons?.[0] ||
+        `Commercial close status: ${commercialCloseCompletion.status}.`,
+    )
   }
   if (openFu.length) {
     facts.push(
@@ -215,6 +227,18 @@ export function buildForgeLivingSummary({
           item.reason === FOLLOWUP_REASON.CHANGES_REQUESTED,
       ),
     },
+    commercialCloseCompletion: commercialCloseCompletion
+      ? {
+          closeId: commercialCloseCompletion.closeId,
+          status: commercialCloseCompletion.status,
+          ready: commercialCloseCompletion.ready,
+          alreadyComplete: commercialCloseCompletion.alreadyComplete,
+          blockers: [...(commercialCloseCompletion.blockers || [])],
+          reasons: [...(commercialCloseCompletion.reasons || [])],
+          requirements: { ...(commercialCloseCompletion.requirements || {}) },
+          satisfied: { ...(commercialCloseCompletion.satisfied || {}) },
+        }
+      : null,
     facts,
     narrative,
   }

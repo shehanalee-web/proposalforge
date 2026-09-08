@@ -67,6 +67,12 @@ import {
 } from './invoiceSchema.js'
 import { reconcileCommercialCloseFollowup } from './signals.js'
 import {
+  assertCommercialCloseReadyToComplete,
+  evaluateCommercialCloseCompletion,
+  presentCommercialCloseCompletion,
+  reconcileCommercialCloseCompletion,
+} from './completion.js'
+import {
   findCommercialClose,
   findCommercialCloseByDecision,
   findCommercialCloseByProposal,
@@ -178,6 +184,21 @@ function assertInvoicePath() {
         message: 'commercialCloseInvoicePath capability is off.',
       },
     ])
+  }
+}
+
+function assertCompletionPath() {
+  assertStateMachine()
+  if (!COMMERCIAL_CLOSE_CAPABILITIES.commercialCloseCompletionReconciliation) {
+    throw new ValidationError(
+      'Commercial close completion reconciliation is not enabled.',
+      [
+        {
+          field: 'capabilities',
+          message: 'commercialCloseCompletionReconciliation capability is off.',
+        },
+      ],
+    )
   }
 }
 
@@ -559,6 +580,7 @@ function studioPayload(close) {
     allowedTransitions: close
       ? allowedCommercialCloseTransitions(close.status)
       : [],
+    completion: presentCommercialCloseCompletion(close),
     capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
   }
 }
@@ -789,6 +811,7 @@ export function createCommercialCloseFromAcceptedDecision({
  * Never mutates proposal content or the immutable decision binding.
  * H15.3: transition to `signed` requires valid signature evidence.
  * H15.4: transition to `paid` requires valid payment evidence.
+ * H15.7: transition to `closed` requires requirement-driven completion readiness.
  */
 export function transitionCommercialClose({
   companyId,
@@ -854,6 +877,34 @@ export function transitionCommercialClose({
           },
         ],
       )
+    }
+  }
+
+  if (target === COMMERCIAL_CLOSE_STATUS.CLOSED) {
+    assertCompletionPath()
+    try {
+      assertCommercialCloseReadyToComplete(existing)
+    } catch (error) {
+      if (error?.name === 'CompletionNotReady') {
+        const evaluation =
+          error.evaluation || evaluateCommercialCloseCompletion(existing)
+        throw new ValidationError(
+          'Commercial close is not ready to complete.',
+          [
+            {
+              field: 'completion',
+              message:
+                evaluation.reasons?.[0] ||
+                'Completion requirements are not satisfied.',
+            },
+            ...(evaluation.blockers || []).map((code) => ({
+              field: 'completion',
+              message: code,
+            })),
+          ],
+        )
+      }
+      throw error
     }
   }
 
@@ -2630,6 +2681,101 @@ export function getCommercialCloseInvoice({ companyId, closeId, actor } = {}) {
     invoice: presentCloseInvoice(close.invoice),
     closeId: close.id,
     status: close.status,
+    capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
+  }
+}
+
+/**
+ * Studio: read requirement-driven completion readiness (H15.7).
+ * Never mutates proposals or close state.
+ */
+export function getCommercialCloseCompletion({ companyId, closeId, actor } = {}) {
+  assertCompletionPath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanViewCommercialClose(user)) {
+    throw new ForbiddenError('You do not have permission to view commercial closes.')
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const close = findCommercialClose(id)
+  if (!close || close.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  return {
+    completion: presentCommercialCloseCompletion(close),
+    closeId: close.id,
+    status: close.status,
+    decision: {
+      selectedTotal: close.decision?.selectedTotal ?? null,
+      currency: close.decision?.currency ?? null,
+      acceptedAt: close.decision?.acceptedAt ?? null,
+      publicationId: close.decision?.publicationId ?? null,
+      snapshotNumber: close.decision?.snapshotNumber ?? null,
+      proposalVersion: close.decision?.proposalVersion ?? null,
+    },
+    capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
+  }
+}
+
+/**
+ * Studio: idempotent completion reconciliation (H15.7).
+ * Evaluates persisted state only. Never mutates proposals, never enables vendors,
+ * never applies provider signals into the close.
+ */
+export function reconcileCommercialCloseCompletionForStudio({
+  companyId,
+  closeId,
+  actor,
+  providerSignals,
+} = {}) {
+  assertCompletionPath()
+  const scoped = scopedCompany(companyId)
+  const user = actorOf(actor)
+  assertCompanyActor(user, scoped)
+  if (!studioCanViewCommercialClose(user)) {
+    throw new ForbiddenError('You do not have permission to view commercial closes.')
+  }
+
+  const id = String(closeId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('closeId is required.', [
+      { field: 'closeId', message: 'closeId is required.' },
+    ])
+  }
+
+  const close = findCommercialClose(id)
+  if (!close || close.companyId !== scoped) {
+    throw new NotFoundError('Commercial close not found.')
+  }
+
+  const decisionBefore = JSON.stringify(close.decision)
+  const reconciled = reconcileCommercialCloseCompletion(close, {
+    providerSignals,
+  })
+  const decisionAfter = JSON.stringify(close.decision)
+
+  if (decisionBefore !== decisionAfter) {
+    throw new ValidationError('Decision binding must remain unchanged during reconciliation.', [
+      { field: 'decision', message: 'Reconciliation attempted to alter the locked decision.' },
+    ])
+  }
+
+  return {
+    result: reconciled.result,
+    mutated: reconciled.mutated === true,
+    providerSignalsIgnored: reconciled.providerSignalsIgnored ?? 0,
+    vendorsDisabled: reconciled.vendorsDisabled === true,
+    completion: presentCommercialCloseCompletion(close),
+    close: presentCommercialClose(close),
     capabilities: COMMERCIAL_CLOSE_CAPABILITIES,
   }
 }
