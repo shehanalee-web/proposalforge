@@ -126,9 +126,8 @@ startAutomationEventIntake()
 console.log('— Capabilities —')
 assert('eventIntake === true', INTEGRATION_CAPABILITIES.eventIntake === true)
 assert(
-  'other H16 execution/vendor capabilities remain false',
-  INTEGRATION_CAPABILITIES.automationRules === false &&
-    INTEGRATION_CAPABILITIES.deliveryExecution === false &&
+  'delivery/vendor/worker capabilities remain false',
+  INTEGRATION_CAPABILITIES.deliveryExecution === false &&
     INTEGRATION_CAPABILITIES.emailDelivery === false &&
     INTEGRATION_CAPABILITIES.crm === false &&
     INTEGRATION_CAPABILITIES.calendar === false &&
@@ -447,9 +446,8 @@ const eventsSrc = sourceOf('src', 'integrations', 'events', 'intake.js')
   + sourceOf('src', 'integrations', 'events', 'fanout.js')
 
 assert(
-  'no rules engine / outbox / workers / delivery / vendor SDKs / OAuth / network / live webhook ingress',
-  !eventsSrc.includes('evaluateAutomationRule') &&
-    !eventsSrc.includes('processOutbox') &&
+  'no outbox / workers / delivery / vendor SDKs / OAuth / network / live webhook ingress in intake',
+  !eventsSrc.includes('processOutbox') &&
     !eventsSrc.includes('Bull') &&
     !/from\s+['"](?:@?stripe|hubspot|jsforce|@slack|twilio|docusign)/i.test(
       eventsSrc,
@@ -461,7 +459,9 @@ assert(
     ) &&
     !sourceOf('src', 'commercialClose', 'providers', 'webhook.js').includes(
       'ingestAutomationEvent',
-    ),
+    ) &&
+    !eventsSrc.includes('createManualFollowup') &&
+    !eventsSrc.includes('commercialClose'),
 )
 
 assert(

@@ -1,7 +1,7 @@
 /**
- * H16.1–H16.2 — Integration Foundation + Event Intake public surface.
+ * H16.1–H16.3 — Integration Foundation + Event Intake + Automation Rules.
  *
- * Rules, outbox, delivery execution, and vendor SDKs remain out of scope.
+ * Delivery execution, outbox, workers, and vendor SDKs remain out of scope.
  * CommercialClose provider adapters remain exclusively under H15.6.
  */
 
@@ -102,6 +102,7 @@ export {
   recordAutomationIntakeReceiptOnly,
   ingestAutomationEvent,
   normalizeDomainEventForIntake,
+  setAutomationEventAcceptedListener,
   startAutomationEventIntake,
   stopAutomationEventIntake,
   isAutomationEventIntakeRunning,
@@ -111,3 +112,58 @@ export {
   fanoutPortalEmission,
   fanoutInteractionEmission,
 } from './events/index.js'
+
+export {
+  AUTOMATION_RULE_SCHEMA_VERSION,
+  AUTOMATION_RULE_ACTION_TYPE,
+  AUTOMATION_RULE_ACTION_TYPES,
+  AUTOMATION_RULE_CONDITION_OP,
+  AUTOMATION_RULE_CONDITION_OPS,
+  AUTOMATION_RULE_EVENT_PATHS,
+  AUTOMATION_RULE_RUN_STATUS,
+  AUTOMATION_RULE_RUN_STATUSES,
+  AUTOMATION_RULE_FAILURE_REASON,
+  AUTOMATION_RULE_LIMITS,
+  isAllowedAutomationRuleEventPath,
+  readAutomationEventPath,
+  makeAutomationRule,
+  cloneAutomationRule,
+  nextAutomationRuleVersion,
+  presentStudioAutomationRule,
+  makeAutomationRuleExecutionKey,
+  makeAutomationRuleRun,
+  cloneAutomationRuleRun,
+  presentStudioAutomationRuleRun,
+  evaluateAutomationPredicate,
+  evaluateAutomationConditions,
+  resolveAutomationActionParam,
+  executeAutomationAction,
+  configureAutomationRulesStore,
+  allAutomationRules,
+  allAutomationRuleRuns,
+  replaceAutomationRules,
+  replaceAutomationRuleRuns,
+  resetAutomationRulesStore,
+  resetAutomationRuleRunsStore,
+  serializeAutomationRules,
+  serializeAutomationRuleRuns,
+  findAutomationRuleById,
+  findAutomationRuleRunByIdempotencyKey,
+  getAutomationRuleForCompany,
+  listAutomationRulesForCompany,
+  listEnabledAutomationRulesForCompany,
+  listAutomationRuleRunsForCompany,
+  upsertAutomationRuleRecord,
+  deleteAutomationRuleRecord,
+  recordAutomationRuleRun,
+  getAutomationRuleEvaluationDepth,
+  isAutomationRuleEvaluationActive,
+  evaluateAutomationRulesForEvent,
+  onAutomationEventAccepted,
+  listStudioAutomationRules,
+  getStudioAutomationRule,
+  upsertStudioAutomationRule,
+  patchStudioAutomationRule,
+  deleteStudioAutomationRule,
+  listStudioAutomationRuleRuns,
+} from './rules/index.js'

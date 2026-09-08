@@ -3,6 +3,7 @@
  *
  * Records thin AutomationEvents + durable receipt ledger entries.
  * Never mutates proposals, decisions, CommercialClose, workflow, or follow-ups.
+ * H16.3 may observe accepted events via a registered listener (no rules import here).
  */
 
 import { INTEGRATION_CAPABILITIES } from '../types.js'
@@ -23,6 +24,27 @@ import {
   recordAcceptedAutomationIntake,
   recordAutomationIntakeReceiptOnly,
 } from './store.js'
+
+/** @type {null | ((event: object) => void)} */
+let acceptedListener = null
+
+/**
+ * Register a post-accept hook (H16.3 rules). Listener must not throw to callers.
+ *
+ * @param {null | ((event: object) => void)} listener
+ */
+export function setAutomationEventAcceptedListener(listener) {
+  acceptedListener = typeof listener === 'function' ? listener : null
+}
+
+function notifyAccepted(event) {
+  if (!acceptedListener || !event) return
+  try {
+    acceptedListener(event)
+  } catch {
+    /* rules must never break intake */
+  }
+}
 
 function resultShape({
   ok,
@@ -175,6 +197,8 @@ export function ingestAutomationEvent(input = {}) {
     receivedAt: accepted.receivedAt,
     schemaVersion: accepted.schemaVersion,
   })
+
+  notifyAccepted(recorded.event)
 
   return resultShape({
     ok: true,
