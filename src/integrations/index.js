@@ -391,6 +391,7 @@ export {
   listRegisteredTimelineSources,
   getTimelineSource,
   describeTimelineSources,
+  createAutomationLedgerTimelineSource,
   deriveTimelineEntryId,
   sanitizeTimelineAttributes,
   resolveTimelineTimestamps,

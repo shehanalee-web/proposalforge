@@ -41,6 +41,8 @@ export {
   describeTimelineSources,
 } from './sources/index.js'
 
+export { createAutomationLedgerTimelineSource } from './sources/automationLedger.js'
+
 export {
   deriveTimelineEntryId,
   sanitizeTimelineAttributes,
