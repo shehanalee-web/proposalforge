@@ -15,6 +15,10 @@ import {
 } from '../../followup/index.js'
 import { NOTIFICATION_TYPE } from '../../models/notification.js'
 import { getWorkflowActor, resolveWorkflowActor } from '../../workflow/actors.js'
+import {
+  isDeferredEnqueueActionType,
+  recordDeferredAutomationActionIntent,
+} from '../intents/record.js'
 import { readAutomationEventPath } from './schema.js'
 import {
   AUTOMATION_RULE_ACTION_TYPE,
@@ -102,10 +106,63 @@ function compactFollowup(followup) {
  * @param {object} rule
  * @param {object} event
  * @param {object} action
+ * @param {{ actionIndex?: number, ruleRunId?: string | null }} [context]
  */
-export function executeAutomationAction(rule, event, action = {}) {
+export function executeAutomationAction(rule, event, action = {}, context = {}) {
   const type = String(action.type ?? '').trim()
   const params = resolveParams(action.params, event)
+
+  if (isDeferredEnqueueActionType(type)) {
+    const actionIndex = Number.isInteger(context.actionIndex)
+      ? context.actionIndex
+      : 0
+    const payload = {
+      ...params,
+    }
+    delete payload.actorId
+    const recorded = recordDeferredAutomationActionIntent({
+      companyId: rule.companyId,
+      actionType: type,
+      eventId: event.id,
+      eventIdempotencyKey: event.idempotencyKey ?? null,
+      ruleId: rule.id,
+      ruleVersion: rule.version,
+      ruleRunId: context.ruleRunId ?? null,
+      actionIndex,
+      payload,
+      correlation: {
+        proposalId: event.correlation?.proposalId ?? params.proposalId ?? null,
+        followupId: event.correlation?.followupId ?? params.followupId ?? null,
+        sessionId: event.correlation?.sessionId ?? null,
+        closeId: event.correlation?.closeId ?? null,
+        actorId: rule.runAsActorId ?? event.correlation?.actorId ?? null,
+      },
+      providerId: params.providerId ?? null,
+    })
+    if (!recorded.ok || !recorded.intent) {
+      const reason = recorded.reason || AUTOMATION_RULE_FAILURE_REASON.ACTION_FAILED
+      return actionResult({
+        ok: false,
+        actionType: type,
+        failureReason:
+          reason === 'intents_disabled'
+            ? AUTOMATION_RULE_FAILURE_REASON.INTENTS_DISABLED
+            : reason === 'unsupported_action'
+              ? AUTOMATION_RULE_FAILURE_REASON.UNSUPPORTED_ACTION
+              : reason === 'missing_param'
+                ? AUTOMATION_RULE_FAILURE_REASON.MISSING_PARAM
+                : AUTOMATION_RULE_FAILURE_REASON.ACTION_FAILED,
+      })
+    }
+    return actionResult({
+      ok: true,
+      actionType: type,
+      result: Object.freeze({
+        intentId: recorded.intent.id,
+        status: recorded.intent.status,
+      }),
+    })
+  }
 
   if (type === AUTOMATION_RULE_ACTION_TYPE.NOTIFY_STUDIO) {
     const notificationType =

@@ -13,6 +13,7 @@ import { forgePlugin } from './server/forgePlugin.js'
 import { commercialClosePlugin } from './server/commercialClosePlugin.js'
 import { integrationsIntakePlugin } from './server/integrationsIntakePlugin.js'
 import { integrationsRulesPlugin } from './server/integrationsRulesPlugin.js'
+import { integrationsIntentsPlugin } from './server/integrationsIntentsPlugin.js'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -20,6 +21,7 @@ export default defineConfig({
     react(),
     integrationsIntakePlugin(),
     integrationsRulesPlugin(),
+    integrationsIntentsPlugin(),
     localUploadsPlugin(),
     emailPlugin(),
     aiPlugin(),
