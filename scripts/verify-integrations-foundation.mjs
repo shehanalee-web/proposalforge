@@ -117,13 +117,13 @@ assert(
 )
 
 assert(
-  '2. delivery/vendor/worker capabilities remain false',
+  '2. delivery/vendor/worker capabilities remain false (outboundWebhooks true in H16.5)',
   INTEGRATION_CAPABILITIES.deliveryExecution === false &&
     INTEGRATION_CAPABILITIES.emailDelivery === false &&
     INTEGRATION_CAPABILITIES.crm === false &&
     INTEGRATION_CAPABILITIES.calendar === false &&
     INTEGRATION_CAPABILITIES.messaging === false &&
-    INTEGRATION_CAPABILITIES.outboundWebhooks === false &&
+    INTEGRATION_CAPABILITIES.outboundWebhooks === true &&
     INTEGRATION_CAPABILITIES.backgroundWorkers === false &&
     INTEGRATION_CAPABILITIES.thirdPartyIntegrations === false &&
     INTEGRATION_CAPABILITIES.oauth === false &&
@@ -242,26 +242,36 @@ assert(
 
 console.log('— Null adapters / registry —')
 const adapters = listIntegrationAdapters()
+const nullAdapters = adapters.filter((adapter) => String(adapter.id).startsWith('null_'))
+const httpWebhookAdapter = adapters.find(
+  (adapter) => adapter.id === 'http_outbound_webhook',
+)
 assert(
-  '7. null/disabled adapters are safe defaults',
+  '7. null/disabled adapters remain safe defaults',
   NULL_INTEGRATION_ADAPTER_IDS.length === 5 &&
-    adapters.length === 5 &&
-    adapters.every((adapter) => adapter.isEnabled({}) === false) &&
-    adapters.every((adapter) => adapter.describe().enabled === false) &&
-    adapters.every((adapter) => adapter.describe().network === false) &&
-    adapters.every((adapter) => adapter.describe().oauth === false),
+    nullAdapters.length === 5 &&
+    nullAdapters.every((adapter) => adapter.isEnabled({}) === false) &&
+    nullAdapters.every((adapter) => adapter.describe().enabled === false) &&
+    nullAdapters.every((adapter) => adapter.describe().network === false) &&
+    nullAdapters.every((adapter) => adapter.describe().oauth === false) &&
+    httpWebhookAdapter != null &&
+    adapters.length === 6,
 )
 
 assert(
   '8. adapter registry is vendor-neutral',
-  adapters.every((adapter) =>
-    String(adapter.id).startsWith('null_'),
+  adapters.every(
+    (adapter) =>
+      String(adapter.id).startsWith('null_') ||
+      adapter.id === 'http_outbound_webhook',
   ) &&
     !adapters.some((adapter) =>
       /salesforce|hubspot|slack|stripe|docusign|twilio|whatsapp|google|outlook/i.test(
         adapter.id,
       ),
-    ),
+    ) &&
+    httpWebhookAdapter.describe().vendorNeutral === true &&
+    httpWebhookAdapter.describe().oauth === false,
 )
 
 const resolved = resolveEnabledIntegrationAdapter(
@@ -280,7 +290,16 @@ assert(
 )
 
 console.log('— Source / boundary honesty —')
-const integrationSources = collectIntegrationSources()
+const integrationSourceFiles = collectIntegrationSources()
+const nonWebhookSources = integrationSourceFiles
+  .filter((file) => !file.replace(/\\/g, '/').includes('/webhooks/'))
+  .map((file) => readFileSync(file, 'utf8'))
+  .join('\n')
+const integrationSources = integrationSourceFiles
+  .map((file) => readFileSync(file, 'utf8'))
+  .join('\n')
+const webhookSources = integrationSourceFiles
+  .filter((file) => file.replace(/\\/g, '/').includes('/webhooks/'))
   .map((file) => readFileSync(file, 'utf8'))
   .join('\n')
 
@@ -307,8 +326,9 @@ assert(
 )
 
 assert(
-  '11. no network calls',
-  !networkCallPattern.test(integrationSources),
+  '11. network I/O confined to H16.5 webhooks transport',
+  !networkCallPattern.test(nonWebhookSources) &&
+    (webhookSources.length === 0 || networkCallPattern.test(webhookSources)),
 )
 
 assert(

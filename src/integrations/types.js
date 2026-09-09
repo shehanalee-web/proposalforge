@@ -3,7 +3,8 @@
  *
  * Vendor-neutral kinds, lifecycle, capabilities, and rejection reasons.
  * H16.2 enables eventIntake. H16.3 enables automationRules.
- * H16.4 enables actionIntents (recorded only — no execution).
+ * H16.4 enables actionIntents (recorded only — no intent execution states).
+ * H16.5 enables outboundWebhooks (sync consumer; live network still env-gated).
  * Delivery/vendors/workers stay off. CommercialClose providers remain H15.6.
  */
 
@@ -59,8 +60,9 @@ export const INTEGRATION_REJECTION_REASON = Object.freeze({
 
 /**
  * Honest H16 capability surface.
- * Foundation + event intake + automation rules + action intents are true.
- * Delivery / vendors / workers stay false.
+ * Foundation + event intake + automation rules + action intents + outbound
+ * webhooks architecture are true. Live HTTPS still requires
+ * OUTBOUND_WEBHOOK_NETWORK=1. Delivery / vendors / workers stay false.
  */
 export const INTEGRATION_CAPABILITIES = Object.freeze({
   integrationFoundation: true,
@@ -72,7 +74,7 @@ export const INTEGRATION_CAPABILITIES = Object.freeze({
   crm: false,
   calendar: false,
   messaging: false,
-  outboundWebhooks: false,
+  outboundWebhooks: true,
   backgroundWorkers: false,
   thirdPartyIntegrations: false,
   oauth: false,

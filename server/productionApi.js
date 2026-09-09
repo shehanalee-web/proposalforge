@@ -10,6 +10,7 @@ import { commercialClosePlugin } from './commercialClosePlugin.js'
 import { integrationsIntakePlugin } from './integrationsIntakePlugin.js'
 import { integrationsRulesPlugin } from './integrationsRulesPlugin.js'
 import { integrationsIntentsPlugin } from './integrationsIntentsPlugin.js'
+import { integrationsWebhooksPlugin } from './integrationsWebhooksPlugin.js'
 import { localUploadsPlugin } from './localUploadsPlugin.js'
 import { portalPlugin } from './portalPlugin.js'
 import { workflowPlugin } from './workflowPlugin.js'
@@ -22,6 +23,7 @@ function getHandlers() {
     integrationsIntakePlugin(),
     integrationsRulesPlugin(),
     integrationsIntentsPlugin(),
+    integrationsWebhooksPlugin(),
     localUploadsPlugin(),
     emailPlugin(),
     aiPlugin(),

@@ -212,13 +212,13 @@ const stopNotify = onNotificationEvent((event) => {
 console.log('— Capabilities —')
 assert('1. automationRules === true', INTEGRATION_CAPABILITIES.automationRules === true)
 assert(
-  '2. other H16 execution/vendor flags remain false',
+  '2. other H16 execution/vendor flags remain false (outboundWebhooks true in H16.5)',
   INTEGRATION_CAPABILITIES.deliveryExecution === false &&
     INTEGRATION_CAPABILITIES.emailDelivery === false &&
     INTEGRATION_CAPABILITIES.crm === false &&
     INTEGRATION_CAPABILITIES.calendar === false &&
     INTEGRATION_CAPABILITIES.messaging === false &&
-    INTEGRATION_CAPABILITIES.outboundWebhooks === false &&
+    INTEGRATION_CAPABILITIES.outboundWebhooks === true &&
     INTEGRATION_CAPABILITIES.backgroundWorkers === false &&
     INTEGRATION_CAPABILITIES.thirdPartyIntegrations === false &&
     INTEGRATION_CAPABILITIES.oauth === false &&
