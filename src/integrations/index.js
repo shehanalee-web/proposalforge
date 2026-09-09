@@ -400,6 +400,7 @@ export {
   createStudioAuditTimelineSource,
   createProposalActivityTimelineSource,
   createCommercialCloseHistoryTimelineSource,
+  dedupeTimelineEntries,
   projectTimelineCandidates,
   filterTimelineAudience,
   setActivityTimelineCapabilityOverrideForTests,

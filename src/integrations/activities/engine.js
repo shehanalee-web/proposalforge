@@ -20,6 +20,7 @@ import {
   TIMELINE_UNSCOPED_SOURCE_IDS,
 } from './types.js'
 import { filterTimelineAudience, projectTimelineCandidates } from './projection.js'
+import { dedupeTimelineEntries } from './dedupe.js'
 import { listRegisteredTimelineSources } from './sources/index.js'
 
 let capabilityOverride = null
@@ -194,10 +195,13 @@ export function buildTimeline(query = {}) {
   }
 
   const projected = projectTimelineCandidates(candidates, { companyId })
+
+  // Runs before the audience filter so a duplicate can never be the row that
+  // survives for the client while its canonical twin is discarded.
   const deduped =
     typeof query.dedupe === 'function'
       ? query.dedupe(projected.entries)
-      : { entries: projected.entries, drops: {} }
+      : dedupeTimelineEntries(projected.entries)
 
   const audienceFiltered = filterTimelineAudience(deduped.entries, audience)
 
