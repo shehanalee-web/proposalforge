@@ -46,6 +46,7 @@ export { createLivingEventsTimelineSource } from './sources/livingEvents.js'
 export { createDomainActivityTimelineSource } from './sources/domainActivity.js'
 export { createWorkflowActivityTimelineSource } from './sources/workflowActivity.js'
 export { createPortalActivityTimelineSource } from './sources/portalActivity.js'
+export { createInteractionActivityTimelineSource } from './sources/interactionActivity.js'
 
 export { projectTimelineCandidates, filterTimelineAudience } from './projection.js'
 

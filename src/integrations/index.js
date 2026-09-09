@@ -396,6 +396,7 @@ export {
   createDomainActivityTimelineSource,
   createWorkflowActivityTimelineSource,
   createPortalActivityTimelineSource,
+  createInteractionActivityTimelineSource,
   projectTimelineCandidates,
   filterTimelineAudience,
   setActivityTimelineCapabilityOverrideForTests,

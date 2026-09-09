@@ -14,6 +14,7 @@ import {
   createLivingEventsTimelineSource,
   createWorkflowActivityTimelineSource,
   createPortalActivityTimelineSource,
+  createInteractionActivityTimelineSource,
   listStudioTimeline,
   listStudioTimelineForProposal,
   describeStudioTimelineSources,
@@ -110,6 +111,9 @@ export function integrationsActivitiesPlugin() {
     }
     if (!getTimelineSource(TIMELINE_SOURCE_ID.PORTAL_ACTIVITY)) {
       registerTimelineSource(createPortalActivityTimelineSource())
+    }
+    if (!getTimelineSource(TIMELINE_SOURCE_ID.INTERACTION_ACTIVITY)) {
+      registerTimelineSource(createInteractionActivityTimelineSource())
     }
     ready = true
   }
