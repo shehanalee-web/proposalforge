@@ -6,6 +6,7 @@
  * H16.4 enables actionIntents (recorded only — no intent execution states).
  * H16.5 enables outboundWebhooks (sync consumer; live network still env-gated).
  * H16.6 enables crm (vendor-neutral sync consumer; mock adapter only, no network).
+ * H16.7 enables activityTimeline (read-only projection; no native write path).
  * Delivery/vendors/workers stay off. CommercialClose providers remain H15.6.
  */
 
@@ -65,6 +66,11 @@ export const INTEGRATION_REJECTION_REASON = Object.freeze({
  * webhooks + CRM architecture are true. Live webhook HTTPS still requires
  * OUTBOUND_WEBHOOK_NETWORK=1, and CRM ships with an in-process mock adapter
  * only. Delivery / vendors / OAuth / workers stay false.
+ *
+ * activityTimeline is a read-only projection. activityAuthoring stays false
+ * until H16.8 registers a durable repository — native Activity records must
+ * never be written to ephemeral JSON storage, so the write surface cannot be
+ * enabled before durable persistence exists.
  */
 export const INTEGRATION_CAPABILITIES = Object.freeze({
   integrationFoundation: true,
@@ -77,6 +83,8 @@ export const INTEGRATION_CAPABILITIES = Object.freeze({
   calendar: false,
   messaging: false,
   outboundWebhooks: true,
+  activityTimeline: true,
+  activityAuthoring: false,
   backgroundWorkers: false,
   thirdPartyIntegrations: false,
   oauth: false,

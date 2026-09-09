@@ -1,5 +1,9 @@
 /**
- * H16.1–H16.6 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks + CRM.
+ * H16.1–H16.7 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
+ * + CRM + Activity Timeline.
+ *
+ * H16.7 adds a read-only activity timeline projection. It owns no store, writes
+ * nothing, and exposes no mutation surface.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -355,3 +359,39 @@ export {
   getStudioCrmOutcome,
   executeStudioCrmIntent,
 } from './crm/index.js'
+
+export {
+  ACTIVITY_SCHEMA_VERSION,
+  ACTIVITY_KIND,
+  ACTIVITY_KINDS,
+  ACTIVITY_PROJECTED_KINDS,
+  ACTIVITY_ORIGIN,
+  ACTIVITY_ORIGINS,
+  ACTIVITY_PROJECTED_ORIGINS,
+  ACTIVITY_AUDIENCE as ACTIVITY_TIMELINE_AUDIENCE,
+  ACTIVITY_AUDIENCES as ACTIVITY_TIMELINE_AUDIENCES,
+  ACTIVITY_ACTOR_KIND,
+  ACTIVITY_ACTOR_KINDS,
+  ACTIVITY_SUBJECT_TYPE,
+  ACTIVITY_SUBJECT_TYPES,
+  ACTIVITY_RESOLVABLE_SUBJECT_TYPES,
+  TIMELINE_ENTRY_ID_PREFIX,
+  TIMELINE_SOURCE_ID,
+  TIMELINE_SOURCE_IDS,
+  TIMELINE_SOURCE_PRIORITY,
+  TIMELINE_UNSCOPED_SOURCE_IDS,
+  TIMELINE_LIVING_CANONICAL_INTERACTION_TYPES,
+  TIMELINE_DROP_REASON,
+  TIMELINE_DROP_REASONS,
+  TIMELINE_LIMITS,
+  deriveTimelineEntryId,
+  sanitizeTimelineAttributes,
+  resolveTimelineTimestamps,
+  makeTimelineSubject,
+  makeTimelineSource,
+  makeTimelineActor,
+  makeTimelineEntry,
+  cloneTimelineEntry,
+  presentStudioTimelineEntry,
+  presentClientTimelineEntry,
+} from './activities/index.js'
