@@ -117,10 +117,10 @@ assert(
 )
 
 assert(
-  '2. delivery/vendor/worker capabilities remain false (outboundWebhooks true in H16.5)',
+  '2. delivery/vendor/worker capabilities remain false (outboundWebhooks true in H16.5, crm true in H16.6)',
   INTEGRATION_CAPABILITIES.deliveryExecution === false &&
     INTEGRATION_CAPABILITIES.emailDelivery === false &&
-    INTEGRATION_CAPABILITIES.crm === false &&
+    INTEGRATION_CAPABILITIES.crm === true &&
     INTEGRATION_CAPABILITIES.calendar === false &&
     INTEGRATION_CAPABILITIES.messaging === false &&
     INTEGRATION_CAPABILITIES.outboundWebhooks === true &&
@@ -357,11 +357,10 @@ function pathExists(relativePath) {
 }
 
 assert(
-  'foundation file layout stays minimal (no outbox/delivery/crm/calendar/messaging)',
+  'foundation file layout stays minimal (no outbox/delivery/calendar/messaging)',
   !integrationSources.includes('processOutbox') &&
     !pathExists('src/integrations/outbox') &&
     !pathExists('src/integrations/delivery') &&
-    !pathExists('src/integrations/crm') &&
     !pathExists('src/integrations/calendar') &&
     !pathExists('src/integrations/messaging'),
 )

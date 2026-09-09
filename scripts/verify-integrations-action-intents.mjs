@@ -195,10 +195,10 @@ resetAll()
 console.log('— Capabilities —')
 assert('1. actionIntents === true', INTEGRATION_CAPABILITIES.actionIntents === true)
 assert(
-  '2. all non-webhook execution/vendor flags remain false',
+  '2. all non-webhook/non-crm execution/vendor flags remain false',
   INTEGRATION_CAPABILITIES.deliveryExecution === false &&
     INTEGRATION_CAPABILITIES.emailDelivery === false &&
-    INTEGRATION_CAPABILITIES.crm === false &&
+    INTEGRATION_CAPABILITIES.crm === true &&
     INTEGRATION_CAPABILITIES.calendar === false &&
     INTEGRATION_CAPABILITIES.messaging === false &&
     INTEGRATION_CAPABILITIES.outboundWebhooks === true &&

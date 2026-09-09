@@ -126,10 +126,10 @@ startAutomationEventIntake()
 console.log('— Capabilities —')
 assert('eventIntake === true', INTEGRATION_CAPABILITIES.eventIntake === true)
 assert(
-  'delivery/vendor/worker capabilities remain false (outboundWebhooks true in H16.5)',
+  'delivery/vendor/worker capabilities remain false (outboundWebhooks true in H16.5, crm true in H16.6)',
   INTEGRATION_CAPABILITIES.deliveryExecution === false &&
     INTEGRATION_CAPABILITIES.emailDelivery === false &&
-    INTEGRATION_CAPABILITIES.crm === false &&
+    INTEGRATION_CAPABILITIES.crm === true &&
     INTEGRATION_CAPABILITIES.calendar === false &&
     INTEGRATION_CAPABILITIES.messaging === false &&
     INTEGRATION_CAPABILITIES.outboundWebhooks === true &&
