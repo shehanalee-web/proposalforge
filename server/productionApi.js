@@ -11,6 +11,7 @@ import { integrationsIntakePlugin } from './integrationsIntakePlugin.js'
 import { integrationsRulesPlugin } from './integrationsRulesPlugin.js'
 import { integrationsIntentsPlugin } from './integrationsIntentsPlugin.js'
 import { integrationsWebhooksPlugin } from './integrationsWebhooksPlugin.js'
+import { integrationsCrmPlugin } from './integrationsCrmPlugin.js'
 import { localUploadsPlugin } from './localUploadsPlugin.js'
 import { portalPlugin } from './portalPlugin.js'
 import { workflowPlugin } from './workflowPlugin.js'
@@ -24,6 +25,7 @@ function getHandlers() {
     integrationsRulesPlugin(),
     integrationsIntentsPlugin(),
     integrationsWebhooksPlugin(),
+    integrationsCrmPlugin(),
     localUploadsPlugin(),
     emailPlugin(),
     aiPlugin(),

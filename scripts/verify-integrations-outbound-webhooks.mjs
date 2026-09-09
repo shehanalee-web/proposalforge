@@ -254,14 +254,14 @@ resetAll()
 console.log('— Capabilities —')
 assert('1. outboundWebhooks === true', INTEGRATION_CAPABILITIES.outboundWebhooks === true)
 assert(
-  '2. previous capabilities remain correct',
+  '2. previous capabilities remain correct (crm true in H16.6)',
   INTEGRATION_CAPABILITIES.integrationFoundation === true &&
     INTEGRATION_CAPABILITIES.eventIntake === true &&
     INTEGRATION_CAPABILITIES.automationRules === true &&
     INTEGRATION_CAPABILITIES.actionIntents === true &&
     INTEGRATION_CAPABILITIES.deliveryExecution === false &&
     INTEGRATION_CAPABILITIES.emailDelivery === false &&
-    INTEGRATION_CAPABILITIES.crm === false &&
+    INTEGRATION_CAPABILITIES.crm === true &&
     INTEGRATION_CAPABILITIES.calendar === false &&
     INTEGRATION_CAPABILITIES.messaging === false &&
     INTEGRATION_CAPABILITIES.backgroundWorkers === false &&
