@@ -47,9 +47,9 @@ function asIso(value) {
 }
 
 /**
- * Two independent 32-bit hashes combined to 64 bits. Pure JS on purpose: this
- * module is reachable from bundled client code, so no node:crypto dependency.
- * Identity here is a de-duplication key, never a security boundary.
+ * Two independent 32-bit hashes combined to 64 bits. Kept dependency-free so
+ * this module stays pure and portable. Identity here is a de-duplication key,
+ * never a security boundary.
  */
 function fnv1a32(input) {
   let hash = 0x811c9dc5
