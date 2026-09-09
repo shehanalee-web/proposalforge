@@ -395,6 +395,7 @@ export {
   createLivingEventsTimelineSource,
   createDomainActivityTimelineSource,
   createWorkflowActivityTimelineSource,
+  createPortalActivityTimelineSource,
   projectTimelineCandidates,
   filterTimelineAudience,
   setActivityTimelineCapabilityOverrideForTests,
