@@ -392,6 +392,7 @@ export {
   getTimelineSource,
   describeTimelineSources,
   createAutomationLedgerTimelineSource,
+  createLivingEventsTimelineSource,
   projectTimelineCandidates,
   filterTimelineAudience,
   setActivityTimelineCapabilityOverrideForTests,
