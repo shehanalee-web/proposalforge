@@ -43,6 +43,8 @@ export {
 
 export { createAutomationLedgerTimelineSource } from './sources/automationLedger.js'
 
+export { projectTimelineCandidates, filterTimelineAudience } from './projection.js'
+
 export {
   deriveTimelineEntryId,
   sanitizeTimelineAttributes,

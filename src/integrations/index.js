@@ -392,6 +392,8 @@ export {
   getTimelineSource,
   describeTimelineSources,
   createAutomationLedgerTimelineSource,
+  projectTimelineCandidates,
+  filterTimelineAudience,
   deriveTimelineEntryId,
   sanitizeTimelineAttributes,
   resolveTimelineTimestamps,
