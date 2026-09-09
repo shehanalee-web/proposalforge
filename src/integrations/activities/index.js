@@ -32,6 +32,16 @@ export {
 } from './types.js'
 
 export {
+  assertTimelineSourceContract,
+  registerTimelineSource,
+  unregisterTimelineSource,
+  resetTimelineSources,
+  listRegisteredTimelineSources,
+  getTimelineSource,
+  describeTimelineSources,
+} from './sources/index.js'
+
+export {
   deriveTimelineEntryId,
   sanitizeTimelineAttributes,
   resolveTimelineTimestamps,
