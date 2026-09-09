@@ -46,6 +46,24 @@ export { createAutomationLedgerTimelineSource } from './sources/automationLedger
 export { projectTimelineCandidates, filterTimelineAudience } from './projection.js'
 
 export {
+  setActivityTimelineCapabilityOverrideForTests,
+  clearActivityTimelineCapabilityOverrideForTests,
+  isActivityTimelineEnabled,
+  isActivityAuthoringEnabled,
+  compareTimelineEntries,
+  encodeTimelineCursor,
+  decodeTimelineCursor,
+  buildTimeline,
+} from './engine.js'
+
+export {
+  listStudioTimeline,
+  listStudioTimelineForProposal,
+  describeStudioTimelineSources,
+  getActivityCapabilities,
+} from './repository.js'
+
+export {
   deriveTimelineEntryId,
   sanitizeTimelineAttributes,
   resolveTimelineTimestamps,
