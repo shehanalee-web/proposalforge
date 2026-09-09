@@ -15,6 +15,9 @@ export const NULL_INTEGRATION_ADAPTER_ID = Object.freeze({
   [INTEGRATION_KIND.OUTBOUND_WEBHOOK]: 'null_outbound_webhook',
 })
 
+/** Vendor-neutral HTTP outbound webhook adapter (H16.5). Not a vendor SDK. */
+export const HTTP_OUTBOUND_WEBHOOK_ADAPTER_ID = 'http_outbound_webhook'
+
 export const NULL_INTEGRATION_ADAPTER_IDS = Object.freeze(
   Object.values(NULL_INTEGRATION_ADAPTER_ID),
 )

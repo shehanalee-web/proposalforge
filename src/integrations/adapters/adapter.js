@@ -1,17 +1,21 @@
 /**
- * H16.1 — Integration adapter registry (null/disabled defaults).
+ * H16.1 / H16.5 — Integration adapter registry.
  *
- * Adapters never call vendors, never perform OAuth, and never open network I/O.
+ * Null adapters never call vendors or open network I/O.
+ * H16.5 registers a vendor-neutral HTTP outbound webhook adapter descriptor;
+ * live delivery is env-gated in webhooks/transport.js — not automatic.
  * This registry is not the H15.6 CommercialClose provider registry.
  */
 
 import { ValidationError } from '../../services/errors.js'
 import {
+  INTEGRATION_CAPABILITIES,
   INTEGRATION_KIND,
   INTEGRATION_KINDS,
   INTEGRATION_REJECTION_REASON,
 } from '../types.js'
 import {
+  HTTP_OUTBOUND_WEBHOOK_ADAPTER_ID,
   NULL_INTEGRATION_ADAPTER_ID,
   makeIntegrationAdapterDescriptor,
 } from './types.js'
@@ -140,12 +144,41 @@ export function createNullOutboundWebhookAdapter() {
   )
 }
 
+/**
+ * Vendor-neutral outbound webhook adapter. Enabled only when capability is on
+ * and a company destination config reports enabled — still no automatic POST.
+ */
+export function createHttpOutboundWebhookAdapter() {
+  return Object.freeze({
+    id: HTTP_OUTBOUND_WEBHOOK_ADAPTER_ID,
+    kind: INTEGRATION_KIND.OUTBOUND_WEBHOOK,
+    isEnabled(companyConfig) {
+      if (!INTEGRATION_CAPABILITIES.outboundWebhooks) return false
+      return Boolean(companyConfig?.enabled)
+    },
+    describe() {
+      return Object.freeze({
+        ...makeIntegrationAdapterDescriptor({
+          id: HTTP_OUTBOUND_WEBHOOK_ADAPTER_ID,
+          kind: INTEGRATION_KIND.OUTBOUND_WEBHOOK,
+        }),
+        enabled: INTEGRATION_CAPABILITIES.outboundWebhooks === true,
+        vendorNeutral: true,
+        network: true,
+        oauth: false,
+        liveNetworkEnvGate: 'OUTBOUND_WEBHOOK_NETWORK',
+      })
+    },
+  })
+}
+
 export function registerNullIntegrationAdapters() {
   registerIntegrationAdapter(createNullDeliveryAdapter())
   registerIntegrationAdapter(createNullCrmAdapter())
   registerIntegrationAdapter(createNullCalendarAdapter())
   registerIntegrationAdapter(createNullMessagingAdapter())
   registerIntegrationAdapter(createNullOutboundWebhookAdapter())
+  registerIntegrationAdapter(createHttpOutboundWebhookAdapter())
 }
 
 registerNullIntegrationAdapters()

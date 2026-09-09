@@ -14,6 +14,7 @@ import { commercialClosePlugin } from './server/commercialClosePlugin.js'
 import { integrationsIntakePlugin } from './server/integrationsIntakePlugin.js'
 import { integrationsRulesPlugin } from './server/integrationsRulesPlugin.js'
 import { integrationsIntentsPlugin } from './server/integrationsIntentsPlugin.js'
+import { integrationsWebhooksPlugin } from './server/integrationsWebhooksPlugin.js'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -22,6 +23,7 @@ export default defineConfig({
     integrationsIntakePlugin(),
     integrationsRulesPlugin(),
     integrationsIntentsPlugin(),
+    integrationsWebhooksPlugin(),
     localUploadsPlugin(),
     emailPlugin(),
     aiPlugin(),

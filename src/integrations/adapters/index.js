@@ -1,6 +1,7 @@
 export {
   NULL_INTEGRATION_ADAPTER_ID,
   NULL_INTEGRATION_ADAPTER_IDS,
+  HTTP_OUTBOUND_WEBHOOK_ADAPTER_ID,
   makeIntegrationAdapterDescriptor,
 } from './types.js'
 export {
@@ -13,6 +14,7 @@ export {
   createNullCalendarAdapter,
   createNullMessagingAdapter,
   createNullOutboundWebhookAdapter,
+  createHttpOutboundWebhookAdapter,
   registerNullIntegrationAdapters,
   resolveEnabledIntegrationAdapter,
 } from './adapter.js'
