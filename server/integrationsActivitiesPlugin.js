@@ -5,8 +5,11 @@
  * persist handler, and exposes no POST/PATCH/PUT/DELETE route. Native Activity
  * writes arrive in H16.8 on a durable PostgreSQL repository, never here.
  */
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
+import { ensureRuntimeData } from './dataPaths.js'
 import {
   registerTimelineSource,
   getTimelineSource,
@@ -15,6 +18,9 @@ import {
   createWorkflowActivityTimelineSource,
   createPortalActivityTimelineSource,
   createInteractionActivityTimelineSource,
+  createStudioAuditTimelineSource,
+  createProposalActivityTimelineSource,
+  createCommercialCloseHistoryTimelineSource,
   listStudioTimeline,
   listStudioTimelineForProposal,
   describeStudioTimelineSources,
@@ -29,6 +35,20 @@ function json(res, status, body) {
   res.setHeader('Content-Type', 'application/json')
   res.setHeader('Content-Length', Buffer.byteLength(payload))
   res.end(payload)
+}
+
+/**
+ * Legacy stores with no in-memory module. Read fresh per request and never
+ * written back. A missing or malformed file yields no candidates rather than
+ * failing the whole timeline, since these are optional historical sources.
+ */
+function readDataArray(fileName) {
+  try {
+    const parsed = JSON.parse(readFileSync(join(ensureRuntimeData(), fileName), 'utf8'))
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
 }
 
 function matchRoute(url, pattern) {
@@ -114,6 +134,19 @@ export function integrationsActivitiesPlugin() {
     }
     if (!getTimelineSource(TIMELINE_SOURCE_ID.INTERACTION_ACTIVITY)) {
       registerTimelineSource(createInteractionActivityTimelineSource())
+    }
+    if (!getTimelineSource(TIMELINE_SOURCE_ID.STUDIO_AUDIT)) {
+      registerTimelineSource(
+        createStudioAuditTimelineSource({ read: () => readDataArray('activityEvents.json') }),
+      )
+    }
+    if (!getTimelineSource(TIMELINE_SOURCE_ID.PROPOSAL_ACTIVITY)) {
+      registerTimelineSource(
+        createProposalActivityTimelineSource({ read: () => readDataArray('proposals.json') }),
+      )
+    }
+    if (!getTimelineSource(TIMELINE_SOURCE_ID.COMMERCIAL_CLOSE_HISTORY)) {
+      registerTimelineSource(createCommercialCloseHistoryTimelineSource())
     }
     ready = true
   }
