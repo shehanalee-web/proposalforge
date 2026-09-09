@@ -43,6 +43,8 @@ export {
 
 export { createAutomationLedgerTimelineSource } from './sources/automationLedger.js'
 export { createLivingEventsTimelineSource } from './sources/livingEvents.js'
+export { createDomainActivityTimelineSource } from './sources/domainActivity.js'
+export { createWorkflowActivityTimelineSource } from './sources/workflowActivity.js'
 
 export { projectTimelineCandidates, filterTimelineAudience } from './projection.js'
 

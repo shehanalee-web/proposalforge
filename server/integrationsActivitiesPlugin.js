@@ -12,6 +12,7 @@ import {
   getTimelineSource,
   createAutomationLedgerTimelineSource,
   createLivingEventsTimelineSource,
+  createWorkflowActivityTimelineSource,
   listStudioTimeline,
   listStudioTimelineForProposal,
   describeStudioTimelineSources,
@@ -102,6 +103,9 @@ export function integrationsActivitiesPlugin() {
     }
     if (!getTimelineSource(TIMELINE_SOURCE_ID.LIVING_EVENTS)) {
       registerTimelineSource(createLivingEventsTimelineSource())
+    }
+    if (!getTimelineSource(TIMELINE_SOURCE_ID.WORKFLOW_ACTIVITY)) {
+      registerTimelineSource(createWorkflowActivityTimelineSource())
     }
     ready = true
   }
