@@ -1,11 +1,12 @@
 /**
- * H16.8 Slice 8.1 — Activity persistence contracts.
+ * H16.8 persistence verification.
  *
- * Types, native Activity schema, capability flags, and the authoring AND
- * durable-health gate. No adapters, migrations, HTTP writes, or nested H16.7.
+ * Slice 8.1: contracts, native schema, authoring AND durable-health gate.
+ * Slice 8.2: port registry, null/memory adapters, shared conformance.
+ * No Postgres, migrations, HTTP writes, or nested H16.7.
  * Never writes data/proposals.json.
  */
-import { ValidationError } from '../src/services/errors.js'
+import { ForbiddenError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import { ACTIVITY_KIND, ACTIVITY_ORIGIN, ACTIVITY_SUBJECT_TYPE } from '../src/integrations/activities/types.js'
 import {
@@ -23,6 +24,13 @@ import {
   ACTIVITY_NATIVE_ID_PREFIX,
   makeNativeActivity,
   cloneNativeActivity,
+  registerActivityRepository,
+  getActivityRepository,
+  resetActivityRepository,
+  createMemoryActivityRepository,
+  createNullActivityRepository,
+  assertActivityRepositoryContract,
+  assertActivityRepositoryConformance,
 } from '../src/integrations/index.js'
 
 let passed = 0
@@ -180,6 +188,121 @@ assert(
 
 clearActivityAuthoringCapabilityOverrideForTests()
 
+async function threwAsync(fn) {
+  try {
+    await fn()
+    return null
+  } catch (error) {
+    return error
+  }
+}
+
+function asyncMethods() {
+  return {
+    async health() {
+      return { ok: false, durable: false, migrated: null, message: 'x' }
+    },
+    async create() {},
+    async get() {},
+    async list() {},
+    async update() {},
+    async archive() {},
+  }
+}
+
 console.log('')
-console.log(`H16.8.1 persistence contract checks: ${passed} passed, ${failed} failed`)
+console.log('— H16.8.2 port + null/memory —')
+
+assert(
+  '17. default registry is the null adapter',
+  getActivityRepository().id === ACTIVITY_REPOSITORY_ID.NULL &&
+    describeActivityRepository().mode === ACTIVITY_REPOSITORY_MODE.NULL,
+)
+
+{
+  const repo = getActivityRepository()
+  const createError = await threwAsync(() => repo.create(validNote()))
+  const getError = await threwAsync(() => repo.get('act-x', DEFAULT_COMPANY_ID))
+  const listError = await threwAsync(() => repo.list({ companyId: DEFAULT_COMPANY_ID }))
+  const updateError = await threwAsync(() => repo.update('act-x', { body: 'x' }, DEFAULT_COMPANY_ID))
+  const archiveError = await threwAsync(() => repo.archive('act-x', DEFAULT_COMPANY_ID))
+  assert(
+    '18. null adapter refuses reads and writes',
+    [createError, getError, listError, updateError, archiveError].every(
+      (error) =>
+        error instanceof ForbiddenError && error.message === 'Activity persistence is not enabled.',
+    ),
+  )
+}
+
+{
+  const error = threw(() =>
+    registerActivityRepository({
+      id: ACTIVITY_REPOSITORY_ID.MEMORY,
+      describe() {
+        return {
+          id: ACTIVITY_REPOSITORY_ID.MEMORY,
+          durable: true,
+          mode: ACTIVITY_REPOSITORY_MODE.MEMORY,
+        }
+      },
+      ...asyncMethods(),
+    }),
+  )
+  assert('19. memory adapter cannot declare durable', error instanceof ValidationError)
+}
+
+{
+  const error = threw(() =>
+    registerActivityRepository({
+      id: ACTIVITY_REPOSITORY_ID.POSTGRES,
+      describe() {
+        return {
+          id: ACTIVITY_REPOSITORY_ID.POSTGRES,
+          durable: false,
+          mode: ACTIVITY_REPOSITORY_MODE.POSTGRES,
+        }
+      },
+      ...asyncMethods(),
+    }),
+  )
+  assert('20. postgres adapter without durable is refused', error instanceof ValidationError)
+}
+
+{
+  const memory = createMemoryActivityRepository()
+  registerActivityRepository(memory)
+  assert(
+    '21. memory describe is not durable',
+    describeActivityRepository().id === ACTIVITY_REPOSITORY_ID.MEMORY &&
+      describeActivityRepository().durable === false &&
+      isDurableActivityRepositoryHealthy() === false &&
+      isActivityAuthoringEnabled() === false &&
+      getActivityCapabilities().durablePersistence === false,
+  )
+  await assertActivityRepositoryConformance(
+    memory,
+    { studio: DEFAULT_COMPANY_ID, other: 'company-harborline' },
+    assert,
+  )
+}
+
+resetActivityRepository()
+assert(
+  '22. reset returns to the null adapter',
+  getActivityRepository().id === ACTIVITY_REPOSITORY_ID.NULL &&
+    describeActivityRepository().durable === false,
+)
+
+assert(
+  '23. null factory still satisfies the contract',
+  assertActivityRepositoryContract(createNullActivityRepository()).mode ===
+    ACTIVITY_REPOSITORY_MODE.NULL,
+)
+
+clearActivityAuthoringCapabilityOverrideForTests()
+resetActivityRepository()
+
+console.log('')
+console.log(`H16.8 persistence checks: ${passed} passed, ${failed} failed`)
 if (failed > 0) process.exit(1)

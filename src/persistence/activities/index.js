@@ -1,14 +1,10 @@
 /**
- * H16.8 — Activity persistence barrel (Slice 8.1).
+ * H16.8 — Activity persistence barrel (Slice 8.2).
  *
- * Exports contracts, the native record builder, and a closed health seam.
- * No adapter is registered yet, so durable health is structurally false.
- * Slice 8.2 replaces the stub with the repository registry.
- *
- * This barrel does not export create / update / archive.
+ * Registry + null/memory adapters. Native writes exist on the adapter, not as
+ * HTTP routes. This barrel still does not export a standalone create/update/
+ * archive function for the timeline plugin.
  */
-
-import { ACTIVITY_REPOSITORY_ID, ACTIVITY_REPOSITORY_MODE } from './types.js'
 
 export {
   ACTIVITY_REPOSITORY_ID,
@@ -38,22 +34,15 @@ export {
 
 export { makeNativeActivity, cloneNativeActivity } from './schema.js'
 
-/**
- * Slice 8.1 stub. No durable adapter is registered.
- *
- * @returns {{ id: string, durable: boolean, mode: string }}
- */
-export function describeActivityRepository() {
-  return Object.freeze({
-    id: ACTIVITY_REPOSITORY_ID.NULL,
-    durable: false,
-    mode: ACTIVITY_REPOSITORY_MODE.NULL,
-  })
-}
+export {
+  assertActivityRepositoryContract,
+  registerActivityRepository,
+  getActivityRepository,
+  describeActivityRepository,
+  resetActivityRepository,
+  isDurableActivityRepositoryHealthy,
+} from './port.js'
 
-/**
- * Slice 8.1 stub. Always false until Slice 8.2 registers a healthy durable adapter.
- */
-export function isDurableActivityRepositoryHealthy() {
-  return false
-}
+export { createNullActivityRepository } from './null.js'
+export { createMemoryActivityRepository, resetMemoryActivityRepository } from './memory.js'
+export { assertActivityRepositoryConformance } from './conformance.js'

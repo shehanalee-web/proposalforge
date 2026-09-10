@@ -1,11 +1,11 @@
 /**
  * H16.1–H16.8 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
- * + CRM + Activity Timeline + Activity persistence contracts.
+ * + CRM + Activity Timeline + Activity persistence.
  *
  * H16.7 adds a read-only activity timeline projection. It owns no store, writes
  * nothing, and exposes no mutation surface.
- * H16.8 Slice 8.1 adds the ActivityRepository contracts. Native writes are not
- * exposed from this barrel.
+ * H16.8 Slice 8.2 adds null/memory ActivityRepository adapters. Native writes
+ * are not exposed as HTTP from this barrel.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -468,4 +468,12 @@ export {
   NATIVE_ACTIVITY_LIMITS,
   makeNativeActivity,
   cloneNativeActivity,
+  assertActivityRepositoryContract,
+  registerActivityRepository,
+  getActivityRepository,
+  resetActivityRepository,
+  createNullActivityRepository,
+  createMemoryActivityRepository,
+  resetMemoryActivityRepository,
+  assertActivityRepositoryConformance,
 } from '../persistence/activities/index.js'
