@@ -26,6 +26,10 @@ import {
 } from './engine.js'
 import { describeTimelineSources } from './sources/index.js'
 import { describeTimelineCache, isTimelineCacheEnabled } from './cache.js'
+import {
+  describeActivityRepository,
+  isDurableActivityRepositoryHealthy,
+} from '../../persistence/activities/index.js'
 
 function assertCompany(companyId) {
   const check = evaluateIntegrationCompanyScope(companyId)
@@ -79,10 +83,18 @@ export function describeStudioTimelineSources(companyId) {
 }
 
 export function getActivityCapabilities() {
+  const repository = describeActivityRepository()
+  const healthy = isDurableActivityRepositoryHealthy() === true
   return Object.freeze({
     activityTimeline: isActivityTimelineEnabled(),
     activityAuthoring: isActivityAuthoringEnabled(),
-    durablePersistence: false,
+    activityPersistence: INTEGRATION_CAPABILITIES.activityPersistence === true,
+    durablePersistence: repository.durable === true && healthy,
+    repository: Object.freeze({
+      id: repository.id,
+      durable: repository.durable === true,
+      healthy,
+    }),
     // Derived from the port rather than asserted, so this cannot drift from
     // what is actually registered.
     cacheEnabled: isTimelineCacheEnabled(),

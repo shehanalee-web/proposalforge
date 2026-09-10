@@ -22,8 +22,10 @@ import {
 import { filterTimelineAudience, projectTimelineCandidates } from './projection.js'
 import { dedupeTimelineEntries } from './dedupe.js'
 import { listRegisteredTimelineSources } from './sources/index.js'
+import { isDurableActivityRepositoryHealthy } from '../../persistence/activities/index.js'
 
 let capabilityOverride = null
+let authoringOverride = null
 
 /** Test seam mirroring the H16.6 CRM capability override. */
 export function setActivityTimelineCapabilityOverrideForTests(value) {
@@ -34,17 +36,36 @@ export function clearActivityTimelineCapabilityOverrideForTests() {
   capabilityOverride = null
 }
 
+/**
+ * Test seam for the authoring *flag*. The durable-health gate still applies:
+ * override true + a non-durable adapter remains disabled.
+ *
+ * @param {boolean | null} value
+ */
+export function setActivityAuthoringCapabilityOverrideForTests(value) {
+  authoringOverride = typeof value === 'boolean' ? value : null
+}
+
+export function clearActivityAuthoringCapabilityOverrideForTests() {
+  authoringOverride = null
+}
+
 export function isActivityTimelineEnabled() {
   if (typeof capabilityOverride === 'boolean') return capabilityOverride
   return INTEGRATION_CAPABILITIES.activityTimeline === true
 }
 
 /**
- * Native authoring can never be enabled without a durable repository. H16.7
- * registers none, so this is structurally false rather than merely configured.
+ * Native authoring requires the capability flag AND a healthy durable
+ * repository. Slice 8.1 registers none, so this stays structurally false
+ * even if a test forces the flag.
  */
 export function isActivityAuthoringEnabled() {
-  return INTEGRATION_CAPABILITIES.activityAuthoring === true
+  const requested =
+    typeof authoringOverride === 'boolean'
+      ? authoringOverride
+      : INTEGRATION_CAPABILITIES.activityAuthoring === true
+  return requested === true && isDurableActivityRepositoryHealthy() === true
 }
 
 function clampLimit(limit) {
