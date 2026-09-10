@@ -4,7 +4,8 @@
  * Slice 8.1: contracts, native schema, authoring AND durable-health gate.
  * Slice 8.2: port registry, null/memory adapters, shared conformance.
  * Slice 8.3: numbered SQL migrations, runner, secret-ref DSN.
- * No Postgres ActivityRepository, HTTP writes, or nested H16.7.
+ * Slice 8.4: Postgres ActivityRepository. Skip live cases without a DSN.
+ * No HTTP writes, native TimelineSource, boot wiring, or nested H16.7.
  * Never writes data/proposals.json.
  */
 import { spawnSync } from 'node:child_process'
@@ -56,6 +57,8 @@ import {
   resetActivityRepository,
   createMemoryActivityRepository,
   createNullActivityRepository,
+  createPostgresActivityRepository,
+  resetPostgresActivityRepository,
   assertActivityRepositoryContract,
   assertActivityRepositoryConformance,
 } from '../src/integrations/index.js'
@@ -536,16 +539,120 @@ assert(
 
 {
   const plugin = readFileSync(join(root, 'server', 'integrationsActivitiesPlugin.js'), 'utf8')
-  const pkg = readFileSync(join(root, 'package.json'), 'utf8')
   assert(
-    '37. HTTP plugin does not run migrations and postgres adapter is absent',
+    '37. HTTP plugin does not run migrations',
     !/persistence\/migrate|migrateActivities|migrate-activities/.test(plugin) &&
-      !existsSync(join(root, 'src', 'persistence', 'activities', 'postgres.js')) &&
-      !/"pg"\s*:/.test(pkg) &&
       INTEGRATION_CAPABILITIES.vendorSdks === false &&
       INTEGRATION_CAPABILITIES.activityAuthoring === false &&
       isActivityAuthoringEnabled() === false,
   )
+}
+
+function collectJs(dir) {
+  let text = ''
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const next = join(dir, entry.name)
+    if (entry.isDirectory()) text += collectJs(next)
+    else if (entry.name.endsWith('.js')) text += readFileSync(next, 'utf8')
+  }
+  return text
+}
+
+console.log('')
+console.log('— H16.8.4 postgres adapter —')
+
+{
+  const pkg = readFileSync(join(root, 'package.json'), 'utf8')
+  const postgres = createPostgresActivityRepository()
+  assert(
+    '38. pg protocol client is installed; postgres adapter is durable',
+    /"pg"\s*:\s*"\^8/.test(pkg) &&
+      !/"@vercel\/postgres"|"@neondatabase\/serverless"|"@supabase\/supabase-js"/.test(pkg) &&
+      !/"prisma"|"drizzle-orm"/.test(pkg) &&
+      existsSync(join(root, 'src', 'persistence', 'activities', 'postgres.js')) &&
+      postgres.describe().id === ACTIVITY_REPOSITORY_ID.POSTGRES &&
+      postgres.describe().durable === true &&
+      postgres.describe().mode === ACTIVITY_REPOSITORY_MODE.POSTGRES &&
+      assertActivityRepositoryContract(postgres).durable === true &&
+      INTEGRATION_CAPABILITIES.vendorSdks === false,
+  )
+}
+
+assert(
+  '39. postgres factory is not inside src/integrations/activities',
+  !/function\s+create\w*ActivityRepository|createPostgresActivityRepository/.test(
+    collectJs(join(root, 'src', 'integrations', 'activities')),
+  ),
+)
+
+{
+  const health = await withEnv(
+    { [ACTIVITY_DATABASE_URL_ENV]: null, [ACTIVITY_DATABASE_URL_REF_ENV]: null },
+    () => createPostgresActivityRepository().health(),
+  )
+  assert(
+    '40. postgres health without DSN is not ok and does not leak',
+    health.ok === false &&
+      health.durable === true &&
+      health.migrated === false &&
+      typeof health.message === 'string' &&
+      !health.message.includes('postgres://'),
+  )
+}
+
+{
+  registerActivityRepository(createPostgresActivityRepository())
+  assert(
+    '41. activityAuthoring stays false with postgres registered',
+    INTEGRATION_CAPABILITIES.activityAuthoring === false &&
+      isActivityAuthoringEnabled() === false,
+  )
+  resetActivityRepository()
+}
+
+{
+  const dsn = resolveActivityDatabaseUrl()
+  if (!dsn.ok) {
+    assert('42. postgres live conformance skipped without DSN', true)
+    assert('43. postgres SQL injection case skipped without DSN', true)
+  } else {
+    const first = await migrateActivities()
+    const second = await migrateActivities()
+    assert(
+      '42. migrate is idempotent before postgres conformance',
+      first.ok === true && second.ok === true && second.current === true && second.applied.length === 0,
+    )
+    const repo = createPostgresActivityRepository()
+    registerActivityRepository(repo)
+    await assertActivityRepositoryConformance(
+      repo,
+      { studio: DEFAULT_COMPANY_ID, other: 'company-harborline' },
+      assert,
+    )
+    const evil = "p'; DROP TABLE activities; --"
+    const created = await repo.create({
+      companyId: DEFAULT_COMPANY_ID,
+      origin: ACTIVITY_ORIGIN.USER,
+      kind: ACTIVITY_NATIVE_KIND.NOTE,
+      type: ACTIVITY_NATIVE_TYPE.NOTE_CREATED,
+      subject: { type: ACTIVITY_SUBJECT_TYPE.PROPOSAL, id: evil },
+      occurredAt: '2026-09-10T12:00:00.000Z',
+      actor: { id: 'user-1', kind: 'user' },
+      subjectLine: 'Injection probe',
+      body: 'Should store as subject id.',
+    })
+    const listed = await repo.list({ companyId: DEFAULT_COMPANY_ID, limit: 5 })
+    const health = await repo.health()
+    assert(
+      '43. SQL in subjectId does not drop activities',
+      created.subject.id.length > 0 &&
+        health.ok === true &&
+        Array.isArray(listed.entries) &&
+        !String(health.message).includes('postgres://'),
+    )
+    await resetPostgresActivityRepository()
+    resetActivityRepository()
+  }
 }
 
 clearActivityPersistenceTestSecrets()

@@ -13,6 +13,7 @@ import {
 } from './types.js'
 import { createNullActivityRepository } from './null.js'
 import { resetMemoryActivityRepository } from './memory.js'
+import { resetPostgresActivityRepository } from './postgres.js'
 
 const REQUIRED_METHODS = Object.freeze([
   'describe',
@@ -119,6 +120,7 @@ export function describeActivityRepository() {
 
 export function resetActivityRepository() {
   resetMemoryActivityRepository()
+  void resetPostgresActivityRepository()
   registered = createNullActivityRepository()
   return registered
 }
