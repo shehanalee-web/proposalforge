@@ -1,9 +1,11 @@
 /**
- * H16.1–H16.7 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
- * + CRM + Activity Timeline.
+ * H16.1–H16.8 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
+ * + CRM + Activity Timeline + Activity persistence.
  *
  * H16.7 adds a read-only activity timeline projection. It owns no store, writes
  * nothing, and exposes no mutation surface.
+ * H16.8 Slice 8.5 wires null/postgres boot into capabilities. Native writes
+ * are not exposed as HTTP from this barrel.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -420,10 +422,16 @@ export {
   filterTimelineAudience,
   setActivityTimelineCapabilityOverrideForTests,
   clearActivityTimelineCapabilityOverrideForTests,
+  setActivityAuthoringCapabilityOverrideForTests,
+  clearActivityAuthoringCapabilityOverrideForTests,
   configureTimelineProposalLookup,
   resetTimelineProposalLookup,
   isActivityTimelineEnabled,
   isActivityAuthoringEnabled,
+  describeActivityRepository,
+  isDurableActivityRepositoryHealthy,
+  getActivityRepositoryHealth,
+  refreshActivityRepositoryHealth,
   compareTimelineEntries,
   encodeTimelineCursor,
   decodeTimelineCursor,
@@ -443,3 +451,34 @@ export {
   presentStudioTimelineEntry,
   presentClientTimelineEntry,
 } from './activities/index.js'
+
+export {
+  ACTIVITY_REPOSITORY_ID,
+  ACTIVITY_REPOSITORY_IDS,
+  ACTIVITY_REPOSITORY_MODE,
+  ACTIVITY_REPOSITORY_MODES,
+  ACTIVITY_NATIVE_ID_PREFIX,
+  ACTIVITY_DATABASE_URL_ENV,
+  ACTIVITY_NATIVE_KIND,
+  ACTIVITY_NATIVE_KINDS,
+  ACTIVITY_NATIVE_ORIGIN,
+  ACTIVITY_NATIVE_ORIGINS,
+  ACTIVITY_NATIVE_TYPE,
+  ACTIVITY_NATIVE_TYPES,
+  ACTIVITY_NATIVE_TYPE_BY_KIND,
+  NATIVE_ACTIVITY_SCHEMA_VERSION,
+  NATIVE_ACTIVITY_LIMITS,
+  makeNativeActivity,
+  cloneNativeActivity,
+  assertActivityRepositoryContract,
+  registerActivityRepository,
+  getActivityRepository,
+  resetActivityRepository,
+  ensureActivityPersistence,
+  createNullActivityRepository,
+  createMemoryActivityRepository,
+  resetMemoryActivityRepository,
+  createPostgresActivityRepository,
+  resetPostgresActivityRepository,
+  assertActivityRepositoryConformance,
+} from '../persistence/activities/index.js'

@@ -427,6 +427,7 @@ assert(
     INTEGRATION_CAPABILITIES.actionIntents === true &&
     INTEGRATION_CAPABILITIES.outboundWebhooks === true &&
     INTEGRATION_CAPABILITIES.crm === true &&
+    INTEGRATION_CAPABILITIES.activityPersistence === true &&
     INTEGRATION_CAPABILITIES.deliveryExecution === false &&
     INTEGRATION_CAPABILITIES.emailDelivery === false &&
     INTEGRATION_CAPABILITIES.calendar === false &&
