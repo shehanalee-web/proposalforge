@@ -95,8 +95,8 @@ export function getActivityCapabilities() {
       durable: repository.durable === true,
       healthy,
     }),
-    // Derived from the port rather than asserted, so this cannot drift from
-    // what is actually registered.
+    // Derived from the registered adapter and the last confirmed health
+    // snapshot. No DSN, no row counts.
     cacheEnabled: isTimelineCacheEnabled(),
     cache: describeTimelineCache(),
     integrationCapabilities: INTEGRATION_CAPABILITIES,

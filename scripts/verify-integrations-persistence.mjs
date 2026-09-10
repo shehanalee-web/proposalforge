@@ -5,7 +5,8 @@
  * Slice 8.2: port registry, null/memory adapters, shared conformance.
  * Slice 8.3: numbered SQL migrations, runner, secret-ref DSN.
  * Slice 8.4: Postgres ActivityRepository. Skip live cases without a DSN.
- * No HTTP writes, native TimelineSource, boot wiring, or nested H16.7.
+ * Slice 8.5: boot null/postgres, derived capabilities, GET-only.
+ * No native TimelineSource, authoring HTTP, or nested H16.7.
  * Never writes data/proposals.json.
  */
 import { spawnSync } from 'node:child_process'
@@ -59,6 +60,9 @@ import {
   createNullActivityRepository,
   createPostgresActivityRepository,
   resetPostgresActivityRepository,
+  ensureActivityPersistence,
+  getActivityRepositoryHealth,
+  refreshActivityRepositoryHealth,
   assertActivityRepositoryContract,
   assertActivityRepositoryConformance,
 } from '../src/integrations/index.js'
@@ -653,6 +657,121 @@ assert(
     await resetPostgresActivityRepository()
     resetActivityRepository()
   }
+}
+
+console.log('')
+console.log('— H16.8.5 boot + capabilities —')
+
+function invokePlugin(plugin, method, url) {
+  return new Promise((resolve, reject) => {
+    const res = {
+      statusCode: 0,
+      headers: {},
+      setHeader(name, value) {
+        this.headers[name] = value
+      },
+      end(body) {
+        let parsed = null
+        try {
+          parsed = body ? JSON.parse(body) : null
+        } catch {
+          parsed = body
+        }
+        resolve({ status: this.statusCode, body: parsed, nextCalled: false })
+      },
+    }
+    Promise.resolve(
+      plugin.handle({ method, url }, res, () => {
+        resolve({ status: 0, body: null, nextCalled: true })
+      }),
+    ).catch(reject)
+  })
+}
+
+{
+  resetActivityRepository()
+  const descriptor = await withEnv(
+    { [ACTIVITY_DATABASE_URL_ENV]: null, [ACTIVITY_DATABASE_URL_REF_ENV]: null },
+    () => ensureActivityPersistence(),
+  )
+  const caps = getActivityCapabilities()
+  const health = getActivityRepositoryHealth()
+  assert(
+    '44. boot without DSN stays on the null adapter',
+    descriptor.id === ACTIVITY_REPOSITORY_ID.NULL &&
+      descriptor.durable === false &&
+      health.ok === false &&
+      !String(health.message).includes('postgres://') &&
+      caps.durablePersistence === false &&
+      caps.activityAuthoring === false &&
+      caps.repository.id === ACTIVITY_REPOSITORY_ID.NULL &&
+      caps.repository.healthy === false &&
+      isDurableActivityRepositoryHealthy() === false,
+  )
+}
+
+{
+  registerActivityRepository(createPostgresActivityRepository())
+  const caps = getActivityCapabilities()
+  assert(
+    '45. postgres is not durable-healthy until health is confirmed',
+    caps.repository.durable === true &&
+      caps.repository.healthy === false &&
+      caps.durablePersistence === false &&
+      isDurableActivityRepositoryHealthy() === false &&
+      isActivityAuthoringEnabled() === false,
+  )
+  resetActivityRepository()
+}
+
+{
+  const { integrationsActivitiesPlugin } = await import(
+    '../server/integrationsActivitiesPlugin.js'
+  )
+  resetActivityRepository()
+  const plugin = integrationsActivitiesPlugin()
+  const pluginSource = readFileSync(
+    join(root, 'server', 'integrationsActivitiesPlugin.js'),
+    'utf8',
+  )
+  const caps = await withEnv(
+    { [ACTIVITY_DATABASE_URL_ENV]: null, [ACTIVITY_DATABASE_URL_REF_ENV]: null },
+    () => invokePlugin(plugin, 'GET', '/api/activities/capabilities'),
+  )
+  const skipped = await withEnv(
+    { [ACTIVITY_DATABASE_URL_ENV]: null, [ACTIVITY_DATABASE_URL_REF_ENV]: null },
+    () => invokePlugin(plugin, 'POST', '/api/activities/capabilities'),
+  )
+  const payload = JSON.stringify(caps.body || {})
+  assert(
+    '46. GET capabilities is derived and stays GET-only',
+    caps.status === 200 &&
+      caps.body.capabilities.activityPersistence === true &&
+      caps.body.capabilities.durablePersistence === false &&
+      caps.body.capabilities.activityAuthoring === false &&
+      caps.body.capabilities.repository.id === ACTIVITY_REPOSITORY_ID.NULL &&
+      !payload.includes('postgres://') &&
+      skipped.nextCalled === true &&
+      pluginSource.includes("req.method !== 'GET'") &&
+      !/['"]POST['"]|['"]PATCH['"]|['"]PUT['"]|['"]DELETE['"]/.test(pluginSource) &&
+      !/persistence\/migrate|migrateActivities|migrate-activities/.test(pluginSource) &&
+      !/createPostgresActivityRepository/.test(pluginSource),
+  )
+  resetActivityRepository()
+}
+
+{
+  registerActivityRepository(createMemoryActivityRepository())
+  await refreshActivityRepositoryHealth()
+  const caps = getActivityCapabilities()
+  assert(
+    '47. memory health does not enable durablePersistence',
+    getActivityRepositoryHealth().ok === true &&
+      caps.repository.durable === false &&
+      caps.durablePersistence === false &&
+      isActivityAuthoringEnabled() === false,
+  )
+  resetActivityRepository()
 }
 
 clearActivityPersistenceTestSecrets()

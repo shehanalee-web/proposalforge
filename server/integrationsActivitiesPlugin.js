@@ -1,9 +1,10 @@
 /**
- * H16.7 — Activity timeline HTTP surface.
+ * H16.7/H16.8 — Activity timeline HTTP surface.
  *
  * Read-only by design. This plugin registers no data file, configures no
- * persist handler, and exposes no POST/PATCH/PUT/DELETE route. Native Activity
- * writes arrive in H16.8 on a durable PostgreSQL repository, never here.
+ * persist handler, and exposes no mutation route. Native Activity writes are
+ * not served here. Boot registers the null ActivityRepository, then postgres
+ * when a DSN resolves. Migrations are an ops command, not this plugin.
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -26,6 +27,7 @@ import {
   describeStudioTimelineSources,
   getActivityCapabilities,
   configureTimelineProposalLookup,
+  ensureActivityPersistence,
   TIMELINE_SOURCE_ID,
   TIMELINE_LIMITS,
 } from '../src/integrations/index.js'
@@ -168,6 +170,7 @@ export function integrationsActivitiesPlugin() {
 
   async function handle(req, res, next) {
     ensureSources()
+    await ensureActivityPersistence()
     const url = req.url || ''
 
     if (req.method !== 'GET') {
@@ -222,6 +225,7 @@ export function integrationsActivitiesPlugin() {
 
   function attach(server) {
     ensureSources()
+    void ensureActivityPersistence()
     server.middlewares.use((req, res, next) => {
       handle(req, res, next)
     })

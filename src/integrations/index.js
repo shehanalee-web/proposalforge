@@ -4,8 +4,8 @@
  *
  * H16.7 adds a read-only activity timeline projection. It owns no store, writes
  * nothing, and exposes no mutation surface.
- * H16.8 Slice 8.4 adds the Postgres ActivityRepository. Native writes are not
- * exposed as HTTP from this barrel. Boot registration is Slice 8.5.
+ * H16.8 Slice 8.5 wires null/postgres boot into capabilities. Native writes
+ * are not exposed as HTTP from this barrel.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -430,6 +430,8 @@ export {
   isActivityAuthoringEnabled,
   describeActivityRepository,
   isDurableActivityRepositoryHealthy,
+  getActivityRepositoryHealth,
+  refreshActivityRepositoryHealth,
   compareTimelineEntries,
   encodeTimelineCursor,
   decodeTimelineCursor,
@@ -472,6 +474,7 @@ export {
   registerActivityRepository,
   getActivityRepository,
   resetActivityRepository,
+  ensureActivityPersistence,
   createNullActivityRepository,
   createMemoryActivityRepository,
   resetMemoryActivityRepository,

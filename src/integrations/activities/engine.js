@@ -57,8 +57,8 @@ export function isActivityTimelineEnabled() {
 
 /**
  * Native authoring requires the capability flag AND a healthy durable
- * repository. Slice 8.1 registers none, so this stays structurally false
- * even if a test forces the flag.
+ * repository. Health is the last confirmed adapter.health().ok; postgres
+ * is not treated as healthy merely because describe().durable is true.
  */
 export function isActivityAuthoringEnabled() {
   const requested =

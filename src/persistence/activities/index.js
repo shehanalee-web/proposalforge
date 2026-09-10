@@ -1,9 +1,9 @@
 /**
  * H16.8 — Activity persistence barrel (Slice 8.4).
  *
- * Registry + null/memory/postgres adapters. Native writes exist on the adapter,
- * not as HTTP routes. This barrel still does not export a standalone
- * create/update/archive function for the timeline plugin.
+ * Registry + null/memory/postgres adapters. Boot wiring lives in the port;
+ * this barrel still does not export a standalone create/update/archive
+ * function for the timeline plugin.
  */
 
 export {
@@ -40,7 +40,10 @@ export {
   getActivityRepository,
   describeActivityRepository,
   resetActivityRepository,
+  getActivityRepositoryHealth,
+  refreshActivityRepositoryHealth,
   isDurableActivityRepositoryHealthy,
+  ensureActivityPersistence,
 } from './port.js'
 
 export { createNullActivityRepository } from './null.js'

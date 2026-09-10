@@ -90,6 +90,8 @@ export {
 export {
   describeActivityRepository,
   isDurableActivityRepositoryHealthy,
+  getActivityRepositoryHealth,
+  refreshActivityRepositoryHealth,
 } from '../../persistence/activities/index.js'
 
 export {
