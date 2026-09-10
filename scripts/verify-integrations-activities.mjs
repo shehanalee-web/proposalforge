@@ -68,6 +68,8 @@ import {
   isActivityAuthoringEnabled,
   isTimelineCacheEnabled,
   describeTimelineCache,
+  configureTimelineProposalLookup,
+  resetTimelineProposalLookup,
 } from '../src/integrations/index.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -153,6 +155,8 @@ const otherCompany = WORKFLOW_ISOLATION_COMPANY_ID
 const PROPOSAL_A = 'prop-h167-a'
 const PROPOSAL_B = 'prop-h167-b'
 const PROPOSAL_PAGE = 'prop-h167-page'
+/** Known proposal with no projected events — must 200 [], not 404. */
+const PROPOSAL_EMPTY = 'prop-h167-empty'
 
 const LIVING_MIRRORED_ID = 'levt-h167-mirrored'
 const LIVING_LEGACY_ID = 'levt-h167-legacy'
@@ -374,6 +378,22 @@ function seedSources() {
   registerTimelineSource(
     createProposalActivityTimelineSource({ read: () => proposalFixtures }),
   )
+  configureTimelineProposalLookup((proposalId) => {
+    const id = String(proposalId ?? '').trim()
+    const rows = [
+      { id: PROPOSAL_A, companyId: studio },
+      { id: PROPOSAL_B, companyId: otherCompany },
+      { id: PROPOSAL_PAGE, companyId: studio },
+      { id: PROPOSAL_EMPTY, companyId: studio },
+      ...proposalFixtures,
+    ]
+    const found = rows.find((row) => String(row?.id ?? '').trim() === id)
+    if (!found) return null
+    return {
+      id,
+      companyId: String(found.companyId ?? '').trim() || studio,
+    }
+  })
 }
 
 seedStores()
@@ -1003,11 +1023,27 @@ assert(
   )
 }
 assert(
-  '42. an unknown or fabricated subject raises NotFoundError',
+  '42. unknown ids 404; a known proposal with no remaining events returns []',
   threw(() => listStudioTimelineForProposal(studio, 'prop-does-not-exist')) instanceof
     NotFoundError &&
     threw(() => listStudioTimelineForProposal(studio, 'prop-fabricated-zzz')) instanceof
-      NotFoundError,
+      NotFoundError &&
+    threw(() => listStudioTimelineForProposal(studio, PROPOSAL_EMPTY)) === null &&
+    listStudioTimelineForProposal(studio, PROPOSAL_EMPTY).entries.length === 0 &&
+    threw(() =>
+      listStudioTimeline({
+        companyId: studio,
+        subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
+        subjectId: PROPOSAL_EMPTY,
+        audience: ACTIVITY_AUDIENCE.CLIENT,
+      }),
+    ) === null &&
+    listStudioTimeline({
+      companyId: studio,
+      subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
+      subjectId: PROPOSAL_EMPTY,
+      audience: ACTIVITY_AUDIENCE.CLIENT,
+    }).entries.length === 0,
 )
 {
   const studioPage = listStudioTimeline({ companyId: studio, limit: 200 })
@@ -1200,6 +1236,7 @@ assert('66. data/proposals.json byte-identical and git diff --check clean', (() 
 })())
 
 resetTimelineSources()
+resetTimelineProposalLookup()
 
 console.log('')
 console.log(`H16.7 activity timeline checks: ${passed} passed, ${failed} failed`)

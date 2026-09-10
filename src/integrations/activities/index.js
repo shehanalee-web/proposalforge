@@ -74,6 +74,8 @@ export { projectTimelineCandidates, filterTimelineAudience } from './projection.
 export {
   setActivityTimelineCapabilityOverrideForTests,
   clearActivityTimelineCapabilityOverrideForTests,
+  configureTimelineProposalLookup,
+  resetTimelineProposalLookup,
   isActivityTimelineEnabled,
   isActivityAuthoringEnabled,
   compareTimelineEntries,

@@ -420,6 +420,8 @@ export {
   filterTimelineAudience,
   setActivityTimelineCapabilityOverrideForTests,
   clearActivityTimelineCapabilityOverrideForTests,
+  configureTimelineProposalLookup,
+  resetTimelineProposalLookup,
   isActivityTimelineEnabled,
   isActivityAuthoringEnabled,
   compareTimelineEntries,

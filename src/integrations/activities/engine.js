@@ -88,10 +88,45 @@ export function decodeTimelineCursor(cursor) {
 }
 
 /**
- * Companies a subject is known to, derived from the H16.2 ledger.
+ * Proposal existence lookup. The HTTP plugin injects a reader over
+ * proposals.json; tests inject fixtures. The engine never reads the file
+ * itself, so it stays free of node:fs.
  *
- * Used only to distinguish "belongs to another company" from "does not exist".
- * Never returns content.
+ * @typedef {{ id: string, companyId: string }} TimelineProposalRecord
+ * @type {(proposalId: string) => TimelineProposalRecord | null}
+ */
+let proposalLookup = null
+
+/**
+ * @param {(proposalId: string) => object | null} lookup
+ */
+export function configureTimelineProposalLookup(lookup) {
+  proposalLookup = typeof lookup === 'function' ? lookup : null
+}
+
+export function resetTimelineProposalLookup() {
+  proposalLookup = null
+}
+
+function lookupProposalRecord(proposalId) {
+  const id = String(proposalId ?? '').trim()
+  if (!id || typeof proposalLookup !== 'function') return null
+  const record = proposalLookup(id)
+  if (!record || typeof record !== 'object') return null
+  const foundId = String(record.id ?? id).trim()
+  if (foundId !== id) return null
+  return {
+    id,
+    companyId: String(record.companyId ?? '').trim() || DEFAULT_COMPANY_ID,
+  }
+}
+
+/**
+ * Companies a subject is known to from the H16.2 ledger.
+ *
+ * Secondary to proposals.json: a proposal that never reached intake can still
+ * exist as a legacy row. Ledger membership is kept so a company-scoped
+ * proposal that is not in the unscoped file can still 403 rather than 404.
  */
 function subjectCompaniesFromLedger(subjectType, subjectId) {
   if (subjectType !== ACTIVITY_SUBJECT_TYPE.PROPOSAL) return new Set()
@@ -102,6 +137,32 @@ function subjectCompaniesFromLedger(subjectType, subjectId) {
     }
   }
   return companies
+}
+
+/**
+ * Authorize a proposal subject before any audience filter.
+ *
+ * Existence comes from the proposal record first, then the ledger. Unknown
+ * ids 404. A known proposal owned by another company 403s. A known proposal
+ * with no remaining events after later filters is a 200 empty page, not 404.
+ *
+ * @param {string} companyId
+ * @param {{ type: string | null, id: string | null }} subject
+ */
+function assertProposalAccess(companyId, subject) {
+  if (!subject?.id || subject.type !== ACTIVITY_SUBJECT_TYPE.PROPOSAL) return
+
+  const record = lookupProposalRecord(subject.id)
+  const ledgerCompanies = subjectCompaniesFromLedger(subject.type, subject.id)
+  const owners = new Set(ledgerCompanies)
+  if (record) owners.add(record.companyId)
+
+  if (!record && ledgerCompanies.size === 0) {
+    throw new NotFoundError('Timeline subject not found.')
+  }
+  if (!owners.has(companyId)) {
+    throw new ForbiddenError('You cannot access another company workspace.')
+  }
 }
 
 function assertSubject(subjectType, subjectId) {
@@ -166,6 +227,7 @@ export function buildTimeline(query = {}) {
   }
 
   const subject = assertSubject(query.subjectType, query.subjectId)
+  assertProposalAccess(companyId, subject)
   const audience = ACTIVITY_AUDIENCES.includes(query.audience)
     ? query.audience
     : ACTIVITY_AUDIENCE.INTERNAL
@@ -219,16 +281,6 @@ export function buildTimeline(query = {}) {
 
   if (Array.isArray(query.origins) && query.origins.length) {
     ordered = ordered.filter((item) => query.origins.includes(item.origin))
-  }
-
-  if (subject.id && ordered.length === 0) {
-    const known = subjectCompaniesFromLedger(subject.type, subject.id)
-    if (known.size && !known.has(companyId)) {
-      throw new ForbiddenError('You cannot access another company workspace.')
-    }
-    if (!known.size) {
-      throw new NotFoundError('Timeline subject not found.')
-    }
   }
 
   const afterCursor = cursor

@@ -25,6 +25,7 @@ import {
   listStudioTimelineForProposal,
   describeStudioTimelineSources,
   getActivityCapabilities,
+  configureTimelineProposalLookup,
   TIMELINE_SOURCE_ID,
   TIMELINE_LIMITS,
 } from '../src/integrations/index.js'
@@ -48,6 +49,19 @@ function readDataArray(fileName) {
     return Array.isArray(parsed) ? parsed : []
   } catch {
     return []
+  }
+}
+
+function lookupProposalRecord(proposalId) {
+  const id = String(proposalId ?? '').trim()
+  if (!id) return null
+  const found = readDataArray('proposals.json').find(
+    (row) => String(row?.id ?? '').trim() === id,
+  )
+  if (!found) return null
+  return {
+    id,
+    companyId: String(found.companyId ?? '').trim() || DEFAULT_COMPANY_ID,
   }
 }
 
@@ -148,6 +162,7 @@ export function integrationsActivitiesPlugin() {
     if (!getTimelineSource(TIMELINE_SOURCE_ID.COMMERCIAL_CLOSE_HISTORY)) {
       registerTimelineSource(createCommercialCloseHistoryTimelineSource())
     }
+    configureTimelineProposalLookup(lookupProposalRecord)
     ready = true
   }
 
