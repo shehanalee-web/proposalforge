@@ -6,7 +6,8 @@
  * Slice 8.3: numbered SQL migrations, runner, secret-ref DSN.
  * Slice 8.4: Postgres ActivityRepository. Skip live cases without a DSN.
  * Slice 8.5: boot null/postgres, derived capabilities, GET-only.
- * No native TimelineSource, authoring HTTP, or nested H16.7.
+ * Slice 8.6: closing assertion suite. H16.7 stays unnested.
+ * No native TimelineSource or authoring HTTP.
  * Never writes data/proposals.json.
  */
 import { spawnSync } from 'node:child_process'
@@ -48,6 +49,8 @@ import {
   isDurableActivityRepositoryHealthy,
   ACTIVITY_REPOSITORY_ID,
   ACTIVITY_REPOSITORY_MODE,
+  TIMELINE_SOURCE_IDS,
+  buildTimeline,
   ACTIVITY_NATIVE_KIND,
   ACTIVITY_NATIVE_TYPE,
   ACTIVITY_NATIVE_ID_PREFIX,
@@ -772,6 +775,84 @@ function invokePlugin(plugin, method, url) {
       isActivityAuthoringEnabled() === false,
   )
   resetActivityRepository()
+}
+
+console.log('')
+console.log('— H16.8.6 assertion suite —')
+
+function stripComments(source) {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
+}
+
+resetActivityRepository()
+clearActivityPersistenceTestSecrets()
+clearActivityAuthoringCapabilityOverrideForTests()
+
+{
+  const caps = getActivityCapabilities()
+  assert(
+    '48. reset registry is null and durablePersistence stays false',
+    getActivityRepository().id === ACTIVITY_REPOSITORY_ID.NULL &&
+      caps.durablePersistence === false &&
+      caps.activityAuthoring === false &&
+      caps.activityPersistence === true &&
+      isActivityAuthoringEnabled() === false &&
+      isDurableActivityRepositoryHealthy() === false,
+  )
+}
+
+{
+  const activitiesDir = join(root, 'src', 'integrations', 'activities')
+  const moduleSource = stripComments(collectJs(activitiesDir))
+  assert(
+    '49. no ActivityRepository factory exists under src/integrations/activities',
+    !/class\s+\w*ActivityRepository|function\s+create\w*ActivityRepository/.test(moduleSource) &&
+      !readdirSync(activitiesDir).includes('persistence'),
+  )
+}
+
+{
+  const dataDir = join(root, 'data')
+  const present = readdirSync(dataDir)
+  const ownStore = present.filter((name) =>
+    /^(activities|activity-timeline|timeline|timeline-cache)\.json$/i.test(name),
+  )
+  const proposalsDiff = spawnSync('git', ['diff', '--', 'data/proposals.json'], {
+    encoding: 'utf8',
+    cwd: root,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  assert(
+    '50. no ephemeral activity JSON store and proposals.json is unmodified',
+    ownStore.length === 0 &&
+      !existsSync(join(dataDir, 'activities.json')) &&
+      !(proposalsDiff.stdout || '').trim(),
+  )
+}
+
+assert(
+  '51. buildTimeline stays synchronous',
+  typeof buildTimeline === 'function' && buildTimeline.constructor.name === 'Function',
+)
+
+assert(
+  '52. no native postgres TimelineSource is registered',
+  Array.isArray(TIMELINE_SOURCE_IDS) &&
+    TIMELINE_SOURCE_IDS.length > 0 &&
+    TIMELINE_SOURCE_IDS.every((id) => !/postgres|native_activity/i.test(id)),
+)
+
+{
+  const pluginSource = stripComments(
+    readFileSync(join(root, 'server', 'integrationsActivitiesPlugin.js'), 'utf8'),
+  )
+  assert(
+    '53. HTTP surface remains GET-only and vendorSdks stays false',
+    pluginSource.includes("req.method !== 'GET'") &&
+      !/['"]POST['"]|['"]PATCH['"]|['"]PUT['"]|['"]DELETE['"]/.test(pluginSource) &&
+      INTEGRATION_CAPABILITIES.vendorSdks === false &&
+      INTEGRATION_CAPABILITIES.activityAuthoring === false,
+  )
 }
 
 clearActivityPersistenceTestSecrets()
