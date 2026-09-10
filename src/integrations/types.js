@@ -85,6 +85,7 @@ export const INTEGRATION_CAPABILITIES = Object.freeze({
   outboundWebhooks: true,
   activityTimeline: true,
   activityAuthoring: false,
+  activityTimelineCache: false,
   backgroundWorkers: false,
   thirdPartyIntegrations: false,
   oauth: false,

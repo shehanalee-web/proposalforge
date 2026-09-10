@@ -68,7 +68,7 @@ function djb2(input) {
   return hash >>> 0
 }
 
-function stableHash(input) {
+export function stableHash(input) {
   const text = asString(input)
   return `${fnv1a32(text).toString(36)}${djb2(text).toString(36)}`
 }

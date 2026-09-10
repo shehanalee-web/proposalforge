@@ -25,6 +25,7 @@ import {
   isActivityTimelineEnabled,
 } from './engine.js'
 import { describeTimelineSources } from './sources/index.js'
+import { describeTimelineCache, isTimelineCacheEnabled } from './cache.js'
 
 function assertCompany(companyId) {
   const check = evaluateIntegrationCompanyScope(companyId)
@@ -82,7 +83,10 @@ export function getActivityCapabilities() {
     activityTimeline: isActivityTimelineEnabled(),
     activityAuthoring: isActivityAuthoringEnabled(),
     durablePersistence: false,
-    cacheEnabled: false,
+    // Derived from the port rather than asserted, so this cannot drift from
+    // what is actually registered.
+    cacheEnabled: isTimelineCacheEnabled(),
+    cache: describeTimelineCache(),
     integrationCapabilities: INTEGRATION_CAPABILITIES,
   })
 }

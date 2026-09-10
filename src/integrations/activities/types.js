@@ -127,6 +127,29 @@ export const TIMELINE_LIVING_CANONICAL_INTERACTION_TYPES = Object.freeze([
   'question_answered',
 ])
 
+export const TIMELINE_CACHE_ID = Object.freeze({
+  NULL: 'null_cache',
+})
+
+/**
+ * H16.7 ships DISABLED only. The other modes are declared so a Redis or
+ * PostgreSQL cache is a registration rather than a reshape of the port.
+ */
+export const TIMELINE_CACHE_MODE = Object.freeze({
+  DISABLED: 'disabled',
+  MEMORY: 'memory',
+  REDIS: 'redis',
+  POSTGRES: 'postgres',
+})
+
+export const TIMELINE_CACHE_MODES = Object.freeze(Object.values(TIMELINE_CACHE_MODE))
+
+export const TIMELINE_CACHE_LIMITS = Object.freeze({
+  MAX_KEY: 512,
+  DEFAULT_TTL_SECONDS: 30,
+  MAX_TTL_SECONDS: 300,
+})
+
 export const TIMELINE_DROP_REASON = Object.freeze({
   CANONICAL_SOURCE_ELSEWHERE: 'canonical_source_elsewhere',
   DUPLICATE: 'duplicate',

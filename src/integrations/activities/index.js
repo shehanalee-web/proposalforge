@@ -29,6 +29,10 @@ export {
   TIMELINE_DROP_REASON,
   TIMELINE_DROP_REASONS,
   TIMELINE_LIMITS,
+  TIMELINE_CACHE_ID,
+  TIMELINE_CACHE_MODE,
+  TIMELINE_CACHE_MODES,
+  TIMELINE_CACHE_LIMITS,
 } from './types.js'
 
 export {
@@ -48,6 +52,19 @@ export { createWorkflowActivityTimelineSource } from './sources/workflowActivity
 export { createPortalActivityTimelineSource } from './sources/portalActivity.js'
 export { createInteractionActivityTimelineSource } from './sources/interactionActivity.js'
 export { dedupeTimelineEntries } from './dedupe.js'
+export {
+  assertTimelineCacheContract,
+  createNullTimelineCache,
+  deriveTimelineCacheKey,
+  deriveTimelineSourceFingerprint,
+  describeTimelineCache,
+  getTimelineCache,
+  isTimelineCacheEnabled,
+  isTimelinePageCacheable,
+  registerTimelineCache,
+  resetTimelineCache,
+  resolveTimelineCacheTtlSeconds,
+} from './cache.js'
 export { createStudioAuditTimelineSource } from './sources/studioAudit.js'
 export { createProposalActivityTimelineSource } from './sources/proposalActivity.js'
 export { createCommercialCloseHistoryTimelineSource } from './sources/commercialCloseHistory.js'
@@ -81,6 +98,7 @@ export {
   makeTimelineActor,
   makeTimelineEntry,
   cloneTimelineEntry,
+  stableHash,
   presentStudioTimelineEntry,
   presentClientTimelineEntry,
 } from './schema.js'
