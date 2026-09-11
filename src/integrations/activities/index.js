@@ -3,8 +3,9 @@
  *
  * Read-only projection plus the H16.9 studio write facade. Persistence
  * factories stay under `persistence/` and are re-exported as describe/health
- * only. Slice 9.2 makes the timeline engine async. activityAuthoring stays
- * false until HTTP exists (9.4) and the flag flips (9.5).
+ * only. Slice 9.2 makes the timeline engine async. Slice 9.3 adds the
+ * read-only native_activity source. activityAuthoring stays false until HTTP
+ * exists (9.4) and the flag flips (9.5).
  */
 
 export {
@@ -70,6 +71,7 @@ export {
 export { createStudioAuditTimelineSource } from './sources/studioAudit.js'
 export { createProposalActivityTimelineSource } from './sources/proposalActivity.js'
 export { createCommercialCloseHistoryTimelineSource } from './sources/commercialCloseHistory.js'
+export { createNativeActivityTimelineSource } from './sources/nativeActivity.js'
 
 export { projectTimelineCandidates, filterTimelineAudience } from './projection.js'
 

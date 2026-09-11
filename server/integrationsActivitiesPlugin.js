@@ -22,6 +22,7 @@ import {
   createStudioAuditTimelineSource,
   createProposalActivityTimelineSource,
   createCommercialCloseHistoryTimelineSource,
+  createNativeActivityTimelineSource,
   listStudioTimeline,
   listStudioTimelineForProposal,
   describeStudioTimelineSources,
@@ -163,6 +164,9 @@ export function integrationsActivitiesPlugin() {
     }
     if (!getTimelineSource(TIMELINE_SOURCE_ID.COMMERCIAL_CLOSE_HISTORY)) {
       registerTimelineSource(createCommercialCloseHistoryTimelineSource())
+    }
+    if (!getTimelineSource(TIMELINE_SOURCE_ID.NATIVE_ACTIVITY)) {
+      registerTimelineSource(createNativeActivityTimelineSource())
     }
     configureTimelineProposalLookup(lookupProposalRecord)
     ready = true

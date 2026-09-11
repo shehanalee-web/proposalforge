@@ -7,8 +7,8 @@
  * Slice 8.4: Postgres ActivityRepository. Skip live cases without a DSN.
  * Slice 8.5: boot null/postgres, derived capabilities, GET-only.
  * Slice 8.6: closing assertion suite. H16.7 stays unnested.
- * No native TimelineSource or authoring HTTP.
- * Never writes data/proposals.json.
+ * Slice 9.3: native_activity TimelineSource over the registered repository.
+ * Authoring HTTP stays out. Never writes data/proposals.json.
  */
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
@@ -49,7 +49,14 @@ import {
   isDurableActivityRepositoryHealthy,
   ACTIVITY_REPOSITORY_ID,
   ACTIVITY_REPOSITORY_MODE,
+  TIMELINE_SOURCE_ID,
   TIMELINE_SOURCE_IDS,
+  TIMELINE_SOURCE_PRIORITY,
+  assertTimelineSourceContract,
+  registerTimelineSource,
+  resetTimelineSources,
+  listRegisteredTimelineSources,
+  createNativeActivityTimelineSource,
   buildTimeline,
   ACTIVITY_NATIVE_KIND,
   ACTIVITY_NATIVE_TYPE,
@@ -836,10 +843,9 @@ assert(
 )
 
 assert(
-  '52. no native postgres TimelineSource is registered',
-  Array.isArray(TIMELINE_SOURCE_IDS) &&
-    TIMELINE_SOURCE_IDS.length > 0 &&
-    TIMELINE_SOURCE_IDS.every((id) => !/postgres|native_activity/i.test(id)),
+  '52. native_activity is allowlisted; no postgres-named TimelineSource',
+  TIMELINE_SOURCE_IDS.includes(TIMELINE_SOURCE_ID.NATIVE_ACTIVITY) &&
+    TIMELINE_SOURCE_IDS.every((id) => !/postgres/i.test(id)),
 )
 
 {
@@ -853,11 +859,201 @@ assert(
       INTEGRATION_CAPABILITIES.vendorSdks === false &&
       INTEGRATION_CAPABILITIES.activityAuthoring === false,
   )
+  assert(
+    '54. native_activity is registered at boot beside the projection sources',
+    pluginSource.includes('createNativeActivityTimelineSource()') &&
+      pluginSource.includes('TIMELINE_SOURCE_ID.NATIVE_ACTIVITY') &&
+      typeof createNativeActivityTimelineSource === 'function' &&
+      !/create\w*ActivityRepository/.test(pluginSource),
+  )
+}
+
+console.log('')
+console.log('— H16.9.3 native timeline source —')
+
+{
+  resetTimelineSources()
+  resetActivityRepository()
+  const source = createNativeActivityTimelineSource()
+  const descriptor = assertTimelineSourceContract(source)
+  const registered = registerTimelineSource(source)
+  assert(
+    '55. native_activity satisfies the TimelineSource contract at priority 110',
+    source.id === TIMELINE_SOURCE_ID.NATIVE_ACTIVITY &&
+      TIMELINE_SOURCE_ID.NATIVE_ACTIVITY === 'native_activity' &&
+      descriptor.readOnly === true &&
+      descriptor.storeRef === 'activity-repository' &&
+      TIMELINE_SOURCE_PRIORITY[TIMELINE_SOURCE_ID.NATIVE_ACTIVITY] === 110 &&
+      registered.priority === 110 &&
+      listRegisteredTimelineSources()[0].id === TIMELINE_SOURCE_ID.NATIVE_ACTIVITY,
+  )
+}
+
+{
+  resetActivityRepository()
+  const source = createNativeActivityTimelineSource()
+  assert(
+    '56. null repository disables the native source',
+    describeActivityRepository().mode === ACTIVITY_REPOSITORY_MODE.NULL &&
+      source.isEnabled() === false,
+  )
+  registerActivityRepository(createMemoryActivityRepository())
+  assert(
+    '57. memory repository enables the native source without authoring',
+    source.isEnabled() === true &&
+      INTEGRATION_CAPABILITIES.activityAuthoring === false &&
+      isActivityAuthoringEnabled() === false,
+  )
+  resetActivityRepository()
+}
+
+{
+  resetTimelineSources()
+  resetActivityRepository()
+  const memory = createMemoryActivityRepository()
+  let forwarded = null
+  registerActivityRepository({
+    id: memory.id,
+    describe: () => memory.describe(),
+    health: (...args) => memory.health(...args),
+    create: (...args) => memory.create(...args),
+    get: (...args) => memory.get(...args),
+    update: (...args) => memory.update(...args),
+    archive: (...args) => memory.archive(...args),
+    async list(query) {
+      forwarded = query
+      return memory.list(query)
+    },
+  })
+
+  const created = await getActivityRepository().create(validNote(), {
+    companyId: DEFAULT_COMPANY_ID,
+  })
+  const archived = await getActivityRepository().create(
+    validNote({
+      subjectLine: 'Archived note',
+      occurredAt: '2026-09-10T12:00:00.000Z',
+    }),
+    { companyId: DEFAULT_COMPANY_ID },
+  )
+  await getActivityRepository().archive(archived.id, DEFAULT_COMPANY_ID)
+
+  const source = createNativeActivityTimelineSource()
+  const sinceIso = '2026-09-10T12:00:00.000Z'
+  const untilIso = '2026-09-10T12:00:00.000Z'
+  const candidates = await source.list({
+    companyId: DEFAULT_COMPANY_ID,
+    subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
+    subjectId: 'prop-h168-a',
+    kinds: [ACTIVITY_NATIVE_KIND.NOTE],
+    origins: [ACTIVITY_ORIGIN.USER],
+    audience: 'internal',
+    since: sinceIso,
+    until: untilIso,
+    limit: 50,
+  })
+  const mapped = candidates.find((entry) => entry.nativeId === created.id)
+  assert(
+    '58. native records map to timeline candidates and skip archived rows',
+    Array.isArray(candidates) &&
+      candidates.length === 1 &&
+      mapped &&
+      mapped.sourceId === TIMELINE_SOURCE_ID.NATIVE_ACTIVITY &&
+      mapped.nativeId === created.id &&
+      mapped.companyId === created.companyId &&
+      mapped.subject?.id === created.subject.id &&
+      mapped.kind === created.kind &&
+      mapped.type === created.type &&
+      mapped.origin === created.origin &&
+      mapped.audience === created.audience &&
+      mapped.occurredAtRaw === created.occurredAt &&
+      mapped.recordedAtRaw === created.recordedAt &&
+      mapped.actor?.id === created.actor.id &&
+      mapped.subjectLine === created.subjectLine &&
+      mapped.body === created.body &&
+      mapped.source?.entityId === created.source.entityId &&
+      !('participants' in mapped) &&
+      !candidates.some((entry) => entry.nativeId === archived.id),
+  )
+  assert(
+    '59. repository list keeps includeArchived false and full ISO since/until',
+    forwarded?.includeArchived === false &&
+      forwarded?.since === sinceIso &&
+      forwarded?.until === untilIso &&
+      forwarded?.companyId === DEFAULT_COMPANY_ID &&
+      forwarded?.subjectType === ACTIVITY_SUBJECT_TYPE.PROPOSAL &&
+      forwarded?.subjectId === 'prop-h168-a' &&
+      Array.isArray(forwarded?.kinds) &&
+      Array.isArray(forwarded?.origins),
+  )
+  resetActivityRepository()
+}
+
+{
+  resetTimelineSources()
+  resetActivityRepository()
+  const memory = createMemoryActivityRepository()
+  registerActivityRepository({
+    id: memory.id,
+    describe: () => memory.describe(),
+    health: (...args) => memory.health(...args),
+    create: (...args) => memory.create(...args),
+    get: (...args) => memory.get(...args),
+    update: (...args) => memory.update(...args),
+    archive: (...args) => memory.archive(...args),
+    async list() {
+      throw new Error('repository list failed')
+    },
+  })
+  registerTimelineSource(createNativeActivityTimelineSource())
+  registerTimelineSource({
+    id: TIMELINE_SOURCE_ID.LIVING_EVENTS,
+    canonicalFor: [],
+    isEnabled: () => true,
+    list: () => [
+      {
+        sourceId: TIMELINE_SOURCE_ID.LIVING_EVENTS,
+        nativeId: 'lev-h169-degraded',
+        companyId: DEFAULT_COMPANY_ID,
+        subject: { type: ACTIVITY_SUBJECT_TYPE.PROPOSAL, id: 'prop-h168-a' },
+        kind: ACTIVITY_KIND.SYSTEM_EVENT,
+        type: 'living.viewed',
+        origin: ACTIVITY_ORIGIN.SYSTEM,
+        audience: 'internal',
+        occurredAtRaw: '2026-09-10T12:00:00.000Z',
+        recordedAtRaw: '2026-09-10T12:00:00.000Z',
+        actor: { id: null, kind: 'system', displayName: null },
+        subjectLine: 'viewed',
+        body: '',
+        attributes: {},
+        source: {
+          domain: 'living',
+          entityType: 'living',
+          entityId: 'lev-h169-degraded',
+          eventId: 'lev-h169-degraded',
+        },
+      },
+    ],
+    describe: () => ({
+      id: TIMELINE_SOURCE_ID.LIVING_EVENTS,
+      readOnly: true,
+      storeRef: 'living-events.json',
+    }),
+  })
+  const page = await buildTimeline({ companyId: DEFAULT_COMPANY_ID, limit: 50 })
+  assert(
+    '60. repository list errors degrade native_activity instead of failing the timeline',
+    page.diagnostics.sourcesDegraded.includes(TIMELINE_SOURCE_ID.NATIVE_ACTIVITY) &&
+      page.entries.length > 0,
+  )
+  resetTimelineSources()
+  resetActivityRepository()
 }
 
 clearActivityPersistenceTestSecrets()
 clearActivityAuthoringCapabilityOverrideForTests()
 resetActivityRepository()
+resetTimelineSources()
 
 console.log('')
 console.log(`H16.8 persistence checks: ${passed} passed, ${failed} failed`)

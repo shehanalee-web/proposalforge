@@ -81,6 +81,7 @@ export const ACTIVITY_RESOLVABLE_SUBJECT_TYPES = Object.freeze([
 ])
 
 export const TIMELINE_SOURCE_ID = Object.freeze({
+  NATIVE_ACTIVITY: 'native_activity',
   AUTOMATION_LEDGER: 'automation_ledger',
   STUDIO_AUDIT: 'studio_audit',
   LIVING_EVENTS: 'living_events',
@@ -98,6 +99,7 @@ export const TIMELINE_SOURCE_IDS = Object.freeze(Object.values(TIMELINE_SOURCE_I
  * form always beats the raw legacy record it was derived from.
  */
 export const TIMELINE_SOURCE_PRIORITY = Object.freeze({
+  [TIMELINE_SOURCE_ID.NATIVE_ACTIVITY]: 110,
   [TIMELINE_SOURCE_ID.AUTOMATION_LEDGER]: 100,
   [TIMELINE_SOURCE_ID.STUDIO_AUDIT]: 80,
   [TIMELINE_SOURCE_ID.LIVING_EVENTS]: 60,
