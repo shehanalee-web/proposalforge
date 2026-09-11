@@ -321,16 +321,60 @@ console.log('— boundaries —')
   const vendorSdk =
     /from\s+['"](?:googleapis|@microsoft\/microsoft-graph-client|gmail|outlook|@google-cloud)/i
   const network = /\bfetch\s*\(|\baxios\b|\bnode:https\b|\bnode:http\b|XMLHttpRequest/
-  const persist =
-    /writeFileSync|createStudioActivity|getActivityRepository|ingestAutomationEvent|fanoutActivityEmission|resolveActivityEntity|upsertActivityEntity/
+  const writeOps =
+    /writeFileSync|appendFileSync|createWriteStream|mkdirSync|writeFile\s*\(/
+  const forbiddenPersistenceApi =
+    /\b(getActivityRepository|registerActivityRepository|createMemoryActivityRepository|createPostgresActivityRepository|createNullActivityRepository|resetActivityRepository|resetMemoryActivityRepository|resetPostgresActivityRepository|ingestAutomationEvent|fanoutActivityEmission|emitNativeActivityCreated|resolveActivityEntity|upsertActivityEntity)\b/
+  const forbiddenAdapterFrom =
+    /from\s+['"][^'"]*persistence\/activities(?:\.js)?['"]|from\s+['"][^'"]*persistence\/activities\/(?:memory|postgres|null|port|index)(?:\.js)?['"]/
+  const allowedTypesFrom =
+    /from\s+['"][^'"]*persistence\/activities\/types(?:\.js)?['"]/
+  const approvedFacadeImport =
+    /import\s*\{\s*createStudioActivity\s*\}\s*from\s*['"]\.\.\/activities\/authoring\.js['"]/
+  const importLines = (source) =>
+    source
+      .split('\n')
+      .filter((line) => /^\s*import\b/.test(line))
+      .join('\n')
+
+  const typesSource = readFileSync(join(mailboxDir, 'types.js'), 'utf8')
+  const schemaSource = readFileSync(join(mailboxDir, 'schema.js'), 'utf8')
+  const indexSource = readFileSync(join(mailboxDir, 'index.js'), 'utf8')
+  const mapPath = join(mailboxDir, 'map.js')
+  const ingestPath = join(mailboxDir, 'ingest.js')
+  const mapSource = existsSync(mapPath) ? readFileSync(mapPath, 'utf8') : ''
+  const ingestSource = existsSync(ingestPath) ? readFileSync(ingestPath, 'utf8') : ''
+  const allImports = importLines(mailboxSource)
+  const persistenceImports = allImports
+    .split('\n')
+    .filter((line) => line.includes('persistence/activities'))
+  const nonIngestImports = importLines(typesSource + '\n' + schemaSource + '\n' + indexSource + '\n' + mapSource)
   const httpPlugin = existsSync(join(root, 'server', 'integrationsMailboxPlugin.js'))
+  const mailboxStoreFiles = [
+    'store.js',
+    'memory.js',
+    'postgres.js',
+    'repository.js',
+    'port.js',
+  ].filter((name) => existsSync(join(mailboxDir, name)))
+
   assert(
-    '10. no vendor SDK, network, persistence, or HTTP plugin',
+    '10. mailbox writes only through createStudioActivity; no repository, adapter, or store',
     !vendorSdk.test(mailboxSource) &&
       !network.test(mailboxSource) &&
-      !persist.test(mailboxSource) &&
-      !httpPlugin &&
-      !existsSync(join(root, 'src', 'integrations', 'mailbox', 'store.js')),
+      !writeOps.test(mailboxSource) &&
+      !forbiddenPersistenceApi.test(mailboxSource) &&
+      !forbiddenAdapterFrom.test(allImports) &&
+      persistenceImports.every((line) => allowedTypesFrom.test(line)) &&
+      !nonIngestImports.includes('createStudioActivity') &&
+      (!ingestSource ||
+        (approvedFacadeImport.test(importLines(ingestSource)) &&
+          ingestSource.includes('createStudioActivity(mapMailboxMessageToStudioActivityInput') &&
+          !forbiddenPersistenceApi.test(ingestSource) &&
+          !importLines(ingestSource).includes('getActivityRepository') &&
+          !importLines(ingestSource).includes('persistence/activities'))) &&
+      mailboxStoreFiles.length === 0 &&
+      !httpPlugin,
   )
 }
 

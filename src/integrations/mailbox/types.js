@@ -21,6 +21,17 @@ export const MAILBOX_SOURCE_ENTITY_TYPE = 'mailbox_message'
 export const MAILBOX_ACTIVITY_KIND = ACTIVITY_KIND.EMAIL
 export const MAILBOX_ACTIVITY_TYPE = ACTIVITY_NATIVE_TYPE.EMAIL_LOGGED
 
+/**
+ * Slice 12.2 ingest outcomes. Uncorrelated mail is not a Native Activity
+ * and is not stored. H16.12 does not invent a subject.
+ */
+export const MAILBOX_INGEST_STATUS = Object.freeze({
+  INGESTED: 'ingested',
+  UNCORRELATED: 'uncorrelated',
+})
+
+export const MAILBOX_INGEST_STATUSES = Object.freeze(Object.values(MAILBOX_INGEST_STATUS))
+
 export const MAILBOX_DIRECTION = Object.freeze({
   INBOUND: 'inbound',
 })

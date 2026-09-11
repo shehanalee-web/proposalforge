@@ -10,8 +10,9 @@
  * Slice 9.2 makes buildTimeline / listStudioTimeline async. Slice 9.3 adds
  * the native_activity TimelineSource. Slice 9.4 adds authoring HTTP. Slice 9.5
  * enables the activityAuthoring flag; runtime still requires durable health.
- * H16.12 Slice 12.1 adds a vendor-neutral inbound mailbox envelope. It does
- * not persist, poll, authenticate, or register a TimelineSource.
+ * H16.12 Slice 12.1 adds a vendor-neutral inbound mailbox envelope. Slice 12.2
+ * maps that envelope through createStudioActivity. It does not persist a
+ * mailbox store, poll, authenticate, or register a TimelineSource.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -533,7 +534,13 @@ export {
   MAILBOX_LIMITS,
   MAILBOX_FORBIDDEN_FIELDS,
   MAILBOX_FORBIDDEN_CONTENT_FIELDS,
+  MAILBOX_INGEST_STATUS,
+  MAILBOX_INGEST_STATUSES,
   makeMailboxIdempotencyKey,
   makeInboundMailboxMessage,
   cloneInboundMailboxMessage,
+  isMailboxSubjectSupplied,
+  makeNativeMailboxIdempotencyKey,
+  mapMailboxMessageToStudioActivityInput,
+  ingestInboundMailboxMessage,
 } from './mailbox/index.js'
