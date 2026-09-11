@@ -1,6 +1,7 @@
 /**
- * H16.1–H16.9 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
- * + CRM + Activity Timeline + Activity persistence + Activity authoring facade.
+ * H16.1–H16.10 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
+ * + CRM + Activity Timeline + Activity persistence + Activity authoring facade
+ * + Activity entity registry (Slice 10.1).
  *
  * H16.7 adds a read-only activity timeline projection. It owns no store, writes
  * nothing, and exposes no mutation surface.
@@ -492,3 +493,20 @@ export {
   resetPostgresActivityRepository,
   assertActivityRepositoryConformance,
 } from '../persistence/activities/index.js'
+
+export {
+  ACTIVITY_ENTITY_SCHEMA_VERSION,
+  ACTIVITY_ENTITY_KIND,
+  ACTIVITY_ENTITY_KINDS,
+  ACTIVITY_ENTITY_LIMITS,
+  ACTIVITY_ENTITY_NOT_FOUND,
+  ACTIVITY_ENTITY_FORBIDDEN,
+  ACTIVITY_ENTITY_FORBIDDEN_FIELDS,
+  makeActivityEntity,
+  cloneActivityEntity,
+  resetActivityEntityStore,
+  allActivityEntities,
+  upsertActivityEntity,
+  getActivityEntity,
+  listActivityEntities,
+} from './entities/index.js'
