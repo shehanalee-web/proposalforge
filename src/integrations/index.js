@@ -1,7 +1,8 @@
 /**
- * H16.1–H16.12 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
+ * H16.1–H16.13 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
  * + CRM + Activity Timeline + Activity persistence + Activity authoring facade
- * + Activity entity registry + Native Activity intake + mailbox envelope.
+ * + Activity entity registry + Native Activity intake + mailbox envelope
+ * + calendar event envelope.
  *
  * H16.7 adds a read-only activity timeline projection. It owns no store, writes
  * nothing, and exposes no mutation surface.
@@ -13,6 +14,8 @@
  * H16.12 Slice 12.1 adds a vendor-neutral inbound mailbox envelope. Slice 12.2
  * maps that envelope through createStudioActivity. It does not persist a
  * mailbox store, poll, authenticate, or register a TimelineSource.
+ * H16.13 Slice 13.1 adds a vendor-neutral inbound calendar event envelope.
+ * It does not ingest, persist, poll, authenticate, or register a TimelineSource.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -544,3 +547,20 @@ export {
   mapMailboxMessageToStudioActivityInput,
   ingestInboundMailboxMessage,
 } from './mailbox/index.js'
+
+export {
+  CALENDAR_SCHEMA_VERSION,
+  CALENDAR_SOURCE_ID,
+  CALENDAR_SOURCE_DOMAIN,
+  CALENDAR_SOURCE_ENTITY_TYPE,
+  CALENDAR_ACTIVITY_KIND,
+  CALENDAR_ACTIVITY_TYPE,
+  CALENDAR_CONTENT_MEDIA_TYPE,
+  CALENDAR_CONTENT_MEDIA_TYPES,
+  CALENDAR_LIMITS,
+  CALENDAR_FORBIDDEN_FIELDS,
+  CALENDAR_FORBIDDEN_CONTENT_FIELDS,
+  makeCalendarIdempotencyKey,
+  makeInboundCalendarEvent,
+  cloneInboundCalendarEvent,
+} from './calendar/index.js'
