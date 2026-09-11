@@ -167,7 +167,7 @@ export function getActivityRepositoryHealth() {
 
 /**
  * Confirm adapter health. Cached so the sync authoring/capabilities gate can
- * include health().ok without making buildTimeline async.
+ * include health().ok without awaiting the adapter on every read.
  */
 export async function refreshActivityRepositoryHealth() {
   const descriptor = describeActivityRepository()

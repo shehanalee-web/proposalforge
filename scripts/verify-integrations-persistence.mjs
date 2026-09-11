@@ -831,8 +831,8 @@ clearActivityAuthoringCapabilityOverrideForTests()
 }
 
 assert(
-  '51. buildTimeline stays synchronous',
-  typeof buildTimeline === 'function' && buildTimeline.constructor.name === 'Function',
+  '51. buildTimeline is asynchronous',
+  typeof buildTimeline === 'function' && buildTimeline.constructor.name === 'AsyncFunction',
 )
 
 assert(

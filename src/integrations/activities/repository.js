@@ -43,10 +43,11 @@ function assertCompany(companyId) {
 
 /**
  * @param {object} [query]
+ * @returns {Promise<object>}
  */
-export function listStudioTimeline(query = {}) {
+export async function listStudioTimeline(query = {}) {
   const companyId = assertCompany(query.companyId)
-  const page = buildTimeline({ ...query, companyId })
+  const page = await buildTimeline({ ...query, companyId })
 
   const present =
     page.entries.length && query.audience === ACTIVITY_AUDIENCE.CLIENT
@@ -64,8 +65,9 @@ export function listStudioTimeline(query = {}) {
  * @param {string} companyId
  * @param {string} proposalId
  * @param {object} [options]
+ * @returns {Promise<object>}
  */
-export function listStudioTimelineForProposal(companyId, proposalId, options = {}) {
+export async function listStudioTimelineForProposal(companyId, proposalId, options = {}) {
   return listStudioTimeline({
     ...options,
     companyId,

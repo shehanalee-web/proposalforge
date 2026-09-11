@@ -148,6 +148,15 @@ function threw(fn) {
   }
 }
 
+async function threwAsync(fn) {
+  try {
+    await fn()
+    return null
+  } catch (error) {
+    return error
+  }
+}
+
 const proposalsBefore = proposalsSnapshot()
 const studio = DEFAULT_COMPANY_ID
 const otherCompany = WORKFLOW_ISOLATION_COMPANY_ID
@@ -527,7 +536,7 @@ assert(
       storeRef: 'portal.json',
     }),
   })
-  const page = buildTimeline({
+  const page = await buildTimeline({
     companyId: studio,
     subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
     subjectId: PROPOSAL_A,
@@ -571,7 +580,7 @@ assert(
       storeRef: 'portal.json',
     }),
   })
-  const page = buildTimeline({
+  const page = await buildTimeline({
     companyId: studio,
     subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
     subjectId: PROPOSAL_A,
@@ -713,8 +722,8 @@ assert(
     }),
 )
 {
-  const first = listStudioTimelineForProposal(studio, PROPOSAL_A)
-  const second = listStudioTimelineForProposal(studio, PROPOSAL_A)
+  const first = await listStudioTimelineForProposal(studio, PROPOSAL_A)
+  const second = await listStudioTimelineForProposal(studio, PROPOSAL_A)
   assert(
     '21. identical requests return byte-identical pages',
     JSON.stringify(first) === JSON.stringify(second),
@@ -749,7 +758,7 @@ assert(
 console.log('')
 console.log('— De-duplication —')
 
-const dedupePage = listStudioTimelineForProposal(studio, PROPOSAL_A, { limit: 200 })
+const dedupePage = await listStudioTimelineForProposal(studio, PROPOSAL_A, { limit: 200 })
 
 {
   const mirrored = dedupePage.entries.filter(
@@ -900,7 +909,7 @@ assert(
   )
 }
 {
-  const page = buildTimeline({
+  const page = await buildTimeline({
     companyId: studio,
     subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
     subjectId: PROPOSAL_A,
@@ -930,30 +939,34 @@ console.log('— Sorting and pagination —')
   }
   assert('31. entries follow the total ordering rule', ordered && entries.length > 1)
 }
-assert(
-  '32. limit defaults to 50 and caps at 200',
-  TIMELINE_LIMITS.DEFAULT_LIMIT === 50 &&
-    TIMELINE_LIMITS.MAX_LIMIT === 200 &&
-    buildTimeline({
-      companyId: studio,
-      subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
-      subjectId: PROPOSAL_PAGE,
-    }).entries.length === 50 &&
-    buildTimeline({
-      companyId: studio,
-      subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
-      subjectId: PROPOSAL_PAGE,
-      limit: 5000,
-    }).entries.length === 200,
-)
 {
-  const first = buildTimeline({
+  const defaultPage = await buildTimeline({
+    companyId: studio,
+    subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
+    subjectId: PROPOSAL_PAGE,
+  })
+  const capped = await buildTimeline({
+    companyId: studio,
+    subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
+    subjectId: PROPOSAL_PAGE,
+    limit: 5000,
+  })
+  assert(
+    '32. limit defaults to 50 and caps at 200',
+    TIMELINE_LIMITS.DEFAULT_LIMIT === 50 &&
+      TIMELINE_LIMITS.MAX_LIMIT === 200 &&
+      defaultPage.entries.length === 50 &&
+      capped.entries.length === 200,
+  )
+}
+{
+  const first = await buildTimeline({
     companyId: studio,
     subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
     subjectId: PROPOSAL_PAGE,
     limit: 10,
   })
-  const again = buildTimeline({
+  const again = await buildTimeline({
     companyId: studio,
     subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
     subjectId: PROPOSAL_PAGE,
@@ -971,7 +984,7 @@ assert(
   let cursor = null
   let pages = 0
   do {
-    const page = buildTimeline({
+    const page = await buildTimeline({
       companyId: studio,
       subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
       subjectId: PROPOSAL_PAGE,
@@ -994,10 +1007,10 @@ console.log('— Company isolation —')
 
 assert(
   '36. timeline requires company scope',
-  threw(() => listStudioTimeline({ companyId: '' })) instanceof ValidationError,
+  (await threwAsync(() => listStudioTimeline({ companyId: '' }))) instanceof ValidationError,
 )
 {
-  const page = buildTimeline({ companyId: otherCompany, limit: 200 })
+  const page = await buildTimeline({ companyId: otherCompany, limit: 200 })
   assert(
     '37. another tenant sees zero studio_audit entries',
     !page.entries.some((entry) => entry.sourceId === TIMELINE_SOURCE_ID.STUDIO_AUDIT),
@@ -1014,7 +1027,7 @@ assert(
   )
 }
 {
-  const error = threw(() => listStudioTimelineForProposal(otherCompany, PROPOSAL_A))
+  const error = await threwAsync(() => listStudioTimelineForProposal(otherCompany, PROPOSAL_A))
   assert('40. a cross-company subject raises ForbiddenError', error instanceof ForbiddenError)
   assert(
     '41. the forbidden error leaks no cross-tenant content',
@@ -1023,32 +1036,44 @@ assert(
     error?.message,
   )
 }
-assert(
-  '42. unknown ids 404; a known proposal with no remaining events returns []',
-  threw(() => listStudioTimelineForProposal(studio, 'prop-does-not-exist')) instanceof
-    NotFoundError &&
-    threw(() => listStudioTimelineForProposal(studio, 'prop-fabricated-zzz')) instanceof
-      NotFoundError &&
-    threw(() => listStudioTimelineForProposal(studio, PROPOSAL_EMPTY)) === null &&
-    listStudioTimelineForProposal(studio, PROPOSAL_EMPTY).entries.length === 0 &&
-    threw(() =>
-      listStudioTimeline({
-        companyId: studio,
-        subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
-        subjectId: PROPOSAL_EMPTY,
-        audience: ACTIVITY_AUDIENCE.CLIENT,
-      }),
-    ) === null &&
+{
+  const missing = await threwAsync(() =>
+    listStudioTimelineForProposal(studio, 'prop-does-not-exist'),
+  )
+  const fabricated = await threwAsync(() =>
+    listStudioTimelineForProposal(studio, 'prop-fabricated-zzz'),
+  )
+  const emptyError = await threwAsync(() =>
+    listStudioTimelineForProposal(studio, PROPOSAL_EMPTY),
+  )
+  const emptyPage = await listStudioTimelineForProposal(studio, PROPOSAL_EMPTY)
+  const emptyClientError = await threwAsync(() =>
     listStudioTimeline({
       companyId: studio,
       subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
       subjectId: PROPOSAL_EMPTY,
       audience: ACTIVITY_AUDIENCE.CLIENT,
-    }).entries.length === 0,
-)
+    }),
+  )
+  const emptyClient = await listStudioTimeline({
+    companyId: studio,
+    subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
+    subjectId: PROPOSAL_EMPTY,
+    audience: ACTIVITY_AUDIENCE.CLIENT,
+  })
+  assert(
+    '42. unknown ids 404; a known proposal with no remaining events returns []',
+    missing instanceof NotFoundError &&
+      fabricated instanceof NotFoundError &&
+      emptyError === null &&
+      emptyPage.entries.length === 0 &&
+      emptyClientError === null &&
+      emptyClient.entries.length === 0,
+  )
+}
 {
-  const studioPage = listStudioTimeline({ companyId: studio, limit: 200 })
-  const otherPage = listStudioTimeline({ companyId: otherCompany, limit: 200 })
+  const studioPage = await listStudioTimeline({ companyId: studio, limit: 200 })
+  const otherPage = await listStudioTimeline({ companyId: otherCompany, limit: 200 })
   assert(
     '43. a client-supplied companyId cannot surface another tenant\'s entries',
     studioPage.entries.every((entry) => entry.companyId === studio) &&
@@ -1064,7 +1089,7 @@ console.log('')
 console.log('— Audience —')
 
 {
-  const client = listStudioTimeline({
+  const client = await listStudioTimeline({
     companyId: studio,
     subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
     subjectId: PROPOSAL_A,
@@ -1088,13 +1113,13 @@ console.log('— Audience —')
   )
 }
 {
-  const studioPage = listStudioTimeline({
+  const studioPage = await listStudioTimeline({
     companyId: studio,
     subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
     subjectId: PROPOSAL_A,
     limit: 200,
   })
-  const clientPage = listStudioTimeline({
+  const clientPage = await listStudioTimeline({
     companyId: studio,
     subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
     subjectId: PROPOSAL_A,
@@ -1128,7 +1153,7 @@ for (const companyId of [studio, otherCompany]) {
     let cursor = null
     let guard = 0
     do {
-      const page = listStudioTimeline({ companyId, audience, limit: 50, cursor })
+      const page = await listStudioTimeline({ companyId, audience, limit: 50, cursor })
       cursor = page.nextCursor
       guard += 1
     } while (cursor && guard < 20)
@@ -1136,7 +1161,7 @@ for (const companyId of [studio, otherCompany]) {
   describeStudioTimelineSources(companyId)
 }
 getActivityCapabilities()
-listStudioTimelineForProposal(studio, PROPOSAL_A)
+await listStudioTimelineForProposal(studio, PROPOSAL_A)
 
 assert(
   '48. activity module files unchanged after full traversal',

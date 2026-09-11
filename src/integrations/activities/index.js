@@ -3,8 +3,8 @@
  *
  * Read-only projection plus the H16.9 studio write facade. Persistence
  * factories stay under `persistence/` and are re-exported as describe/health
- * only. activityAuthoring stays false until HTTP exists (9.4) and the flag
- * flips (9.5).
+ * only. Slice 9.2 makes the timeline engine async. activityAuthoring stays
+ * false until HTTP exists (9.4) and the flag flips (9.5).
  */
 
 export {
