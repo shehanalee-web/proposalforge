@@ -4,6 +4,10 @@
  * Orchestrates source selection, projection, ordering, and keyset pagination.
  * Reads only. A source that throws is isolated and reported as degraded so one
  * broken legacy store cannot blank the whole timeline.
+ *
+ * H16.9 Slice 9.2 makes buildTimeline async so repository-backed sources can
+ * be awaited. Existing projection sources stay synchronous and are wrapped in
+ * Promise.resolve. Native TimelineSource remains Slice 9.3.
  */
 
 import { ForbiddenError, NotFoundError, ValidationError } from '../../services/errors.js'
@@ -166,11 +170,12 @@ function subjectCompaniesFromLedger(subjectType, subjectId) {
  * Existence comes from the proposal record first, then the ledger. Unknown
  * ids 404. A known proposal owned by another company 403s. A known proposal
  * with no remaining events after later filters is a 200 empty page, not 404.
+ * Contact / company / deal subjects are not resolved here (H16.10).
  *
  * @param {string} companyId
  * @param {{ type: string | null, id: string | null }} subject
  */
-function assertProposalAccess(companyId, subject) {
+export function assertProposalAccess(companyId, subject) {
   if (!subject?.id || subject.type !== ACTIVITY_SUBJECT_TYPE.PROPOSAL) return
 
   const record = lookupProposalRecord(subject.id)
@@ -233,9 +238,9 @@ function selectSources(companyId) {
  * Build a page of the timeline.
  *
  * @param {object} query
- * @returns {{ entries: object[], nextCursor: string | null, diagnostics: object }}
+ * @returns {Promise<{ entries: object[], nextCursor: string | null, diagnostics: object }>}
  */
-export function buildTimeline(query = {}) {
+export async function buildTimeline(query = {}) {
   if (!isActivityTimelineEnabled()) {
     throw new ForbiddenError('Activity timeline is not enabled.')
   }
@@ -261,14 +266,16 @@ export function buildTimeline(query = {}) {
 
   for (const entry of sources) {
     try {
-      const produced = entry.source.list({
-        companyId,
-        subjectType: subject.type,
-        subjectId: subject.id,
-        since: query.since ?? null,
-        until: query.until ?? null,
-        limit: TIMELINE_LIMITS.MAX_SOURCE_CANDIDATES,
-      })
+      const produced = await Promise.resolve(
+        entry.source.list({
+          companyId,
+          subjectType: subject.type,
+          subjectId: subject.id,
+          since: query.since ?? null,
+          until: query.until ?? null,
+          limit: TIMELINE_LIMITS.MAX_SOURCE_CANDIDATES,
+        }),
+      )
       for (const candidate of Array.isArray(produced) ? produced : []) {
         candidates.push({ ...candidate, sourceId: entry.id, priority: entry.priority })
       }

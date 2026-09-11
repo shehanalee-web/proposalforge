@@ -1,9 +1,11 @@
 /**
- * H16.7 — Activity timeline barrel.
+ * H16.7–H16.9 — Activity timeline barrel.
  *
- * Read-only projection surface. No write path is exported because none exists.
- * H16.8 persistence contracts live under `persistence/` and are re-exported
- * as describe/health only — never create/update/archive.
+ * Read-only projection plus the H16.9 studio write facade. Persistence
+ * factories stay under `persistence/` and are re-exported as describe/health
+ * only. Slice 9.2 makes the timeline engine async. Slice 9.3 adds the
+ * read-only native_activity source. Slice 9.4 adds authoring HTTP. Slice 9.5
+ * enables the activityAuthoring flag; runtime still requires durable health.
  */
 
 export {
@@ -69,6 +71,7 @@ export {
 export { createStudioAuditTimelineSource } from './sources/studioAudit.js'
 export { createProposalActivityTimelineSource } from './sources/proposalActivity.js'
 export { createCommercialCloseHistoryTimelineSource } from './sources/commercialCloseHistory.js'
+export { createNativeActivityTimelineSource } from './sources/nativeActivity.js'
 
 export { projectTimelineCandidates, filterTimelineAudience } from './projection.js'
 
@@ -81,6 +84,7 @@ export {
   resetTimelineProposalLookup,
   isActivityTimelineEnabled,
   isActivityAuthoringEnabled,
+  assertProposalAccess,
   compareTimelineEntries,
   encodeTimelineCursor,
   decodeTimelineCursor,
@@ -100,6 +104,14 @@ export {
   describeStudioTimelineSources,
   getActivityCapabilities,
 } from './repository.js'
+
+export {
+  STUDIO_ACTIVITY_AUTHORING_ACTOR,
+  createStudioActivity,
+  getStudioActivity,
+  updateStudioActivity,
+  archiveStudioActivity,
+} from './authoring.js'
 
 export {
   deriveTimelineEntryId,

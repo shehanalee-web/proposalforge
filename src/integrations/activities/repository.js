@@ -1,8 +1,8 @@
 /**
  * H16.7 — Studio-facing timeline read facade.
  *
- * Read-only by construction: there is no create, update, transition, or delete
- * here, and none can be added without a durable repository under H16.8.
+ * Read-only by construction. Native writes live in `authoring.js` and call
+ * the persistence port. This module must not grow create/update/archive.
  *
  * Naming note: H16.8's write-side ActivityRepository lives under `persistence/`
  * so it does not collide with this read facade.
@@ -43,10 +43,11 @@ function assertCompany(companyId) {
 
 /**
  * @param {object} [query]
+ * @returns {Promise<object>}
  */
-export function listStudioTimeline(query = {}) {
+export async function listStudioTimeline(query = {}) {
   const companyId = assertCompany(query.companyId)
-  const page = buildTimeline({ ...query, companyId })
+  const page = await buildTimeline({ ...query, companyId })
 
   const present =
     page.entries.length && query.audience === ACTIVITY_AUDIENCE.CLIENT
@@ -64,8 +65,9 @@ export function listStudioTimeline(query = {}) {
  * @param {string} companyId
  * @param {string} proposalId
  * @param {object} [options]
+ * @returns {Promise<object>}
  */
-export function listStudioTimelineForProposal(companyId, proposalId, options = {}) {
+export async function listStudioTimelineForProposal(companyId, proposalId, options = {}) {
   return listStudioTimeline({
     ...options,
     companyId,

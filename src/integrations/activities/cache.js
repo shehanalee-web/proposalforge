@@ -9,11 +9,9 @@
  * Why the port is asynchronous: Redis and PostgreSQL are network-bound, so a
  * synchronous port could not be implemented against either without blocking
  * the event loop. Every method therefore returns a promise even though the
- * null cache resolves immediately. The consequence is recorded rather than
- * hidden — today's read path is synchronous, so the phase that first registers
- * a real cache must also make the read path async. Fixing the port shape now is
- * what keeps that change local to the engine instead of spreading to the
- * contract, the key derivation, and every caller.
+ * null cache resolves immediately. H16.9 Slice 9.2 made buildTimeline async so
+ * a future cache (and repository-backed sources) can be awaited without another
+ * engine reshape. The engine still does not consult this cache.
  *
  * Why caching cannot switch on by accident: a cache is live only when the
  * capability flag is set AND the registered cache declares itself durable. The

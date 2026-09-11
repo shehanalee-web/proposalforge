@@ -1,5 +1,5 @@
 /**
- * H16.7/H16.8 — Activity timeline HTTP surface.
+ * H16.7–H16.9 — Activity timeline HTTP surface.
  *
  * Read-only by design. This plugin registers no data file, configures no
  * persist handler, and exposes no mutation route. Native Activity writes are
@@ -22,6 +22,7 @@ import {
   createStudioAuditTimelineSource,
   createProposalActivityTimelineSource,
   createCommercialCloseHistoryTimelineSource,
+  createNativeActivityTimelineSource,
   listStudioTimeline,
   listStudioTimelineForProposal,
   describeStudioTimelineSources,
@@ -164,6 +165,9 @@ export function integrationsActivitiesPlugin() {
     if (!getTimelineSource(TIMELINE_SOURCE_ID.COMMERCIAL_CLOSE_HISTORY)) {
       registerTimelineSource(createCommercialCloseHistoryTimelineSource())
     }
+    if (!getTimelineSource(TIMELINE_SOURCE_ID.NATIVE_ACTIVITY)) {
+      registerTimelineSource(createNativeActivityTimelineSource())
+    }
     configureTimelineProposalLookup(lookupProposalRecord)
     ready = true
   }
@@ -201,7 +205,7 @@ export function integrationsActivitiesPlugin() {
         return json(
           res,
           200,
-          listStudioTimelineForProposal(
+          await listStudioTimelineForProposal(
             request.companyId,
             proposal.proposalId,
             request,
@@ -214,7 +218,7 @@ export function integrationsActivitiesPlugin() {
 
     if (matchRoute(url, '/api/activities/timeline')) {
       try {
-        return json(res, 200, listStudioTimeline(queryToTimelineRequest(queryOf(url))))
+        return json(res, 200, await listStudioTimeline(queryToTimelineRequest(queryOf(url))))
       } catch (error) {
         return fail(res, error)
       }
