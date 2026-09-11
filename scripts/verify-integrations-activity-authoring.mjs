@@ -6,6 +6,7 @@
  * Deterministic offline tests use memory repositories, the port registry,
  * and test doubles. Memory is never treated as durable.
  * Never writes data/proposals.json. Does not auto-migrate on request.
+ * H16.10 Slice 10.4 authorizes contact/company/deal subjects on HTTP POST.
  */
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
@@ -28,6 +29,9 @@ import {
   ACTIVITY_NATIVE_KIND,
   ACTIVITY_NATIVE_TYPE,
   ACTIVITY_NATIVE_TYPE_BY_KIND,
+  ACTIVITY_ENTITY_KIND,
+  ACTIVITY_ENTITY_FORBIDDEN,
+  ACTIVITY_ENTITY_NOT_FOUND,
   ACTIVITY_REPOSITORY_ID,
   ACTIVITY_REPOSITORY_MODE,
   INTEGRATION_CAPABILITIES,
@@ -57,6 +61,7 @@ import {
   refreshActivityRepositoryHealth,
   registerActivityRepository,
   registerTimelineSource,
+  resetActivityEntityStore,
   resetActivityRepository,
   resetTimelineProposalLookup,
   resetTimelineSources,
@@ -185,6 +190,53 @@ function wrapDurable(memory, { ok = true } = {}) {
   }
 }
 
+function seedAuthoringEntities() {
+  resetActivityEntityStore([
+    {
+      id: 'contact-1',
+      companyId: DEFAULT_COMPANY_ID,
+      kind: ACTIVITY_ENTITY_KIND.CONTACT,
+      displayName: 'Contact One',
+    },
+    {
+      id: 'contact-supplied',
+      companyId: DEFAULT_COMPANY_ID,
+      kind: ACTIVITY_ENTITY_KIND.CONTACT,
+      displayName: 'Contact supplied',
+    },
+    {
+      id: 'company-1',
+      companyId: DEFAULT_COMPANY_ID,
+      kind: ACTIVITY_ENTITY_KIND.COMPANY,
+      displayName: 'Company One',
+    },
+    {
+      id: 'deal-1',
+      companyId: DEFAULT_COMPANY_ID,
+      kind: ACTIVITY_ENTITY_KIND.DEAL,
+      displayName: 'Deal One',
+    },
+    {
+      id: 'contact-other',
+      companyId: otherCompany,
+      kind: ACTIVITY_ENTITY_KIND.CONTACT,
+      displayName: 'Other contact',
+    },
+  ])
+}
+
+function isNativeSubject(subject, type, id) {
+  if (!subject || typeof subject !== 'object' || Array.isArray(subject)) return false
+  const keys = Object.keys(subject).sort()
+  return (
+    subject.type === type &&
+    subject.id === id &&
+    keys.length === 2 &&
+    keys[0] === 'id' &&
+    keys[1] === 'type'
+  )
+}
+
 function seedProposalLookup() {
   configureTimelineProposalLookup((proposalId) => {
     const id = String(proposalId ?? '').trim()
@@ -263,6 +315,7 @@ resetActivityRepository()
 resetTimelineSources()
 clearActivityAuthoringCapabilityOverrideForTests()
 resetTimelineProposalLookup()
+resetActivityEntityStore()
 
 console.log('— A. Capability —')
 
@@ -862,7 +915,9 @@ console.log('— I. Contact / company / deal —')
 
 {
   resetActivityRepository()
-  registerActivityRepository(wrapDurable(createMemoryActivityRepository()).adapter)
+  seedAuthoringEntities()
+  const wrapped = wrapDurable(createMemoryActivityRepository())
+  registerActivityRepository(wrapped.adapter)
   await refreshActivityRepositoryHealth()
   const plugin = integrationsActivityAuthoringPlugin()
   const contact = await invoke(plugin, {
@@ -880,19 +935,59 @@ console.log('— I. Contact / company / deal —')
     url: '/api/activities',
     body: noteInput({ subject: { type: ACTIVITY_SUBJECT_TYPE.DEAL, id: 'deal-1' } }),
   })
+  const storedDeal = wrapped.lastCreate()?.subject
+  const missing = await invoke(plugin, {
+    method: 'POST',
+    url: '/api/activities',
+    body: noteInput({
+      subject: { type: ACTIVITY_SUBJECT_TYPE.CONTACT, id: 'contact-missing' },
+    }),
+  })
+  const cross = await invoke(plugin, {
+    method: 'POST',
+    url: '/api/activities',
+    body: noteInput({
+      subject: { type: ACTIVITY_SUBJECT_TYPE.CONTACT, id: 'contact-other' },
+    }),
+  })
+  const proposalBeforeEntity =
+    authoringPluginSource.indexOf('assertProposalAccess(companyId, input.subject ?? {})') <
+    authoringPluginSource.indexOf('assertActivityEntityAccess(companyId, input.subject ?? {})')
   assert(
-    '43. contact/company/deal subject ids are stored as supplied with no entity resolution',
+    '43. seeded contact-1/company-1/deal-1 authoring stores { type, id }',
     contact.status === 201 &&
-      contact.body.activity.subject.id === 'contact-1' &&
+      isNativeSubject(contact.body.activity.subject, ACTIVITY_SUBJECT_TYPE.CONTACT, 'contact-1') &&
       company.status === 201 &&
-      company.body.activity.subject.id === 'company-1' &&
+      isNativeSubject(company.body.activity.subject, ACTIVITY_SUBJECT_TYPE.COMPANY, 'company-1') &&
       deal.status === 201 &&
-      deal.body.activity.subject.id === 'deal-1' &&
+      isNativeSubject(deal.body.activity.subject, ACTIVITY_SUBJECT_TYPE.DEAL, 'deal-1') &&
+      isNativeSubject(storedDeal, ACTIVITY_SUBJECT_TYPE.DEAL, 'deal-1') &&
+      authoringPluginSource.includes('assertActivityEntityAccess') &&
+      proposalBeforeEntity &&
+      !authoringPluginSource.includes('resolveActivityEntity') &&
       !/resolve(Contact|Company|Deal)|lookupContact|lookupCompany|lookupDeal/.test(
         authoringPluginSource + facadeSource,
       ),
   )
+  assert(
+    '43b. missing entity authoring returns 404 without leaking ids',
+    missing.status === 404 &&
+      missing.body?.message === ACTIVITY_ENTITY_NOT_FOUND &&
+      missing.body?.message === 'Activity subject not found.' &&
+      !String(missing.body?.message ?? '').includes('contact-missing') &&
+      !String(JSON.stringify(missing.body ?? {})).includes(otherCompany),
+  )
+  assert(
+    '43c. cross-company entity authoring returns 403 without leaking ids',
+    cross.status === 403 &&
+      cross.body?.message === ACTIVITY_ENTITY_FORBIDDEN &&
+      cross.body?.message === 'You cannot access another company workspace.' &&
+      !String(cross.body?.message ?? '').includes('contact-other') &&
+      !String(cross.body?.message ?? '').includes(otherCompany) &&
+      !String(JSON.stringify(cross.body ?? {})).includes(otherCompany),
+  )
   resetActivityRepository()
+  resetActivityEntityStore()
 }
 
 console.log('')
@@ -1039,6 +1134,7 @@ console.log('— M. Native activity kinds —')
     ),
   )
   resetActivityRepository()
+  seedAuthoringEntities()
   registerActivityRepository(wrapDurable(createMemoryActivityRepository()).adapter)
   await refreshActivityRepositoryHealth()
   const plugin = integrationsActivityAuthoringPlugin()
@@ -1132,6 +1228,7 @@ clearActivityAuthoringCapabilityOverrideForTests()
 resetActivityRepository()
 resetTimelineSources()
 resetTimelineProposalLookup()
+resetActivityEntityStore()
 
 console.log('')
 console.log(`H16.9 activity authoring checks: ${passed} passed, ${failed} failed`)

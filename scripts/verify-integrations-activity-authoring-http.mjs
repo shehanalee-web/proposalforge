@@ -4,6 +4,8 @@
  * Focused coverage. Does not nest H16.7. Never writes data/proposals.json.
  * Slice 9.5 enables the activityAuthoring flag; runtime still requires a
  * healthy durable adapter.
+ * H16.10 Slice 10.4 seeds contact-1/company-1/deal-1 before native POST
+ * authoring of those subjects. Stored subjects remain { type, id }.
  */
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -16,8 +18,12 @@ import {
   ACTIVITY_REPOSITORY_ID,
   ACTIVITY_REPOSITORY_MODE,
   ACTIVITY_NATIVE_KIND,
+  ACTIVITY_ENTITY_KIND,
+  ACTIVITY_ENTITY_FORBIDDEN,
+  ACTIVITY_ENTITY_NOT_FOUND,
   configureTimelineProposalLookup,
   resetTimelineProposalLookup,
+  resetActivityEntityStore,
   setActivityAuthoringCapabilityOverrideForTests,
   clearActivityAuthoringCapabilityOverrideForTests,
   isActivityAuthoringEnabled,
@@ -137,6 +143,18 @@ function wrapDurable(memory) {
   }
 }
 
+function isNativeSubject(subject, type, id) {
+  if (!subject || typeof subject !== 'object' || Array.isArray(subject)) return false
+  const keys = Object.keys(subject).sort()
+  return (
+    subject.type === type &&
+    subject.id === id &&
+    keys.length === 2 &&
+    keys[0] === 'id' &&
+    keys[1] === 'type'
+  )
+}
+
 async function enableAuthoring() {
   const memory = createMemoryActivityRepository()
   const wrapped = wrapDurable(memory)
@@ -153,6 +171,35 @@ function seedProposalLookup() {
     if (id === 'prop-h169-other') return { id, companyId: otherCompany }
     return null
   })
+}
+
+function seedAuthoringEntities() {
+  resetActivityEntityStore([
+    {
+      id: 'contact-1',
+      companyId: DEFAULT_COMPANY_ID,
+      kind: ACTIVITY_ENTITY_KIND.CONTACT,
+      displayName: 'Contact One',
+    },
+    {
+      id: 'company-1',
+      companyId: DEFAULT_COMPANY_ID,
+      kind: ACTIVITY_ENTITY_KIND.COMPANY,
+      displayName: 'Company One',
+    },
+    {
+      id: 'deal-1',
+      companyId: DEFAULT_COMPANY_ID,
+      kind: ACTIVITY_ENTITY_KIND.DEAL,
+      displayName: 'Deal One',
+    },
+    {
+      id: 'contact-other',
+      companyId: otherCompany,
+      kind: ACTIVITY_ENTITY_KIND.CONTACT,
+      displayName: 'Other contact',
+    },
+  ])
 }
 
 console.log('— H16.9.4 authoring HTTP —')
@@ -317,7 +364,8 @@ console.log('— H16.9.4 authoring HTTP —')
 
 {
   resetActivityRepository()
-  await enableAuthoring()
+  seedAuthoringEntities()
+  const wrapped = await enableAuthoring()
   const plugin = integrationsActivityAuthoringPlugin()
   const contact = await invoke(plugin, {
     method: 'POST',
@@ -340,17 +388,57 @@ console.log('— H16.9.4 authoring HTTP —')
       subject: { type: ACTIVITY_SUBJECT_TYPE.DEAL, id: 'deal-1' },
     }),
   })
+  const storedDeal = wrapped.lastCreate()?.subject
+  const missing = await invoke(plugin, {
+    method: 'POST',
+    url: '/api/activities',
+    body: noteBody({
+      subject: { type: ACTIVITY_SUBJECT_TYPE.CONTACT, id: 'contact-missing' },
+    }),
+  })
+  const cross = await invoke(plugin, {
+    method: 'POST',
+    url: '/api/activities',
+    body: noteBody({
+      subject: { type: ACTIVITY_SUBJECT_TYPE.CONTACT, id: 'contact-other' },
+    }),
+  })
+  const authoringSource = stripComments(
+    readFileSync(join(root, 'server', 'integrationsActivityAuthoringPlugin.js'), 'utf8'),
+  )
   assert(
-    '14. contact/company/deal subjects store without resolution',
+    '14. seeded contact-1/company-1/deal-1 authoring stores { type, id }',
     contact.status === 201 &&
-      contact.body.activity.subject.type === ACTIVITY_SUBJECT_TYPE.CONTACT &&
-      contact.body.activity.subject.id === 'contact-1' &&
+      isNativeSubject(contact.body.activity.subject, ACTIVITY_SUBJECT_TYPE.CONTACT, 'contact-1') &&
       company.status === 201 &&
-      company.body.activity.subject.type === ACTIVITY_SUBJECT_TYPE.COMPANY &&
+      isNativeSubject(company.body.activity.subject, ACTIVITY_SUBJECT_TYPE.COMPANY, 'company-1') &&
       deal.status === 201 &&
-      deal.body.activity.subject.type === ACTIVITY_SUBJECT_TYPE.DEAL,
+      isNativeSubject(deal.body.activity.subject, ACTIVITY_SUBJECT_TYPE.DEAL, 'deal-1') &&
+      isNativeSubject(storedDeal, ACTIVITY_SUBJECT_TYPE.DEAL, 'deal-1') &&
+      authoringSource.includes('assertActivityEntityAccess') &&
+      authoringSource.indexOf('assertProposalAccess(companyId, input.subject ?? {})') <
+        authoringSource.indexOf('assertActivityEntityAccess(companyId, input.subject ?? {})') &&
+      !authoringSource.includes('resolveActivityEntity'),
+  )
+  assert(
+    '14b. missing entity authoring returns 404 without leaking ids',
+    missing.status === 404 &&
+      missing.body?.message === ACTIVITY_ENTITY_NOT_FOUND &&
+      missing.body?.message === 'Activity subject not found.' &&
+      !String(missing.body?.message ?? '').includes('contact-missing') &&
+      !String(JSON.stringify(missing.body ?? {})).includes(otherCompany),
+  )
+  assert(
+    '14c. cross-company entity authoring returns 403 without leaking ids',
+    cross.status === 403 &&
+      cross.body?.message === ACTIVITY_ENTITY_FORBIDDEN &&
+      cross.body?.message === 'You cannot access another company workspace.' &&
+      !String(cross.body?.message ?? '').includes('contact-other') &&
+      !String(cross.body?.message ?? '').includes(otherCompany) &&
+      !String(JSON.stringify(cross.body ?? {})).includes(otherCompany),
   )
   resetActivityRepository()
+  resetActivityEntityStore()
   clearActivityAuthoringCapabilityOverrideForTests()
 }
 
@@ -562,6 +650,11 @@ assert(
   !Object.prototype.hasOwnProperty.call(ACTIVITY_KIND, 'TASK') &&
     !['task', 'TASK'].some((value) => Object.values(ACTIVITY_KIND).includes(value)),
 )
+
+resetActivityEntityStore()
+resetTimelineProposalLookup()
+clearActivityAuthoringCapabilityOverrideForTests()
+resetActivityRepository()
 
 console.log('')
 console.log(`H16.9 authoring HTTP checks: ${passed} passed, ${failed} failed`)

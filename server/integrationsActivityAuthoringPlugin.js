@@ -6,12 +6,16 @@
  * flag; isActivityAuthoringEnabled() still requires a healthy durable
  * adapter and is checked before every authoring request. Writes go through
  * the studio facade, never a persistence factory.
+ * H16.10 Slice 10.4 authorizes contact/company/deal subjects on POST via
+ * assertActivityEntityAccess after assertProposalAccess. Stored subjects
+ * remain { type, id }.
  */
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import {
   ACTIVITY_SUBJECT_TYPE,
   assertProposalAccess,
+  assertActivityEntityAccess,
   createStudioActivity,
   getStudioActivity,
   updateStudioActivity,
@@ -177,6 +181,7 @@ export function integrationsActivityAuthoringPlugin() {
           idempotencyKey: headerKey ?? body.idempotencyKey ?? null,
         }
         assertProposalAccess(companyId, input.subject ?? {})
+        assertActivityEntityAccess(companyId, input.subject ?? {})
         const activity = await createStudioActivity(input)
         return json(res, 201, { activity })
       } catch (error) {
