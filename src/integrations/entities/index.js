@@ -1,8 +1,9 @@
 /**
- * H16.10 Slice 10.1 — Activity entity registry surface.
+ * H16.10 — Activity entity registry + subject resolution.
  *
- * Schema + in-memory store only. Resolver, timeline wiring, and authoring
- * HTTP are later slices. No CRM adapter import.
+ * Slice 10.1: schema + in-memory store.
+ * Slice 10.2: resolveActivityEntity / assertActivityEntityAccess.
+ * Timeline and authoring HTTP wiring are later slices. No CRM adapter import.
  */
 
 export {
@@ -24,3 +25,5 @@ export {
   getActivityEntity,
   listActivityEntities,
 } from './store.js'
+
+export { resolveActivityEntity, assertActivityEntityAccess } from './resolve.js'

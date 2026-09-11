@@ -1,8 +1,9 @@
 /**
  * H16.10 Slice 10.1 — Activity entity registry verification.
  *
- * Schema + in-memory store only. Does not nest H16.7–H16.9.
- * Does not wire timeline or authoring HTTP. Never writes data/proposals.json.
+ * Slice 10.1: schema + in-memory store.
+ * Slice 10.2: resolveActivityEntity / assertActivityEntityAccess.
+ * Does not nest H16.7–H16.9. Does not wire timeline or authoring HTTP.
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -17,11 +18,13 @@ import {
   ACTIVITY_ENTITY_KIND,
   ACTIVITY_ENTITY_KINDS,
   ACTIVITY_ENTITY_NOT_FOUND,
+  assertActivityEntityAccess,
   cloneActivityEntity,
   getActivityEntity,
   listActivityEntities,
   makeActivityEntity,
   resetActivityEntityStore,
+  resolveActivityEntity,
   upsertActivityEntity,
 } from '../src/integrations/index.js'
 
@@ -274,6 +277,216 @@ console.log('— H16.10.1 boundaries —')
     ownStore.length === 0 &&
       !existsSync(join(dataDir, 'entities.json')) &&
       !(proposalsDiff.stdout || '').trim(),
+  )
+}
+
+console.log('')
+console.log('— H16.10.2 resolver —')
+
+{
+  resetActivityEntityStore([
+    fixture(ACTIVITY_ENTITY_KIND.CONTACT, 'contact-1'),
+    fixture(ACTIVITY_ENTITY_KIND.COMPANY, 'company-1'),
+    fixture(ACTIVITY_ENTITY_KIND.DEAL, 'deal-1'),
+    fixture(ACTIVITY_ENTITY_KIND.CONTACT, 'contact-other', otherCompany),
+  ])
+  const contact = resolveActivityEntity({
+    companyId: studio,
+    type: ACTIVITY_ENTITY_KIND.CONTACT,
+    id: 'contact-1',
+  })
+  const company = resolveActivityEntity({
+    companyId: studio,
+    type: ACTIVITY_ENTITY_KIND.COMPANY,
+    id: 'company-1',
+  })
+  const deal = resolveActivityEntity({
+    companyId: studio,
+    type: ACTIVITY_ENTITY_KIND.DEAL,
+    id: 'deal-1',
+  })
+  assert(
+    '14. contact resolves for the owning company',
+    contact.id === 'contact-1' && contact.kind === ACTIVITY_ENTITY_KIND.CONTACT && contact.companyId === studio,
+  )
+  assert(
+    '15. company entity resolves for the owning company',
+    company.id === 'company-1' &&
+      company.kind === ACTIVITY_ENTITY_KIND.COMPANY &&
+      company.companyId === studio,
+  )
+  assert(
+    '16. deal resolves for the owning company',
+    deal.id === 'deal-1' && deal.kind === ACTIVITY_ENTITY_KIND.DEAL && deal.companyId === studio,
+  )
+}
+
+{
+  const missing = threw(() =>
+    resolveActivityEntity({
+      companyId: studio,
+      type: ACTIVITY_ENTITY_KIND.CONTACT,
+      id: 'contact-missing',
+    }),
+  )
+  const accessMissing = threw(() =>
+    assertActivityEntityAccess(studio, {
+      type: ACTIVITY_ENTITY_KIND.CONTACT,
+      id: 'contact-missing',
+    }),
+  )
+  assert(
+    '17. missing entity returns 404 Activity subject not found.',
+    missing instanceof NotFoundError &&
+      missing.message === 'Activity subject not found.' &&
+      accessMissing instanceof NotFoundError &&
+      accessMissing.message === ACTIVITY_ENTITY_NOT_FOUND &&
+      !leak(missing, 'contact-missing', otherCompany),
+  )
+}
+
+{
+  const cross = threw(() =>
+    resolveActivityEntity({
+      companyId: studio,
+      type: ACTIVITY_ENTITY_KIND.CONTACT,
+      id: 'contact-other',
+    }),
+  )
+  const accessCross = threw(() =>
+    assertActivityEntityAccess(studio, {
+      type: ACTIVITY_ENTITY_KIND.CONTACT,
+      id: 'contact-other',
+    }),
+  )
+  assert(
+    '18. foreign-tenant entity returns 403 without leaking id or companyId',
+    cross instanceof ForbiddenError &&
+      cross.message === 'You cannot access another company workspace.' &&
+      accessCross instanceof ForbiddenError &&
+      accessCross.message === ACTIVITY_ENTITY_FORBIDDEN &&
+      !leak(cross, 'contact-other', otherCompany) &&
+      !leak(accessCross, 'contact-other', otherCompany),
+  )
+}
+
+{
+  const proposal = threw(() =>
+    assertActivityEntityAccess(studio, {
+      type: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
+      id: 'prop-does-not-exist',
+    }),
+  )
+  const close = threw(() =>
+    assertActivityEntityAccess(studio, {
+      type: ACTIVITY_SUBJECT_TYPE.CLOSE,
+      id: 'close-1',
+    }),
+  )
+  const missingSubject = threw(() => assertActivityEntityAccess(studio, null))
+  const missingId = threw(() =>
+    assertActivityEntityAccess(studio, { type: ACTIVITY_ENTITY_KIND.CONTACT }),
+  )
+  const resolveProposal = threw(() =>
+    resolveActivityEntity({
+      companyId: studio,
+      type: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
+      id: 'prop-h1610-a',
+    }),
+  )
+  assert(
+    '19. proposal and close subjects are ignored by assertActivityEntityAccess',
+    proposal === null && close === null,
+  )
+  assert(
+    '20. missing subject and missing subject id are ignored',
+    missingSubject === null && missingId === null,
+  )
+  assert(
+    '21. resolveActivityEntity does not look up proposal subjects',
+    resolveProposal instanceof ValidationError,
+  )
+}
+
+{
+  const tenantAsCompany = threw(() =>
+    resolveActivityEntity({
+      companyId: studio,
+      type: ACTIVITY_ENTITY_KIND.COMPANY,
+      id: studio,
+    }),
+  )
+  resetActivityEntityStore([
+    fixture(ACTIVITY_ENTITY_KIND.COMPANY, 'company-1'),
+    fixture(ACTIVITY_ENTITY_KIND.COMPANY, studio),
+  ])
+  const tenantRow = threw(() =>
+    resolveActivityEntity({
+      companyId: studio,
+      type: ACTIVITY_ENTITY_KIND.COMPANY,
+      id: studio,
+    }),
+  )
+  const companyEntity = resolveActivityEntity({
+    companyId: studio,
+    type: ACTIVITY_ENTITY_KIND.COMPANY,
+    id: 'company-1',
+  })
+  assert(
+    '22. company-1 resolves from an entity row; tenant company-studio is never a company subject',
+    companyEntity.id === 'company-1' &&
+      companyEntity.id !== studio &&
+      tenantAsCompany instanceof NotFoundError &&
+      tenantAsCompany.message === ACTIVITY_ENTITY_NOT_FOUND &&
+      tenantRow instanceof NotFoundError &&
+      !leak(tenantAsCompany, studio, 'company-1') &&
+      !leak(tenantRow, studio, 'company-studio'),
+  )
+}
+
+{
+  resetActivityEntityStore([fixture(ACTIVITY_ENTITY_KIND.CONTACT, 'contact-1')])
+  const resolved = resolveActivityEntity({
+    companyId: studio,
+    type: ACTIVITY_ENTITY_KIND.CONTACT,
+    id: 'contact-1',
+  })
+  const frozen = Object.isFrozen(resolved)
+  const mutated = threw(() => {
+    resolved.displayName = 'mutated-in-place'
+    resolved.id = 'contact-hijack'
+  })
+  const stored = getActivityEntity(studio, ACTIVITY_ENTITY_KIND.CONTACT, 'contact-1')
+  assert(
+    '23. returned entity is frozen and cannot mutate the store',
+    frozen &&
+      stored.displayName === 'contact-1' &&
+      stored.id === 'contact-1' &&
+      resolved.displayName === 'contact-1',
+  )
+  void mutated
+}
+
+{
+  const resolveSource = readFileSync(
+    join(root, 'src', 'integrations', 'entities', 'resolve.js'),
+    'utf8',
+  )
+  const engineSource = readFileSync(
+    join(root, 'src', 'integrations', 'activities', 'engine.js'),
+    'utf8',
+  )
+  const authoringPlugin = readFileSync(
+    join(root, 'server', 'integrationsActivityAuthoringPlugin.js'),
+    'utf8',
+  )
+  assert(
+    '24. resolver is not wired into the timeline engine or authoring HTTP',
+    !engineSource.includes('assertActivityEntityAccess') &&
+      !engineSource.includes('resolveActivityEntity') &&
+      !authoringPlugin.includes('assertActivityEntityAccess') &&
+      !authoringPlugin.includes('resolveActivityEntity') &&
+      !/integrations\/crm|createPostgresActivityRepository/.test(resolveSource),
   )
 }
 

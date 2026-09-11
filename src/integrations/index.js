@@ -509,4 +509,6 @@ export {
   upsertActivityEntity,
   getActivityEntity,
   listActivityEntities,
+  resolveActivityEntity,
+  assertActivityEntityAccess,
 } from './entities/index.js'
