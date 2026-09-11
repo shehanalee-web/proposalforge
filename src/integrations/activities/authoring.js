@@ -12,6 +12,7 @@ import { evaluateIntegrationCompanyScope } from '../config.js'
 import { ACTIVITY_ACTOR_KIND, ACTIVITY_ORIGIN } from './types.js'
 import { ACTIVITY_NATIVE_TYPE_BY_KIND } from '../../persistence/activities/types.js'
 import { getActivityRepository } from '../../persistence/activities/port.js'
+import { emitNativeActivityCreated } from './events.js'
 
 /** Fixture actor until real auth exists. Not an HTTP-supplied identity. */
 export const STUDIO_ACTIVITY_AUTHORING_ACTOR = Object.freeze({
@@ -58,7 +59,7 @@ export async function createStudioActivity(input = {}) {
   const companyId = assertCompany(input.companyId)
   const kind = String(input.kind ?? '').trim()
   const type = deriveNativeType(kind)
-  return getActivityRepository().create(
+  const activity = await getActivityRepository().create(
     {
       ...input,
       companyId,
@@ -73,6 +74,8 @@ export async function createStudioActivity(input = {}) {
       actorKind: STUDIO_ACTIVITY_AUTHORING_ACTOR.kind,
     },
   )
+  emitNativeActivityCreated(activity)
+  return activity
 }
 
 /**

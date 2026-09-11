@@ -1197,11 +1197,12 @@ console.log('')
 console.log('— O. H16.2 / later roadmap boundaries —')
 
 assert(
-  '54. H16.9 does not emit H16.2 intake events for the activity domain',
-  !AUTOMATION_INTAKE_SOURCE_DOMAINS.includes(AUTOMATION_SOURCE_DOMAIN.ACTIVITY) &&
-    !/emitAutomation|ingestAutomation|recordAutomationEvent/.test(
-      facadeSource + authoringPluginSource,
-    ),
+  '54. H16.11 emits native creates into H16.2; authoring HTTP does not ingest directly',
+  AUTOMATION_INTAKE_SOURCE_DOMAINS.includes(AUTOMATION_SOURCE_DOMAIN.ACTIVITY) &&
+    facadeSource.includes('emitNativeActivityCreated') &&
+    !authoringPluginSource.includes('emitNativeActivityCreated') &&
+    !authoringPluginSource.includes('ingestAutomationEvent') &&
+    !authoringPluginSource.includes('fanoutActivityEmission'),
 )
 assert(
   '55. email mailbox, calendar, OAuth, workers, vendor SDKs, and real auth are not introduced',

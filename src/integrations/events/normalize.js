@@ -15,6 +15,17 @@ import {
   sanitizeAutomationPayload,
 } from './schema.js'
 import { findLivingEngagementEventById } from '../../living/eventStore.js'
+import {
+  ACTIVITY_SUBJECT_TYPE,
+  TIMELINE_LIMITS,
+} from '../activities/types.js'
+
+const ACTIVITY_AUTOMATION_TYPE_BY_NATIVE = Object.freeze({
+  'note.created': 'activity.note.created',
+  'call.logged': 'activity.call.logged',
+  'meeting.logged': 'activity.meeting.logged',
+  'email.logged': 'activity.email.logged',
+})
 
 function asString(value) {
   return value == null ? '' : String(value)
@@ -368,6 +379,67 @@ function normalizeInteraction(input = {}) {
   })
 }
 
+function nativeActivityAutomationType(type) {
+  const raw = asString(type).trim()
+  if (ACTIVITY_AUTOMATION_TYPE_BY_NATIVE[raw]) return ACTIVITY_AUTOMATION_TYPE_BY_NATIVE[raw]
+  if (Object.values(ACTIVITY_AUTOMATION_TYPE_BY_NATIVE).includes(raw)) return raw
+  return null
+}
+
+function normalizeActivity(input = {}) {
+  const raw = input.rawEvent && typeof input.rawEvent === 'object' ? input.rawEvent : input
+  const nativeType = asString(raw.type || input.type).trim()
+  const automationType = nativeActivityAutomationType(nativeType)
+  if (!automationType) {
+    return reject(AUTOMATION_INTAKE_REASON.UNSUPPORTED_EVENT)
+  }
+
+  const companyId =
+    asOptionalId(input.companyId) || asOptionalId(raw.companyId)
+  if (!companyId) return reject(AUTOMATION_INTAKE_REASON.COMPANY_REQUIRED)
+
+  const activityId = asOptionalId(raw.id)
+  if (!activityId) return reject(AUTOMATION_INTAKE_REASON.MISSING_SOURCE_IDENTITY)
+
+  const kind = asString(raw.kind).trim()
+  const subjectType = asString(raw.subject?.type).trim()
+  const subjectId = asOptionalId(raw.subject?.id)
+  const proposalId =
+    subjectType === ACTIVITY_SUBJECT_TYPE.PROPOSAL ? subjectId : null
+  const subjectLine = asString(raw.subjectLine).trim().slice(0, TIMELINE_LIMITS.MAX_SUBJECT_LINE)
+
+  const payload = {
+    kind: kind || null,
+    type: ACTIVITY_AUTOMATION_TYPE_BY_NATIVE[nativeType]
+      ? nativeType
+      : nativeType.replace(/^activity\./, ''),
+    subjectType: subjectType || null,
+  }
+  if (subjectLine) payload.subjectLine = subjectLine
+
+  return acceptDraft({
+    type: automationType,
+    companyId,
+    occurredAt: raw.occurredAt || raw.createdAt || input.occurredAt,
+    source: {
+      domain: AUTOMATION_SOURCE_DOMAIN.ACTIVITY,
+      entityType: 'activity',
+      entityId: activityId,
+      eventId: activityId,
+    },
+    correlation: {
+      proposalId,
+      sessionId: null,
+      closeId: null,
+      followupId: null,
+      shareToken: null,
+      actorId: null,
+    },
+    sourceEventIdentity: activityId,
+    payload: sanitizeAutomationPayload(payload),
+  })
+}
+
 /**
  * Normalize a domain emission into an AutomationEvent draft result.
  *
@@ -407,9 +479,7 @@ export function normalizeDomainEvent(input = {}) {
     case AUTOMATION_SOURCE_DOMAIN.INTERACTION:
       return normalizeInteraction(input)
     case AUTOMATION_SOURCE_DOMAIN.ACTIVITY:
-      return ignore(AUTOMATION_INTAKE_REASON.CANONICAL_SOURCE_ELSEWHERE, {
-        message: 'Studio activity intake deferred; living/domain events are canonical.',
-      })
+      return normalizeActivity(input)
     case AUTOMATION_SOURCE_DOMAIN.COMMERCIAL_CLOSE:
       // Close facts arrive via living close.* audit events, not a parallel close bus.
       return ignore(AUTOMATION_INTAKE_REASON.CANONICAL_SOURCE_ELSEWHERE, {
