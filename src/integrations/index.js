@@ -1,7 +1,7 @@
 /**
- * H16.1–H16.10 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
+ * H16.1–H16.12 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
  * + CRM + Activity Timeline + Activity persistence + Activity authoring facade
- * + Activity entity registry (Slice 10.1).
+ * + Activity entity registry + Native Activity intake + mailbox envelope.
  *
  * H16.7 adds a read-only activity timeline projection. It owns no store, writes
  * nothing, and exposes no mutation surface.
@@ -10,6 +10,8 @@
  * Slice 9.2 makes buildTimeline / listStudioTimeline async. Slice 9.3 adds
  * the native_activity TimelineSource. Slice 9.4 adds authoring HTTP. Slice 9.5
  * enables the activityAuthoring flag; runtime still requires durable health.
+ * H16.12 Slice 12.1 adds a vendor-neutral inbound mailbox envelope. It does
+ * not persist, poll, authenticate, or register a TimelineSource.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -514,3 +516,24 @@ export {
   resolveActivityEntity,
   assertActivityEntityAccess,
 } from './entities/index.js'
+
+export {
+  MAILBOX_SCHEMA_VERSION,
+  MAILBOX_SOURCE_ID,
+  MAILBOX_SOURCE_DOMAIN,
+  MAILBOX_SOURCE_ENTITY_TYPE,
+  MAILBOX_ACTIVITY_KIND,
+  MAILBOX_ACTIVITY_TYPE,
+  MAILBOX_DIRECTION,
+  MAILBOX_DIRECTIONS,
+  MAILBOX_RECIPIENT_ROLE,
+  MAILBOX_RECIPIENT_ROLES,
+  MAILBOX_CONTENT_MEDIA_TYPE,
+  MAILBOX_CONTENT_MEDIA_TYPES,
+  MAILBOX_LIMITS,
+  MAILBOX_FORBIDDEN_FIELDS,
+  MAILBOX_FORBIDDEN_CONTENT_FIELDS,
+  makeMailboxIdempotencyKey,
+  makeInboundMailboxMessage,
+  cloneInboundMailboxMessage,
+} from './mailbox/index.js'
