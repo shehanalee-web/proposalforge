@@ -414,8 +414,8 @@ console.log('— Capability and structure —')
 
 assert('1. activityTimeline === true', INTEGRATION_CAPABILITIES.activityTimeline === true)
 assert(
-  '2. activityAuthoring === false',
-  INTEGRATION_CAPABILITIES.activityAuthoring === false &&
+  '2. activityAuthoring flag is on; derived authoring stays false without durable health',
+  INTEGRATION_CAPABILITIES.activityAuthoring === true &&
     isActivityAuthoringEnabled() === false &&
     !ACTIVITY_KINDS.includes('task'),
 )

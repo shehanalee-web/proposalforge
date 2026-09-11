@@ -121,8 +121,8 @@ assert(
   INTEGRATION_CAPABILITIES.activityPersistence === true,
 )
 assert(
-  '2. activityAuthoring === false',
-  INTEGRATION_CAPABILITIES.activityAuthoring === false &&
+  '2. activityAuthoring flag is on; derived authoring stays false without durable health',
+  INTEGRATION_CAPABILITIES.activityAuthoring === true &&
     isActivityAuthoringEnabled() === false,
 )
 assert(
@@ -557,7 +557,7 @@ assert(
     '37. HTTP plugin does not run migrations',
     !/persistence\/migrate|migrateActivities|migrate-activities/.test(plugin) &&
       INTEGRATION_CAPABILITIES.vendorSdks === false &&
-      INTEGRATION_CAPABILITIES.activityAuthoring === false &&
+      INTEGRATION_CAPABILITIES.activityAuthoring === true &&
       isActivityAuthoringEnabled() === false,
   )
 }
@@ -617,8 +617,8 @@ assert(
 {
   registerActivityRepository(createPostgresActivityRepository())
   assert(
-    '41. activityAuthoring stays false with postgres registered',
-    INTEGRATION_CAPABILITIES.activityAuthoring === false &&
+    '41. postgres registered without confirmed health does not enable authoring',
+    INTEGRATION_CAPABILITIES.activityAuthoring === true &&
       isActivityAuthoringEnabled() === false,
   )
   resetActivityRepository()
@@ -856,8 +856,7 @@ assert(
     '53. HTTP surface remains GET-only and vendorSdks stays false',
     pluginSource.includes("req.method !== 'GET'") &&
       !/['"]POST['"]|['"]PATCH['"]|['"]PUT['"]|['"]DELETE['"]/.test(pluginSource) &&
-      INTEGRATION_CAPABILITIES.vendorSdks === false &&
-      INTEGRATION_CAPABILITIES.activityAuthoring === false,
+      INTEGRATION_CAPABILITIES.vendorSdks === false,
   )
   assert(
     '54. native_activity is registered at boot beside the projection sources',
@@ -901,7 +900,7 @@ console.log('— H16.9.3 native timeline source —')
   assert(
     '57. memory repository enables the native source without authoring',
     source.isEnabled() === true &&
-      INTEGRATION_CAPABILITIES.activityAuthoring === false &&
+      INTEGRATION_CAPABILITIES.activityAuthoring === true &&
       isActivityAuthoringEnabled() === false,
   )
   resetActivityRepository()

@@ -2,9 +2,10 @@
  * H16.9 Slice 9.4 — Native Activity authoring HTTP.
  *
  * Mutation surface only. Timeline GET routes stay on
- * integrationsActivitiesPlugin.js. The capability flag stays false in this
- * slice; isActivityAuthoringEnabled() is checked before every authoring
- * request. Writes go through the studio facade, never a persistence factory.
+ * integrationsActivitiesPlugin.js. Slice 9.5 enables the activityAuthoring
+ * flag; isActivityAuthoringEnabled() still requires a healthy durable
+ * adapter and is checked before every authoring request. Writes go through
+ * the studio facade, never a persistence factory.
  */
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
@@ -119,7 +120,7 @@ function refuseIfDisabled() {
 
 /**
  * Native Activity authoring HTTP. No PUT or DELETE. Does not write
- * activities.json. Does not flip activityAuthoring.
+ * activities.json. Runtime enablement is isActivityAuthoringEnabled().
  */
 export function integrationsActivityAuthoringPlugin() {
   async function handle(req, res, next) {

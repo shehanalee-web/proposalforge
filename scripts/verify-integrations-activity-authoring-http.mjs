@@ -1,8 +1,9 @@
 /**
- * H16.9 Slice 9.4 — Activity authoring HTTP verification.
+ * H16.9 Slice 9.4–9.5 — Activity authoring HTTP + capability gate.
  *
- * Focused coverage only. Does not flip the production capability flag.
- * Does not nest H16.7. Never writes data/proposals.json.
+ * Focused coverage. Does not nest H16.7. Never writes data/proposals.json.
+ * Slice 9.5 enables the activityAuthoring flag; runtime still requires a
+ * healthy durable adapter.
  */
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -20,9 +21,13 @@ import {
   setActivityAuthoringCapabilityOverrideForTests,
   clearActivityAuthoringCapabilityOverrideForTests,
   isActivityAuthoringEnabled,
+  isDurableActivityRepositoryHealthy,
+  getActivityRepositoryHealth,
+  describeActivityRepository,
   registerActivityRepository,
   resetActivityRepository,
   createMemoryActivityRepository,
+  createPostgresActivityRepository,
   refreshActivityRepositoryHealth,
 } from '../src/integrations/index.js'
 import { integrationsActivitiesPlugin } from '../server/integrationsActivitiesPlugin.js'
@@ -181,8 +186,8 @@ console.log('— H16.9.4 authoring HTTP —')
       !/createPostgresActivityRepository|createMemoryActivityRepository/.test(authoringSource),
   )
   assert(
-    '4. production activityAuthoring remains false',
-    INTEGRATION_CAPABILITIES.activityAuthoring === false &&
+    '4. activityAuthoring flag is on; derived authoring stays false without durable health',
+    INTEGRATION_CAPABILITIES.activityAuthoring === true &&
       isActivityAuthoringEnabled() === false,
   )
 }
@@ -197,7 +202,7 @@ console.log('— H16.9.4 authoring HTTP —')
     body: noteBody(),
   })
   assert(
-    '5. POST authoring returns 403 while activityAuthoring is false',
+    '5. POST authoring returns 403 while derived authoring is disabled',
     created.status === 403 && created.body?.message === 'Activity authoring is not enabled.',
   )
 }
@@ -424,21 +429,140 @@ resetTimelineProposalLookup()
 resetActivityRepository()
 clearActivityAuthoringCapabilityOverrideForTests()
 
+console.log('')
+console.log('— H16.9.5 capability AND durable health —')
+
+{
+  resetActivityRepository()
+  const wrapped = await enableAuthoring()
+  setActivityAuthoringCapabilityOverrideForTests(false)
+  const plugin = integrationsActivityAuthoringPlugin()
+  const created = await invoke(plugin, {
+    method: 'POST',
+    url: '/api/activities',
+    body: noteBody(),
+  })
+  assert(
+    '21. capability override false disables authoring even with durable health',
+    isDurableActivityRepositoryHealthy() === true &&
+      isActivityAuthoringEnabled() === false &&
+      created.status === 403 &&
+      created.body?.message === 'Activity authoring is not enabled.',
+  )
+  void wrapped
+  clearActivityAuthoringCapabilityOverrideForTests()
+  resetActivityRepository()
+}
+
+{
+  resetActivityRepository()
+  clearActivityAuthoringCapabilityOverrideForTests()
+  registerActivityRepository(createMemoryActivityRepository())
+  await refreshActivityRepositoryHealth()
+  assert(
+    '22. flag on + memory repository does not enable authoring',
+    INTEGRATION_CAPABILITIES.activityAuthoring === true &&
+      describeActivityRepository().durable === false &&
+      getActivityRepositoryHealth().ok === true &&
+      isDurableActivityRepositoryHealthy() === false &&
+      isActivityAuthoringEnabled() === false,
+  )
+  resetActivityRepository()
+}
+
+{
+  resetActivityRepository()
+  clearActivityAuthoringCapabilityOverrideForTests()
+  assert(
+    '23. flag on + null repository does not enable authoring',
+    INTEGRATION_CAPABILITIES.activityAuthoring === true &&
+      describeActivityRepository().mode === ACTIVITY_REPOSITORY_MODE.NULL &&
+      isDurableActivityRepositoryHealthy() === false &&
+      isActivityAuthoringEnabled() === false,
+  )
+}
+
+{
+  resetActivityRepository()
+  clearActivityAuthoringCapabilityOverrideForTests()
+  registerActivityRepository(createPostgresActivityRepository())
+  assert(
+    '24. flag on + durable repository + unconfirmed health does not enable authoring',
+    describeActivityRepository().durable === true &&
+      getActivityRepositoryHealth().ok === false &&
+      isDurableActivityRepositoryHealthy() === false &&
+      isActivityAuthoringEnabled() === false,
+  )
+  resetActivityRepository()
+}
+
+{
+  resetActivityRepository()
+  seedProposalLookup()
+  clearActivityAuthoringCapabilityOverrideForTests()
+  const memory = createMemoryActivityRepository()
+  registerActivityRepository(wrapDurable(memory).adapter)
+  await refreshActivityRepositoryHealth()
+  const plugin = integrationsActivityAuthoringPlugin()
+  const created = await invoke(plugin, {
+    method: 'POST',
+    url: '/api/activities',
+    body: noteBody(),
+  })
+  assert(
+    '25. flag on + durable + cached health.ok enables authoring without a second mechanism',
+    INTEGRATION_CAPABILITIES.activityAuthoring === true &&
+      isDurableActivityRepositoryHealthy() === true &&
+      isActivityAuthoringEnabled() === true &&
+      created.status === 201 &&
+      String(created.body?.activity?.id ?? '').startsWith('act-'),
+  )
+  resetActivityRepository()
+  resetTimelineProposalLookup()
+}
+
+{
+  const timeline = integrationsActivitiesPlugin()
+  const caps = await invoke(timeline, {
+    method: 'GET',
+    url: `/api/activities/capabilities?companyId=${DEFAULT_COMPANY_ID}`,
+  })
+  const sources = await invoke(timeline, {
+    method: 'GET',
+    url: `/api/activities/sources?companyId=${DEFAULT_COMPANY_ID}`,
+  })
+  const pluginSource = stripComments(
+    readFileSync(join(root, 'server', 'integrationsActivitiesPlugin.js'), 'utf8'),
+  )
+  assert(
+    '26. timeline GET capabilities and sources remain intact',
+    caps.status === 200 &&
+      caps.body?.capabilities?.activityTimeline === true &&
+      sources.status === 200 &&
+      Array.isArray(sources.body?.sources),
+  )
+  assert(
+    '27. timeline plugin remains GET-only after the authoring flag flip',
+    pluginSource.includes("req.method !== 'GET'") &&
+      !/['"]POST['"]|['"]PATCH['"]|['"]PUT['"]|['"]DELETE['"]/.test(pluginSource),
+  )
+}
+
 const proposalsDiff = spawnSync('git', ['diff', '--', 'data/proposals.json'], {
   encoding: 'utf8',
   cwd: root,
   stdio: ['ignore', 'pipe', 'pipe'],
 })
 assert(
-  '19. data/proposals.json is unmodified',
+  '28. data/proposals.json is unmodified',
   !(proposalsDiff.stdout || '').trim(),
 )
 assert(
-  '20. TASK remains absent from the activity kind enum',
+  '29. TASK remains absent from the activity kind enum',
   !Object.prototype.hasOwnProperty.call(ACTIVITY_KIND, 'TASK') &&
     !['task', 'TASK'].some((value) => Object.values(ACTIVITY_KIND).includes(value)),
 )
 
 console.log('')
-console.log(`H16.9.4 authoring HTTP checks: ${passed} passed, ${failed} failed`)
+console.log(`H16.9 authoring HTTP checks: ${passed} passed, ${failed} failed`)
 if (failed > 0) process.exit(1)
