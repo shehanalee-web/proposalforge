@@ -15,7 +15,8 @@
  * maps that envelope through createStudioActivity. It does not persist a
  * mailbox store, poll, authenticate, or register a TimelineSource.
  * H16.13 Slice 13.1 adds a vendor-neutral inbound calendar event envelope.
- * It does not ingest, persist, poll, authenticate, or register a TimelineSource.
+ * Slice 13.2 maps that envelope through createStudioActivity. It does not persist a
+ * calendar store, poll, authenticate, or register a TimelineSource.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -560,7 +561,13 @@ export {
   CALENDAR_LIMITS,
   CALENDAR_FORBIDDEN_FIELDS,
   CALENDAR_FORBIDDEN_CONTENT_FIELDS,
+  CALENDAR_INGEST_STATUS,
+  CALENDAR_INGEST_STATUSES,
   makeCalendarIdempotencyKey,
   makeInboundCalendarEvent,
   cloneInboundCalendarEvent,
+  isCalendarSubjectSupplied,
+  makeNativeCalendarIdempotencyKey,
+  mapCalendarEventToStudioActivityInput,
+  ingestInboundCalendarEvent,
 } from './calendar/index.js'

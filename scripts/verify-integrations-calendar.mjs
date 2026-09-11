@@ -11,7 +11,6 @@ import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
-import * as calendarApi from '../src/integrations/calendar/index.js'
 import {
   ACTIVITY_KIND,
   ACTIVITY_NATIVE_TYPE,
@@ -255,16 +254,19 @@ console.log('— H16.13.1 calendar envelope —')
 
 {
   const event = makeInboundCalendarEvent(envelope())
+  const typesSource = readFileSync(join(calendarDir, 'types.js'), 'utf8')
+  const schemaSource = readFileSync(join(calendarDir, 'schema.js'), 'utf8')
   assert(
     '7. calendar event maps to meeting / meeting.logged metadata without persisting',
     CALENDAR_ACTIVITY_KIND === ACTIVITY_KIND.MEETING &&
       CALENDAR_ACTIVITY_TYPE === ACTIVITY_NATIVE_TYPE.MEETING_LOGGED &&
       event.activityKind === 'meeting' &&
       event.activityType === 'meeting.logged' &&
-      !('ingestInboundCalendarEvent' in calendarApi) &&
-      !calendarSource.includes('createStudioActivity') &&
-      !calendarSource.includes('getActivityRepository') &&
-      !calendarSource.includes('ingestInboundCalendarEvent'),
+      !typesSource.includes('createStudioActivity') &&
+      !schemaSource.includes('createStudioActivity') &&
+      !typesSource.includes('getActivityRepository') &&
+      !schemaSource.includes('getActivityRepository') &&
+      !schemaSource.includes('ingestInboundCalendarEvent'),
   )
 }
 
@@ -442,26 +444,61 @@ console.log('— boundaries —')
   const writeOps =
     /writeFileSync|appendFileSync|createWriteStream|mkdirSync|writeFile\s*\(/
   const forbiddenPersistenceApi =
-    /\b(getActivityRepository|registerActivityRepository|createMemoryActivityRepository|createPostgresActivityRepository|createNullActivityRepository|resetActivityRepository|createStudioActivity|ingestAutomationEvent|fanoutActivityEmission|emitNativeActivityCreated)\b/
+    /\b(getActivityRepository|registerActivityRepository|createMemoryActivityRepository|createPostgresActivityRepository|createNullActivityRepository|resetActivityRepository|resetMemoryActivityRepository|resetPostgresActivityRepository|ingestAutomationEvent|fanoutActivityEmission|emitNativeActivityCreated|resolveActivityEntity|upsertActivityEntity)\b/
+  const forbiddenAdapterFrom =
+    /from\s+['"][^'"]*persistence\/activities(?:\.js)?['"]|from\s+['"][^'"]*persistence\/activities\/(?:memory|postgres|null|port|index)(?:\.js)?['"]/
+  const allowedTypesFrom =
+    /from\s+['"][^'"]*persistence\/activities\/types(?:\.js)?['"]/
+  const approvedFacadeImport =
+    /import\s*\{\s*createStudioActivity\s*\}\s*from\s*['"]\.\.\/activities\/authoring\.js['"]/
+  const importLines = (source) =>
+    source
+      .split('\n')
+      .filter((line) => /^\s*import\b/.test(line))
+      .join('\n')
+
+  const typesSource = readFileSync(join(calendarDir, 'types.js'), 'utf8')
+  const schemaSource = readFileSync(join(calendarDir, 'schema.js'), 'utf8')
+  const indexSource = readFileSync(join(calendarDir, 'index.js'), 'utf8')
+  const mapPath = join(calendarDir, 'map.js')
+  const ingestPath = join(calendarDir, 'ingest.js')
+  const mapSource = existsSync(mapPath) ? readFileSync(mapPath, 'utf8') : ''
+  const ingestSource = existsSync(ingestPath) ? readFileSync(ingestPath, 'utf8') : ''
+  const allImports = importLines(calendarSource)
+  const persistenceImports = allImports
+    .split('\n')
+    .filter((line) => line.includes('persistence/activities'))
+  const nonIngestImports = importLines(
+    typesSource + '\n' + schemaSource + '\n' + indexSource + '\n' + mapSource,
+  )
   const httpPlugin = existsSync(join(root, 'server', 'integrationsCalendarPlugin.js'))
-  const forbiddenFiles = [
-    'provider.js',
-    'adapters.js',
-    'oauth.js',
+  const calendarStoreFiles = [
     'store.js',
-    'repository.js',
     'memory.js',
+    'postgres.js',
+    'repository.js',
+    'port.js',
+    'provider.js',
+    'oauth.js',
     'calendarPlugin.js',
-    'ingest.js',
-    'map.js',
   ].filter((name) => existsSync(join(calendarDir, name)))
+
   assert(
     '13. no ActivityRepository write occurs',
     !vendorSdk.test(calendarSource) &&
       !network.test(calendarSource) &&
       !writeOps.test(calendarSource) &&
       !forbiddenPersistenceApi.test(calendarSource) &&
-      forbiddenFiles.length === 0 &&
+      !forbiddenAdapterFrom.test(allImports) &&
+      persistenceImports.every((line) => allowedTypesFrom.test(line)) &&
+      !nonIngestImports.includes('createStudioActivity') &&
+      (!ingestSource ||
+        (approvedFacadeImport.test(importLines(ingestSource)) &&
+          ingestSource.includes('createStudioActivity(mapCalendarEventToStudioActivityInput') &&
+          !forbiddenPersistenceApi.test(ingestSource) &&
+          !importLines(ingestSource).includes('getActivityRepository') &&
+          !importLines(ingestSource).includes('persistence/activities'))) &&
+      calendarStoreFiles.length === 0 &&
       !httpPlugin,
   )
 }
@@ -570,8 +607,7 @@ console.log('— boundaries —')
       !(mailboxDiff.stdout || '').trim() &&
       mailboxMessage.mailboxId === 'mailbox-studio-inbox' &&
       mailboxMessage.activityType === 'email.logged' &&
-      existsSync(join(mailboxDir, 'ingest.js')) &&
-      !existsSync(join(calendarDir, 'ingest.js')),
+      existsSync(join(mailboxDir, 'ingest.js')),
   )
 }
 
