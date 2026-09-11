@@ -4,7 +4,8 @@
  * Slice 10.1: schema + in-memory store.
  * Slice 10.2: resolveActivityEntity / assertActivityEntityAccess.
  * Slice 10.3: timeline engine subject authorization.
- * Does not nest H16.7–H16.9. Does not wire authoring HTTP.
+ * Slice 10.4: authoring HTTP POST subject authorization.
+ * Does not nest H16.7–H16.9. Does not add entity HTTP CRUD.
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -496,13 +497,17 @@ console.log('— H16.10.2 resolver —')
     'utf8',
   )
   assert(
-    '24. resolver is wired into the timeline engine but not authoring HTTP',
+    '24. resolver is wired into the timeline engine and authoring HTTP POST',
     engineSource.includes('assertActivityEntityAccess') &&
       engineSource.includes('assertProposalAccess') &&
       engineSource.indexOf('assertProposalAccess(companyId, subject)') <
         engineSource.indexOf('assertActivityEntityAccess(companyId, subject)') &&
-      !authoringPlugin.includes('assertActivityEntityAccess') &&
+      authoringPlugin.includes('assertActivityEntityAccess') &&
+      authoringPlugin.includes('assertProposalAccess') &&
+      authoringPlugin.indexOf('assertProposalAccess(companyId, input.subject ?? {})') <
+        authoringPlugin.indexOf('assertActivityEntityAccess(companyId, input.subject ?? {})') &&
       !authoringPlugin.includes('resolveActivityEntity') &&
+      !/\/api\/entities/.test(authoringPlugin) &&
       !/integrations\/crm|createPostgresActivityRepository/.test(resolveSource),
   )
 }
@@ -651,6 +656,34 @@ console.log('— H16.10.3 timeline engine —')
 resetActivityEntityStore()
 resetTimelineSources()
 resetTimelineProposalLookup()
+
+console.log('')
+console.log('— H16.10.4 authoring HTTP —')
+
+{
+  const authoringPlugin = readFileSync(
+    join(root, 'server', 'integrationsActivityAuthoringPlugin.js'),
+    'utf8',
+  )
+  const timelinePlugin = readFileSync(
+    join(root, 'server', 'integrationsActivitiesPlugin.js'),
+    'utf8',
+  )
+  const viteSource = readFileSync(join(root, 'vite.config.js'), 'utf8')
+  const productionSource = readFileSync(join(root, 'server', 'productionApi.js'), 'utf8')
+  const postBlockStart = authoringPlugin.indexOf("matchRoute(url, '/api/activities'))")
+  const postBlock = authoringPlugin.slice(postBlockStart)
+  assert(
+    '31. authoring POST resolves entities after proposal access; no entity HTTP CRUD',
+    postBlock.includes('assertActivityEntityAccess(companyId, input.subject ?? {})') &&
+      postBlock.includes('assertProposalAccess(companyId, input.subject ?? {})') &&
+      postBlock.indexOf('assertProposalAccess(companyId, input.subject ?? {})') <
+        postBlock.indexOf('assertActivityEntityAccess(companyId, input.subject ?? {})') &&
+      !postBlock.includes('createStudioActivity(resolved') &&
+      !/\/api\/entities/.test(authoringPlugin + timelinePlugin + viteSource + productionSource) &&
+      !existsSync(join(root, 'server', 'integrationsEntitiesPlugin.js')),
+  )
+}
 
 console.log('')
 console.log(`H16.10 entity registry checks: ${passed} passed, ${failed} failed`)
