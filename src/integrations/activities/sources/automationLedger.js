@@ -9,7 +9,10 @@
  */
 
 import { listAcceptedAutomationEventsForCompany } from '../../events/store.js'
-import { AUTOMATION_INTAKE_SOURCE_DOMAINS } from '../../events/types.js'
+import {
+  AUTOMATION_INTAKE_SOURCE_DOMAINS,
+  AUTOMATION_SOURCE_DOMAIN,
+} from '../../events/types.js'
 import {
   ACTIVITY_ACTOR_KIND,
   ACTIVITY_AUDIENCE,
@@ -67,7 +70,9 @@ function toCandidate(event) {
 export function createAutomationLedgerTimelineSource() {
   return {
     id: TIMELINE_SOURCE_ID.AUTOMATION_LEDGER,
-    canonicalFor: [...AUTOMATION_INTAKE_SOURCE_DOMAINS],
+    canonicalFor: AUTOMATION_INTAKE_SOURCE_DOMAINS.filter(
+      (domain) => domain !== AUTOMATION_SOURCE_DOMAIN.ACTIVITY,
+    ),
 
     describe() {
       return {

@@ -31,6 +31,7 @@ import {
   INTEGRATION_CAPABILITIES,
   AUTOMATION_SOURCE_DOMAIN,
   AUTOMATION_INTAKE_SOURCE_DOMAINS,
+  AUTOMATION_CANONICAL_SOURCE,
   ACTIVITY_TIMELINE_AUDIENCE as ACTIVITY_AUDIENCE,
   ACTIVITY_KIND,
   ACTIVITY_KINDS,
@@ -39,6 +40,7 @@ import {
   TIMELINE_LIMITS,
   TIMELINE_SOURCE_ID,
   TIMELINE_SOURCE_IDS,
+  TIMELINE_SOURCE_PRIORITY,
   TIMELINE_UNSCOPED_SOURCE_IDS,
   TIMELINE_DROP_REASON,
   assertTimelineSourceContract,
@@ -47,6 +49,7 @@ import {
   listRegisteredTimelineSources,
   describeTimelineSources,
   createAutomationLedgerTimelineSource,
+  createNativeActivityTimelineSource,
   createLivingEventsTimelineSource,
   createWorkflowActivityTimelineSource,
   createPortalActivityTimelineSource,
@@ -514,12 +517,35 @@ assert(
       else if (current.priority === entry.priority) ambiguous += 1
     }
   }
-  const ledgerOwnsIntake = AUTOMATION_INTAKE_SOURCE_DOMAINS.every(
+  const originalIntakeDomains = [
+    AUTOMATION_SOURCE_DOMAIN.LIVING,
+    AUTOMATION_SOURCE_DOMAIN.FOLLOWUP,
+    AUTOMATION_SOURCE_DOMAIN.WORKFLOW,
+    AUTOMATION_SOURCE_DOMAIN.PORTAL,
+    AUTOMATION_SOURCE_DOMAIN.INTERACTION,
+  ]
+  const ledgerOwnsOriginalFive = originalIntakeDomains.every(
     (domain) => owners.get(domain)?.id === TIMELINE_SOURCE_ID.AUTOMATION_LEDGER,
   )
+  const ledgerClaimsActivity = (createAutomationLedgerTimelineSource().canonicalFor || []).includes(
+    AUTOMATION_SOURCE_DOMAIN.ACTIVITY,
+  )
+  const nativeOwnsActivity =
+    createNativeActivityTimelineSource().canonicalFor.includes(AUTOMATION_SOURCE_DOMAIN.ACTIVITY) &&
+    TIMELINE_SOURCE_PRIORITY[TIMELINE_SOURCE_ID.NATIVE_ACTIVITY] >
+      TIMELINE_SOURCE_PRIORITY[TIMELINE_SOURCE_ID.AUTOMATION_LEDGER] &&
+    TIMELINE_SOURCE_PRIORITY[TIMELINE_SOURCE_ID.NATIVE_ACTIVITY] >
+      TIMELINE_SOURCE_PRIORITY[TIMELINE_SOURCE_ID.STUDIO_AUDIT]
   assert(
     '10. every canonical domain resolves to one highest-priority owner',
-    ambiguous === 0 && ledgerOwnsIntake,
+    ambiguous === 0 &&
+      ledgerOwnsOriginalFive &&
+      !ledgerClaimsActivity &&
+      owners.get(AUTOMATION_SOURCE_DOMAIN.ACTIVITY)?.id !==
+        TIMELINE_SOURCE_ID.AUTOMATION_LEDGER &&
+      nativeOwnsActivity &&
+      AUTOMATION_CANONICAL_SOURCE[AUTOMATION_SOURCE_DOMAIN.ACTIVITY] ===
+        AUTOMATION_SOURCE_DOMAIN.ACTIVITY,
   )
 }
 {
@@ -1232,8 +1258,16 @@ assert(
     INTEGRATION_CAPABILITIES.backgroundWorkers === false,
 )
 assert(
-  '58. AUTOMATION_SOURCE_DOMAIN.ACTIVITY remains inactive in intake',
-  !AUTOMATION_INTAKE_SOURCE_DOMAINS.includes(AUTOMATION_SOURCE_DOMAIN.ACTIVITY),
+  '58. ACTIVITY is an H16.11 intake domain owned by native_activity, not automation_ledger',
+  AUTOMATION_INTAKE_SOURCE_DOMAINS.includes(AUTOMATION_SOURCE_DOMAIN.ACTIVITY) &&
+    AUTOMATION_CANONICAL_SOURCE[AUTOMATION_SOURCE_DOMAIN.ACTIVITY] ===
+      AUTOMATION_SOURCE_DOMAIN.ACTIVITY &&
+    createNativeActivityTimelineSource().canonicalFor.includes(
+      AUTOMATION_SOURCE_DOMAIN.ACTIVITY,
+    ) &&
+    !(createAutomationLedgerTimelineSource().canonicalFor || []).includes(
+      AUTOMATION_SOURCE_DOMAIN.ACTIVITY,
+    ),
 )
 
 // ------------------------------------------------------------------ regression

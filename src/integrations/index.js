@@ -126,6 +126,7 @@ export {
   fanoutWorkflowEmission,
   fanoutPortalEmission,
   fanoutInteractionEmission,
+  fanoutActivityEmission,
 } from './events/index.js'
 
 export {
@@ -451,6 +452,7 @@ export {
   getStudioActivity,
   updateStudioActivity,
   archiveStudioActivity,
+  emitNativeActivityCreated,
   deriveTimelineEntryId,
   sanitizeTimelineAttributes,
   resolveTimelineTimestamps,

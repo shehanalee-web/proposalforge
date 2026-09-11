@@ -113,6 +113,8 @@ export {
   archiveStudioActivity,
 } from './authoring.js'
 
+export { emitNativeActivityCreated } from './events.js'
+
 export {
   deriveTimelineEntryId,
   sanitizeTimelineAttributes,

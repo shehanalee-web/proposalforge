@@ -47,3 +47,7 @@ export function fanoutPortalEmission(rawEvent) {
 export function fanoutInteractionEmission(rawEvent) {
   return fanoutDomainEmission(AUTOMATION_SOURCE_DOMAIN.INTERACTION, rawEvent)
 }
+
+export function fanoutActivityEmission(rawEvent) {
+  return fanoutDomainEmission(AUTOMATION_SOURCE_DOMAIN.ACTIVITY, rawEvent)
+}

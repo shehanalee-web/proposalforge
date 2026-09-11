@@ -57,4 +57,5 @@ export {
   fanoutWorkflowEmission,
   fanoutPortalEmission,
   fanoutInteractionEmission,
+  fanoutActivityEmission,
 } from './fanout.js'
