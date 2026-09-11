@@ -3,7 +3,8 @@
  *
  * Slice 10.1: schema + in-memory store.
  * Slice 10.2: resolveActivityEntity / assertActivityEntityAccess.
- * Does not nest H16.7–H16.9. Does not wire timeline or authoring HTTP.
+ * Slice 10.3: timeline engine subject authorization.
+ * Does not nest H16.7–H16.9. Does not wire authoring HTTP.
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -18,12 +19,17 @@ import {
   ACTIVITY_ENTITY_KIND,
   ACTIVITY_ENTITY_KINDS,
   ACTIVITY_ENTITY_NOT_FOUND,
+  ACTIVITY_RESOLVABLE_SUBJECT_TYPES,
   assertActivityEntityAccess,
+  buildTimeline,
   cloneActivityEntity,
+  configureTimelineProposalLookup,
   getActivityEntity,
   listActivityEntities,
   makeActivityEntity,
   resetActivityEntityStore,
+  resetTimelineProposalLookup,
+  resetTimelineSources,
   resolveActivityEntity,
   upsertActivityEntity,
 } from '../src/integrations/index.js'
@@ -49,6 +55,15 @@ function assert(name, condition, detail = '') {
 function threw(fn) {
   try {
     fn()
+    return null
+  } catch (error) {
+    return error
+  }
+}
+
+async function threwAsync(fn) {
+  try {
+    await fn()
     return null
   } catch (error) {
     return error
@@ -481,16 +496,161 @@ console.log('— H16.10.2 resolver —')
     'utf8',
   )
   assert(
-    '24. resolver is not wired into the timeline engine or authoring HTTP',
-    !engineSource.includes('assertActivityEntityAccess') &&
-      !engineSource.includes('resolveActivityEntity') &&
+    '24. resolver is wired into the timeline engine but not authoring HTTP',
+    engineSource.includes('assertActivityEntityAccess') &&
+      engineSource.includes('assertProposalAccess') &&
+      engineSource.indexOf('assertProposalAccess(companyId, subject)') <
+        engineSource.indexOf('assertActivityEntityAccess(companyId, subject)') &&
       !authoringPlugin.includes('assertActivityEntityAccess') &&
       !authoringPlugin.includes('resolveActivityEntity') &&
       !/integrations\/crm|createPostgresActivityRepository/.test(resolveSource),
   )
 }
 
+console.log('')
+console.log('— H16.10.3 timeline engine —')
+
+{
+  assert(
+    '25. contact, company, and deal are resolvable timeline subject types; CLOSE is not',
+    ACTIVITY_RESOLVABLE_SUBJECT_TYPES.includes(ACTIVITY_SUBJECT_TYPE.PROPOSAL) &&
+      ACTIVITY_RESOLVABLE_SUBJECT_TYPES.includes(ACTIVITY_ENTITY_KIND.CONTACT) &&
+      ACTIVITY_RESOLVABLE_SUBJECT_TYPES.includes(ACTIVITY_ENTITY_KIND.COMPANY) &&
+      ACTIVITY_RESOLVABLE_SUBJECT_TYPES.includes(ACTIVITY_ENTITY_KIND.DEAL) &&
+      !ACTIVITY_RESOLVABLE_SUBJECT_TYPES.includes(ACTIVITY_SUBJECT_TYPE.CLOSE),
+  )
+}
+
+{
+  resetTimelineSources()
+  resetActivityEntityStore([
+    fixture(ACTIVITY_ENTITY_KIND.CONTACT, 'contact-1'),
+    fixture(ACTIVITY_ENTITY_KIND.COMPANY, 'company-1'),
+    fixture(ACTIVITY_ENTITY_KIND.DEAL, 'deal-1'),
+    fixture(ACTIVITY_ENTITY_KIND.CONTACT, 'contact-other', otherCompany),
+  ])
+  const contact = await threwAsync(() =>
+    buildTimeline({
+      companyId: studio,
+      subjectType: ACTIVITY_ENTITY_KIND.CONTACT,
+      subjectId: 'contact-1',
+    }),
+  )
+  const company = await threwAsync(() =>
+    buildTimeline({
+      companyId: studio,
+      subjectType: ACTIVITY_ENTITY_KIND.COMPANY,
+      subjectId: 'company-1',
+    }),
+  )
+  const deal = await threwAsync(() =>
+    buildTimeline({
+      companyId: studio,
+      subjectType: ACTIVITY_ENTITY_KIND.DEAL,
+      subjectId: 'deal-1',
+    }),
+  )
+  assert(
+    '26. known contact/company/deal subjects resolve through the timeline engine',
+    contact === null && company === null && deal === null,
+  )
+}
+
+{
+  const unknown = await threwAsync(() =>
+    buildTimeline({
+      companyId: studio,
+      subjectType: ACTIVITY_ENTITY_KIND.CONTACT,
+      subjectId: 'contact-missing',
+    }),
+  )
+  const cross = await threwAsync(() =>
+    buildTimeline({
+      companyId: studio,
+      subjectType: ACTIVITY_ENTITY_KIND.CONTACT,
+      subjectId: 'contact-other',
+    }),
+  )
+  assert(
+    '27. unknown entity returns 404; cross-tenant entity returns 403 without leaks',
+    unknown instanceof NotFoundError &&
+      unknown.message === 'Activity subject not found.' &&
+      !leak(unknown, 'contact-missing', otherCompany) &&
+      cross instanceof ForbiddenError &&
+      cross.message === 'You cannot access another company workspace.' &&
+      !leak(cross, 'contact-other', otherCompany),
+  )
+}
+
+{
+  resetTimelineProposalLookup()
+  configureTimelineProposalLookup((proposalId) => {
+    if (String(proposalId) === 'prop-h1610-a') return { id: 'prop-h1610-a', companyId: studio }
+    if (String(proposalId) === 'prop-h1610-other') {
+      return { id: 'prop-h1610-other', companyId: otherCompany }
+    }
+    return null
+  })
+  const known = await threwAsync(() =>
+    buildTimeline({
+      companyId: studio,
+      subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
+      subjectId: 'prop-h1610-a',
+    }),
+  )
+  const missing = await threwAsync(() =>
+    buildTimeline({
+      companyId: studio,
+      subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
+      subjectId: 'prop-does-not-exist',
+    }),
+  )
+  const cross = await threwAsync(() =>
+    buildTimeline({
+      companyId: studio,
+      subjectType: ACTIVITY_SUBJECT_TYPE.PROPOSAL,
+      subjectId: 'prop-h1610-other',
+    }),
+  )
+  assert(
+    '28. proposal authorization remains on assertProposalAccess',
+    known === null &&
+      missing instanceof NotFoundError &&
+      missing.message === 'Timeline subject not found.' &&
+      !String(missing.message).includes('Activity subject') &&
+      cross instanceof ForbiddenError &&
+      !leak(cross, 'prop-h1610-other', otherCompany),
+  )
+  resetTimelineProposalLookup()
+}
+
+{
+  const close = await threwAsync(() =>
+    buildTimeline({
+      companyId: studio,
+      subjectType: ACTIVITY_SUBJECT_TYPE.CLOSE,
+      subjectId: 'close-1',
+    }),
+  )
+  assert(
+    '29. CLOSE remains an unresolvable timeline subject',
+    close instanceof ValidationError &&
+      String(close.message).includes('not resolvable'),
+  )
+}
+
+{
+  resetActivityEntityStore()
+  const unscoped = await threwAsync(() => buildTimeline({ companyId: studio, limit: 5 }))
+  assert(
+    '30. unscoped timeline does not perform entity resolution',
+    unscoped === null,
+  )
+}
+
 resetActivityEntityStore()
+resetTimelineSources()
+resetTimelineProposalLookup()
 
 console.log('')
 console.log(`H16.10 entity registry checks: ${passed} passed, ${failed} failed`)

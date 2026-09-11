@@ -60,8 +60,9 @@ export const ACTIVITY_ACTOR_KIND = Object.freeze({
 export const ACTIVITY_ACTOR_KINDS = Object.freeze(Object.values(ACTIVITY_ACTOR_KIND))
 
 /**
- * Polymorphic subject. Only PROPOSAL resolves in H16.7 — Contact/Company/Deal
- * are declared so H16.10 adds resolution rather than migrating stored records.
+ * Polymorphic subject. H16.10 resolves contact, company, and deal against the
+ * Activity entity registry. Proposal resolution remains the H16.7 lookup.
+ * CLOSE is declared but not resolvable in H16.10.
  */
 export const ACTIVITY_SUBJECT_TYPE = Object.freeze({
   PROPOSAL: 'proposal',
@@ -75,9 +76,12 @@ export const ACTIVITY_SUBJECT_TYPES = Object.freeze(
   Object.values(ACTIVITY_SUBJECT_TYPE),
 )
 
-/** Subject types a caller may query in H16.7. */
+/** Subject types a caller may query. CLOSE remains unresolvable in H16.10. */
 export const ACTIVITY_RESOLVABLE_SUBJECT_TYPES = Object.freeze([
   ACTIVITY_SUBJECT_TYPE.PROPOSAL,
+  ACTIVITY_SUBJECT_TYPE.CONTACT,
+  ACTIVITY_SUBJECT_TYPE.COMPANY,
+  ACTIVITY_SUBJECT_TYPE.DEAL,
 ])
 
 export const TIMELINE_SOURCE_ID = Object.freeze({

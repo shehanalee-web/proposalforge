@@ -8,6 +8,9 @@
  * H16.9 Slice 9.2 makes buildTimeline async so repository-backed sources can
  * be awaited. Existing projection sources stay synchronous and are wrapped in
  * Promise.resolve. Native TimelineSource remains Slice 9.3.
+ * H16.10 Slice 10.3 authorizes contact/company/deal subjects via
+ * assertActivityEntityAccess. Proposal authorization stays on
+ * assertProposalAccess. Unscoped lists do not resolve entities.
  */
 
 import { ForbiddenError, NotFoundError, ValidationError } from '../../services/errors.js'
@@ -27,6 +30,7 @@ import { filterTimelineAudience, projectTimelineCandidates } from './projection.
 import { dedupeTimelineEntries } from './dedupe.js'
 import { listRegisteredTimelineSources } from './sources/index.js'
 import { isDurableActivityRepositoryHealthy } from '../../persistence/activities/index.js'
+import { assertActivityEntityAccess } from '../entities/index.js'
 
 let capabilityOverride = null
 let authoringOverride = null
@@ -254,6 +258,7 @@ export async function buildTimeline(query = {}) {
 
   const subject = assertSubject(query.subjectType, query.subjectId)
   assertProposalAccess(companyId, subject)
+  assertActivityEntityAccess(companyId, subject)
   const audience = ACTIVITY_AUDIENCES.includes(query.audience)
     ? query.audience
     : ACTIVITY_AUDIENCE.INTERNAL
