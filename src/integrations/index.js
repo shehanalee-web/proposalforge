@@ -7,8 +7,8 @@
  * H16.8 Slice 8.5 wires null/postgres boot into capabilities.
  * H16.9 Slice 9.1 adds the studio write facade over the registered repository.
  * Slice 9.2 makes buildTimeline / listStudioTimeline async. Slice 9.3 adds
- * the native_activity TimelineSource. activityAuthoring stays false. Native
- * writes are not exposed as HTTP yet.
+ * the native_activity TimelineSource. Slice 9.4 adds authoring HTTP. The
+ * activityAuthoring flag stays false until 9.5.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -432,6 +432,7 @@ export {
   resetTimelineProposalLookup,
   isActivityTimelineEnabled,
   isActivityAuthoringEnabled,
+  assertProposalAccess,
   describeActivityRepository,
   isDurableActivityRepositoryHealthy,
   getActivityRepositoryHealth,

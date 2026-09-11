@@ -170,11 +170,12 @@ function subjectCompaniesFromLedger(subjectType, subjectId) {
  * Existence comes from the proposal record first, then the ledger. Unknown
  * ids 404. A known proposal owned by another company 403s. A known proposal
  * with no remaining events after later filters is a 200 empty page, not 404.
+ * Contact / company / deal subjects are not resolved here (H16.10).
  *
  * @param {string} companyId
  * @param {{ type: string | null, id: string | null }} subject
  */
-function assertProposalAccess(companyId, subject) {
+export function assertProposalAccess(companyId, subject) {
   if (!subject?.id || subject.type !== ACTIVITY_SUBJECT_TYPE.PROPOSAL) return
 
   const record = lookupProposalRecord(subject.id)

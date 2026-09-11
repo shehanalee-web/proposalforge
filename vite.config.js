@@ -17,6 +17,7 @@ import { integrationsIntentsPlugin } from './server/integrationsIntentsPlugin.js
 import { integrationsWebhooksPlugin } from './server/integrationsWebhooksPlugin.js'
 import { integrationsCrmPlugin } from './server/integrationsCrmPlugin.js'
 import { integrationsActivitiesPlugin } from './server/integrationsActivitiesPlugin.js'
+import { integrationsActivityAuthoringPlugin } from './server/integrationsActivityAuthoringPlugin.js'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -28,6 +29,7 @@ export default defineConfig({
     integrationsWebhooksPlugin(),
     integrationsCrmPlugin(),
     integrationsActivitiesPlugin(),
+    integrationsActivityAuthoringPlugin(),
     localUploadsPlugin(),
     emailPlugin(),
     aiPlugin(),

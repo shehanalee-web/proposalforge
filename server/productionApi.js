@@ -13,6 +13,7 @@ import { integrationsIntentsPlugin } from './integrationsIntentsPlugin.js'
 import { integrationsWebhooksPlugin } from './integrationsWebhooksPlugin.js'
 import { integrationsCrmPlugin } from './integrationsCrmPlugin.js'
 import { integrationsActivitiesPlugin } from './integrationsActivitiesPlugin.js'
+import { integrationsActivityAuthoringPlugin } from './integrationsActivityAuthoringPlugin.js'
 import { localUploadsPlugin } from './localUploadsPlugin.js'
 import { portalPlugin } from './portalPlugin.js'
 import { workflowPlugin } from './workflowPlugin.js'
@@ -28,6 +29,7 @@ function getHandlers() {
     integrationsWebhooksPlugin(),
     integrationsCrmPlugin(),
     integrationsActivitiesPlugin(),
+    integrationsActivityAuthoringPlugin(),
     localUploadsPlugin(),
     emailPlugin(),
     aiPlugin(),
