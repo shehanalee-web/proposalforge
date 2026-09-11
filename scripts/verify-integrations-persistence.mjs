@@ -853,7 +853,7 @@ assert(
     readFileSync(join(root, 'server', 'integrationsActivitiesPlugin.js'), 'utf8'),
   )
   assert(
-    '53. HTTP surface remains GET-only and vendorSdks stays false',
+    '53. timeline plugin remains GET-only and vendorSdks stays false',
     pluginSource.includes("req.method !== 'GET'") &&
       !/['"]POST['"]|['"]PATCH['"]|['"]PUT['"]|['"]DELETE['"]/.test(pluginSource) &&
       INTEGRATION_CAPABILITIES.vendorSdks === false,

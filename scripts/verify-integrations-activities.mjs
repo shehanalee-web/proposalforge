@@ -2,7 +2,9 @@
  * H16.7 Activity Timeline verification.
  *
  * Read-only projection over the H16.2 ledger and seven legacy stores.
- * No write path exists: no data file, no persist handler, no mutation route.
+ * This suite's fixture does not register native_activity (that is H16.9).
+ * Timeline HTTP remains GET-only; native writes live on
+ * integrationsActivityAuthoringPlugin.js.
  * Never writes data/proposals.json.
  *
  * Store seeding uses reset*Store() only. No configure*Store({ persist }) call
@@ -480,7 +482,7 @@ console.log('— Source contract —')
 const registered = listRegisteredTimelineSources()
 
 assert(
-  '7. every registered source reports readOnly',
+  '7. historical fixture registers 8 readOnly projection sources',
   registered.length === 8 &&
     describeTimelineSources({ companyId: studio }).every((entry) => entry.readOnly === true),
 )
@@ -1173,7 +1175,7 @@ const pluginSource = stripComments(
   readFileSync(join(root, 'server', 'integrationsActivitiesPlugin.js'), 'utf8'),
 )
 assert(
-  '50. no mutation route is registered',
+  '50. timeline plugin remains GET-only (authoring mutations are a sibling plugin)',
   pluginSource.includes("req.method !== 'GET'") &&
     !/['"]POST['"]|['"]PATCH['"]|['"]PUT['"]|['"]DELETE['"]/.test(pluginSource),
 )
