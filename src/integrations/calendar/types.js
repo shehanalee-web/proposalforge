@@ -23,6 +23,19 @@ export const CALENDAR_ACTIVITY_KIND = ACTIVITY_KIND.MEETING
 export const CALENDAR_ACTIVITY_TYPE = ACTIVITY_NATIVE_TYPE.MEETING_LOGGED
 
 /**
+ * Slice 13.2 ingest outcomes. Uncorrelated events are not a Native Activity
+ * and are not stored. H16.13 does not invent a subject.
+ */
+export const CALENDAR_INGEST_STATUS = Object.freeze({
+  INGESTED: 'ingested',
+  UNCORRELATED: 'uncorrelated',
+})
+
+export const CALENDAR_INGEST_STATUSES = Object.freeze(
+  Object.values(CALENDAR_INGEST_STATUS),
+)
+
+/**
  * Neutral content is always plain text plus an optional opaque reference.
  * HTML, MIME, ICS, and vendor payload types are not part of the envelope.
  */

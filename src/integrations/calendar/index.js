@@ -2,8 +2,9 @@
  * H16.13 — Calendar source.
  *
  * Slice 13.1: vendor-neutral inbound event envelope.
- * Does not persist, ingest, poll, or authenticate. Native Activity remains
- * the write-side owner. No calendar store, HTTP, OAuth, or TimelineSource.
+ * Slice 13.2: map envelope → createStudioActivity() only when the caller
+ * supplies an existing Native Activity subject. Uncorrelated events are not ingested.
+ * Native Activity remains the write-side owner. No calendar store, HTTP, or OAuth.
  */
 
 export {
@@ -18,6 +19,8 @@ export {
   CALENDAR_LIMITS,
   CALENDAR_FORBIDDEN_FIELDS,
   CALENDAR_FORBIDDEN_CONTENT_FIELDS,
+  CALENDAR_INGEST_STATUS,
+  CALENDAR_INGEST_STATUSES,
 } from './types.js'
 
 export {
@@ -25,3 +28,11 @@ export {
   makeInboundCalendarEvent,
   cloneInboundCalendarEvent,
 } from './schema.js'
+
+export {
+  isCalendarSubjectSupplied,
+  makeNativeCalendarIdempotencyKey,
+  mapCalendarEventToStudioActivityInput,
+} from './map.js'
+
+export { ingestInboundCalendarEvent } from './ingest.js'
