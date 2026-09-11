@@ -357,12 +357,15 @@ function pathExists(relativePath) {
 }
 
 assert(
-  'foundation file layout stays minimal (no outbox/delivery/calendar/messaging)',
+  'foundation file layout stays minimal (no outbox/delivery/messaging; calendar envelope only)',
   !integrationSources.includes('processOutbox') &&
     !pathExists('src/integrations/outbox') &&
     !pathExists('src/integrations/delivery') &&
-    !pathExists('src/integrations/calendar') &&
-    !pathExists('src/integrations/messaging'),
+    !pathExists('src/integrations/messaging') &&
+    pathExists('src/integrations/calendar') &&
+    !pathExists('src/integrations/calendar/provider.js') &&
+    !pathExists('src/integrations/calendar/oauth.js') &&
+    !pathExists('src/integrations/calendar/store.js'),
 )
 
 console.log('— Hard boundaries —')
