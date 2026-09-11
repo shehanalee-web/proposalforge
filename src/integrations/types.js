@@ -76,6 +76,9 @@ export const INTEGRATION_REJECTION_REASON = Object.freeze({
  * surface (H16.9). Runtime enablement is the flag AND a healthy durable
  * adapter — native Activity records must never be written to ephemeral JSON
  * storage.
+ * H16.12 Slice 12.1 is a mailbox envelope contract only. emailDelivery,
+ * calendar, oauth, vendorSdks, and backgroundWorkers stay false — no live
+ * mailbox integration exists yet.
  */
 export const INTEGRATION_CAPABILITIES = Object.freeze({
   integrationFoundation: true,
