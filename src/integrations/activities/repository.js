@@ -1,8 +1,8 @@
 /**
  * H16.7 — Studio-facing timeline read facade.
  *
- * Read-only by construction: there is no create, update, transition, or delete
- * here, and none can be added without a durable repository under H16.8.
+ * Read-only by construction. Native writes live in `authoring.js` and call
+ * the persistence port. This module must not grow create/update/archive.
  *
  * Naming note: H16.8's write-side ActivityRepository lives under `persistence/`
  * so it does not collide with this read facade.

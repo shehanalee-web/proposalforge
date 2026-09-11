@@ -1,9 +1,10 @@
 /**
- * H16.7 — Activity timeline barrel.
+ * H16.7–H16.9 — Activity timeline barrel.
  *
- * Read-only projection surface. No write path is exported because none exists.
- * H16.8 persistence contracts live under `persistence/` and are re-exported
- * as describe/health only — never create/update/archive.
+ * Read-only projection plus the H16.9 studio write facade. Persistence
+ * factories stay under `persistence/` and are re-exported as describe/health
+ * only. activityAuthoring stays false until HTTP exists (9.4) and the flag
+ * flips (9.5).
  */
 
 export {
@@ -100,6 +101,14 @@ export {
   describeStudioTimelineSources,
   getActivityCapabilities,
 } from './repository.js'
+
+export {
+  STUDIO_ACTIVITY_AUTHORING_ACTOR,
+  createStudioActivity,
+  getStudioActivity,
+  updateStudioActivity,
+  archiveStudioActivity,
+} from './authoring.js'
 
 export {
   deriveTimelineEntryId,

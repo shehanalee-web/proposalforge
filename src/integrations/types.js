@@ -8,8 +8,9 @@
  * H16.6 enables crm (vendor-neutral sync consumer; mock adapter only, no network).
  * H16.7 enables activityTimeline (read-only projection; no native write path).
  * H16.8 enables activityPersistence (the ActivityRepository port exists).
- * activityAuthoring stays false until a healthy durable adapter is registered
- * AND a public write surface exists (H16.9). Delivery/vendors/workers stay off.
+ * H16.9 Slice 9.1 adds the studio write facade. activityAuthoring stays false
+ * until a healthy durable adapter is registered AND a public write surface
+ * exists (9.4–9.5). Delivery/vendors/workers stay off.
  * CommercialClose providers remain H15.6.
  */
 
@@ -71,9 +72,10 @@ export const INTEGRATION_REJECTION_REASON = Object.freeze({
  * only. Delivery / vendors / OAuth / workers stay false.
  *
  * activityTimeline is a read-only projection. activityPersistence means the
- * write-side port exists (H16.8). activityAuthoring stays false until a
- * healthy durable adapter is registered AND a public write surface exists —
- * native Activity records must never be written to ephemeral JSON storage.
+ * write-side port exists (H16.8). The H16.9 studio facade can call that port;
+ * activityAuthoring stays false until a healthy durable adapter is registered
+ * AND a public write surface exists — native Activity records must never be
+ * written to ephemeral JSON storage.
  */
 export const INTEGRATION_CAPABILITIES = Object.freeze({
   integrationFoundation: true,

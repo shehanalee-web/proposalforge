@@ -1,11 +1,12 @@
 /**
- * H16.1–H16.8 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
- * + CRM + Activity Timeline + Activity persistence.
+ * H16.1–H16.9 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
+ * + CRM + Activity Timeline + Activity persistence + Activity authoring facade.
  *
  * H16.7 adds a read-only activity timeline projection. It owns no store, writes
  * nothing, and exposes no mutation surface.
- * H16.8 Slice 8.5 wires null/postgres boot into capabilities. Native writes
- * are not exposed as HTTP from this barrel.
+ * H16.8 Slice 8.5 wires null/postgres boot into capabilities.
+ * H16.9 Slice 9.1 adds the studio write facade over the registered repository.
+ * activityAuthoring stays false. Native writes are not exposed as HTTP yet.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -440,6 +441,11 @@ export {
   listStudioTimelineForProposal,
   describeStudioTimelineSources,
   getActivityCapabilities,
+  STUDIO_ACTIVITY_AUTHORING_ACTOR,
+  createStudioActivity,
+  getStudioActivity,
+  updateStudioActivity,
+  archiveStudioActivity,
   deriveTimelineEntryId,
   sanitizeTimelineAttributes,
   resolveTimelineTimestamps,
