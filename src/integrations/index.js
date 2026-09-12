@@ -1,8 +1,8 @@
 /**
- * H16.1–H16.13 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
+ * H16.1–H16.14 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
  * + CRM + Activity Timeline + Activity persistence + Activity authoring facade
  * + Activity entity registry + Native Activity intake + mailbox envelope
- * + calendar event envelope.
+ * + calendar event envelope + studio principal contract.
  *
  * H16.7 adds a read-only activity timeline projection. It owns no store, writes
  * nothing, and exposes no mutation surface.
@@ -17,6 +17,9 @@
  * H16.13 Slice 13.1 adds a vendor-neutral inbound calendar event envelope.
  * Slice 13.2 maps that envelope through createStudioActivity. It does not persist a
  * calendar store, poll, authenticate, or register a TimelineSource.
+ * H16.14 Slice 14.1 adds a Studio Principal contract (id, kind, displayName,
+ * companyId). It does not bind HTTP, replace the authoring fixture, or add
+ * login, JWT, cookies, sessions, or OAuth.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -571,3 +574,13 @@ export {
   mapCalendarEventToStudioActivityInput,
   ingestInboundCalendarEvent,
 } from './calendar/index.js'
+
+export {
+  STUDIO_PRINCIPAL_SCHEMA_VERSION,
+  STUDIO_PRINCIPAL_KIND,
+  STUDIO_PRINCIPAL_KINDS,
+  STUDIO_PRINCIPAL_LIMITS,
+  STUDIO_PRINCIPAL_FORBIDDEN_FIELDS,
+  makeStudioPrincipal,
+  cloneStudioPrincipal,
+} from './identity/index.js'
