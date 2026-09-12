@@ -40,6 +40,13 @@ const allowedIdentityExports = Object.freeze([
   'STUDIO_PRINCIPAL_FORBIDDEN_FIELDS',
   'makeStudioPrincipal',
   'cloneStudioPrincipal',
+  'readClaimedStudioIdentity',
+  'getRequestStudioPrincipal',
+  'setRequestStudioPrincipal',
+  'bindStudioPrincipal',
+  'resolveStudioCatalogPrincipal',
+  'bindStudioRequest',
+  'studioRequestIdentity',
 ])
 
 let passed = 0
@@ -326,9 +333,9 @@ console.log('— H16.14.1 studio principal contract —')
     .filter((name) => name.endsWith('.js'))
     .sort()
   assert(
-    '8. identity barrel is contract-only',
+    '8. identity barrel is contract plus request binding',
     exported.join(',') === [...allowedIdentityExports].sort().join(',') &&
-      identityFiles.join(',') === 'index.js,schema.js,types.js' &&
+      identityFiles.join(',') === 'bind.js,index.js,schema.js,types.js' &&
       STUDIO_PRINCIPAL_SCHEMA_VERSION === 1 &&
       typeof identityApi.makeStudioPrincipal === 'function' &&
       !exported.includes('createStudioActivity') &&

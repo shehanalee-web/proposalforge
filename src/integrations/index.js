@@ -18,8 +18,10 @@
  * Slice 13.2 maps that envelope through createStudioActivity. It does not persist a
  * calendar store, poll, authenticate, or register a TimelineSource.
  * H16.14 Slice 14.1 adds a Studio Principal contract (id, kind, displayName,
- * companyId). It does not bind HTTP, replace the authoring fixture, or add
- * login, JWT, cookies, sessions, or OAuth.
+ * companyId). Slice 14.2 binds studio HTTP actorId/companyId claims to that
+ * principal. Query/body cannot impersonate a bound actor or cross tenants.
+ * The current trusted source is the workflow actor catalog. It does not
+ * replace the authoring fixture or add login, JWT, cookies, sessions, or OAuth.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -583,4 +585,11 @@ export {
   STUDIO_PRINCIPAL_FORBIDDEN_FIELDS,
   makeStudioPrincipal,
   cloneStudioPrincipal,
+  readClaimedStudioIdentity,
+  getRequestStudioPrincipal,
+  setRequestStudioPrincipal,
+  bindStudioPrincipal,
+  resolveStudioCatalogPrincipal,
+  bindStudioRequest,
+  studioRequestIdentity,
 } from './identity/index.js'
