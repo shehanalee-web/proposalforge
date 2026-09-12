@@ -1,8 +1,11 @@
 /**
  * H16.14 — Studio Principal.
  *
- * Slice 14.1: canonical identity contract only. No HTTP binding, login,
- * JWT, cookies, sessions, OAuth, or authoring write-path change.
+ * Slice 14.1: canonical identity contract.
+ * Slice 14.2: request binding. Query/body actorId and companyId are claims.
+ * The current trusted source is the workflow actor catalog until real auth
+ * exists. No login, JWT, cookies, sessions, OAuth, or authoring write-path
+ * change.
  */
 
 export {
@@ -14,3 +17,13 @@ export {
 } from './types.js'
 
 export { makeStudioPrincipal, cloneStudioPrincipal } from './schema.js'
+
+export {
+  readClaimedStudioIdentity,
+  getRequestStudioPrincipal,
+  setRequestStudioPrincipal,
+  bindStudioPrincipal,
+  resolveStudioCatalogPrincipal,
+  bindStudioRequest,
+  studioRequestIdentity,
+} from './bind.js'

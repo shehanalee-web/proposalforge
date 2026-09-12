@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import { ensureRuntimeData } from './dataPaths.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
-import { DEFAULT_ACTOR_ID } from '../src/workflow/actors.js'
+import { studioRequestIdentity } from '../src/integrations/identity/index.js'
 import {
   configureLivingEventStore,
   replaceLivingEngagementEvents,
@@ -120,16 +120,6 @@ function fail(res, error) {
   return json(res, status, { message: error.message || 'Commercial close request failed.' })
 }
 
-function actorFrom(body, query) {
-  return {
-    id: body?.actorId || query?.get?.('actorId') || DEFAULT_ACTOR_ID,
-  }
-}
-
-function companyFrom(body, query) {
-  return body?.companyId || query?.get?.('companyId') || DEFAULT_COMPANY_ID
-}
-
 /**
  * Persist commercial closes to `data/commercial-closes.json`.
  * Never writes `data/proposals.json`.
@@ -242,6 +232,12 @@ export function commercialClosePlugin() {
     if (!url.startsWith('/api/commercial-close')) return next()
 
     const method = req.method || 'GET'
+    function actorFrom(body, query) {
+      return studioRequestIdentity(req, body, query).actor
+    }
+    function companyFrom(body, query) {
+      return studioRequestIdentity(req, body, query).companyId
+    }
 
     try {
       // Hydrate inside try/catch so unknown persisted event types surface as

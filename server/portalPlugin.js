@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path'
 import { ensureRuntimeData } from './dataPaths.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
-import { DEFAULT_ACTOR_ID } from '../src/workflow/actors.js'
+import { studioRequestIdentity } from '../src/integrations/identity/index.js'
 import { findWorkflowByProposal } from '../src/workflow/store.js'
 import { WORKFLOW_STATUS } from '../src/workflow/types.js'
 import {
@@ -103,12 +103,6 @@ function fail(res, error) {
   return json(res, status, { message: error.message || 'Portal request failed.' })
 }
 
-function actorFrom(body, query) {
-  return {
-    id: body?.actorId || query?.get?.('actorId') || DEFAULT_ACTOR_ID,
-  }
-}
-
 function companyFrom(body, query) {
   return body?.companyId || query?.get?.('companyId') || DEFAULT_COMPANY_ID
 }
@@ -188,12 +182,13 @@ export function portalPlugin() {
       const one = matchRoute(url, '/api/proposal-portal/:proposalId')
       if (method === 'GET' && one) {
         const query = queryOf(url)
+        const identity = studioRequestIdentity(req, null, query)
         const create = query.get('create') === '1'
         return json(res, 200, {
           portal: getPortal({
-            companyId: companyFrom(null, query),
+            companyId: identity.companyId,
             proposalId: one.proposalId,
-            actor: actorFrom(null, query),
+            actor: identity.actor,
             create,
           }),
         })
@@ -202,21 +197,23 @@ export function portalPlugin() {
       const preview = matchRoute(url, '/api/proposal-portal/:proposalId/preview')
       if (method === 'GET' && preview) {
         const query = queryOf(url)
+        const identity = studioRequestIdentity(req, null, query)
         return json(res, 200, previewPortal({
-          companyId: companyFrom(null, query),
+          companyId: identity.companyId,
           proposalId: preview.proposalId,
-          actor: actorFrom(null, query),
+          actor: identity.actor,
         }))
       }
 
       const create = matchRoute(url, '/api/proposal-portal/:proposalId/create')
       if (method === 'POST' && create) {
         const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        const identity = studioRequestIdentity(req, body, queryOf(url))
         return json(res, 201, {
           portal: createPortal({
-            companyId: companyFrom(body),
+            companyId: identity.companyId,
             proposalId: create.proposalId,
-            actor: actorFrom(body),
+            actor: identity.actor,
           }),
         })
       }
@@ -224,10 +221,11 @@ export function portalPlugin() {
       const publish = matchRoute(url, '/api/proposal-portal/:proposalId/publish')
       if (method === 'POST' && publish) {
         const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        const identity = studioRequestIdentity(req, body, queryOf(url))
         return json(res, 200, publishPortal({
-          companyId: companyFrom(body),
+          companyId: identity.companyId,
           proposalId: publish.proposalId,
-          actor: actorFrom(body),
+          actor: identity.actor,
           expiresAt: body.expiresAt ?? null,
           clientLabel: body.clientLabel,
         }))
@@ -236,11 +234,12 @@ export function portalPlugin() {
       const revoke = matchRoute(url, '/api/proposal-portal/:proposalId/revoke')
       if (method === 'POST' && revoke) {
         const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        const identity = studioRequestIdentity(req, body, queryOf(url))
         return json(res, 200, {
           portal: revokePortal({
-            companyId: companyFrom(body),
+            companyId: identity.companyId,
             proposalId: revoke.proposalId,
-            actor: actorFrom(body),
+            actor: identity.actor,
           }),
         })
       }

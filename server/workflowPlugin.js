@@ -28,8 +28,8 @@ import {
   configureWorkflowStore,
   replaceWorkflowRecords,
 } from '../src/workflow/store.js'
-import { DEFAULT_ACTOR_ID } from '../src/workflow/actors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
+import { studioRequestIdentity } from '../src/integrations/identity/index.js'
 
 function json(res, status, body) {
   const payload = JSON.stringify(body)
@@ -105,12 +105,6 @@ function fail(res, error) {
   return json(res, status, { message: error.message || 'Workflow request failed.' })
 }
 
-function actorFrom(body, query) {
-  return {
-    id: body?.actorId || query?.get?.('actorId') || DEFAULT_ACTOR_ID,
-  }
-}
-
 function companyFrom(body, query) {
   return body?.companyId || query?.get?.('companyId') || DEFAULT_COMPANY_ID
 }
@@ -173,10 +167,11 @@ export function workflowPlugin() {
       const one = matchRoute(url, '/api/workflow/:proposalId')
       if (method === 'GET' && one) {
         const query = queryOf(url)
+        const identity = studioRequestIdentity(req, null, query)
         const workflow = getWorkflow({
-          companyId: companyFrom(null, query),
+          companyId: identity.companyId,
           proposalId: one.proposalId,
-          actor: actorFrom(null, query),
+          actor: identity.actor,
         })
         return json(res, 200, { workflow })
       }
@@ -184,10 +179,11 @@ export function workflowPlugin() {
       const summary = matchRoute(url, '/api/workflow/:proposalId/summary')
       if (method === 'GET' && summary) {
         const query = queryOf(url)
+        const identity = studioRequestIdentity(req, null, query)
         const workflow = getWorkflow({
-          companyId: companyFrom(null, query),
+          companyId: identity.companyId,
           proposalId: summary.proposalId,
-          actor: actorFrom(null, query),
+          actor: identity.actor,
         })
         return json(res, 200, {
           summary: getWorkflowSummary({ workflow }),
@@ -197,11 +193,12 @@ export function workflowPlugin() {
       const transition = matchRoute(url, '/api/workflow/:proposalId/transition')
       if (method === 'POST' && transition) {
         const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        const identity = studioRequestIdentity(req, body, queryOf(url))
         return json(res, 200, {
           workflow: transitionWorkflow({
-            companyId: companyFrom(body),
+            companyId: identity.companyId,
             proposalId: transition.proposalId,
-            actor: actorFrom(body),
+            actor: identity.actor,
             to: body.to,
             note: body.note,
           }),
@@ -211,10 +208,11 @@ export function workflowPlugin() {
       const comments = matchRoute(url, '/api/workflow/:proposalId/comments')
       if (method === 'POST' && comments) {
         const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        const identity = studioRequestIdentity(req, body, queryOf(url))
         const result = addComment({
-          companyId: companyFrom(body),
+          companyId: identity.companyId,
           proposalId: comments.proposalId,
-          actor: actorFrom(body),
+          actor: identity.actor,
           body: body.body,
           blockId: body.blockId,
         })
@@ -224,10 +222,11 @@ export function workflowPlugin() {
       const comment = matchRoute(url, '/api/workflow/:proposalId/comments/:commentId')
       if (method === 'PATCH' && comment) {
         const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        const identity = studioRequestIdentity(req, body, queryOf(url))
         const input = {
-          companyId: companyFrom(body),
+          companyId: identity.companyId,
           proposalId: comment.proposalId,
-          actor: actorFrom(body),
+          actor: identity.actor,
           commentId: comment.commentId,
         }
         const action = body.action
@@ -243,10 +242,11 @@ export function workflowPlugin() {
       const tasks = matchRoute(url, '/api/workflow/:proposalId/tasks')
       if (method === 'POST' && tasks) {
         const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        const identity = studioRequestIdentity(req, body, queryOf(url))
         const input = {
-          companyId: companyFrom(body),
+          companyId: identity.companyId,
           proposalId: tasks.proposalId,
-          actor: actorFrom(body),
+          actor: identity.actor,
         }
         const result = body.finding
           ? createTaskFromFinding({ ...input, finding: body.finding, source: body.source })
@@ -257,11 +257,12 @@ export function workflowPlugin() {
       const task = matchRoute(url, '/api/workflow/:proposalId/tasks/:taskId')
       if (method === 'PATCH' && task) {
         const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        const identity = studioRequestIdentity(req, body, queryOf(url))
         return json(res, 200, {
           workflow: updateTask({
-            companyId: companyFrom(body),
+            companyId: identity.companyId,
             proposalId: task.proposalId,
-            actor: actorFrom(body),
+            actor: identity.actor,
             taskId: task.taskId,
             changes: body.changes ?? body,
           }),
@@ -271,10 +272,11 @@ export function workflowPlugin() {
       const assign = matchRoute(url, '/api/workflow/:proposalId/assign')
       if (method === 'POST' && assign) {
         const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        const identity = studioRequestIdentity(req, body, queryOf(url))
         const input = {
-          companyId: companyFrom(body),
+          companyId: identity.companyId,
           proposalId: assign.proposalId,
-          actor: actorFrom(body),
+          actor: identity.actor,
         }
         let workflow
         if (body.removeReviewerId) {
@@ -292,10 +294,11 @@ export function workflowPlugin() {
       const approvals = matchRoute(url, '/api/workflow/:proposalId/approvals')
       if (method === 'POST' && approvals) {
         const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
+        const identity = studioRequestIdentity(req, body, queryOf(url))
         const input = {
-          companyId: companyFrom(body),
+          companyId: identity.companyId,
           proposalId: approvals.proposalId,
-          actor: actorFrom(body),
+          actor: identity.actor,
           note: body.note,
           blockId: body.blockId,
         }
