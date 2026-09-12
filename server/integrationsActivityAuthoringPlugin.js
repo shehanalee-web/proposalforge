@@ -16,6 +16,7 @@ import {
   ACTIVITY_SUBJECT_TYPE,
   assertProposalAccess,
   assertActivityEntityAccess,
+  bindStudioRequest,
   createStudioActivity,
   getStudioActivity,
   updateStudioActivity,
@@ -173,12 +174,14 @@ export function integrationsActivityAuthoringPlugin() {
       try {
         refuseIfDisabled()
         const body = parseJsonBody(await readBody(req))
-        const companyId = body.companyId || DEFAULT_COMPANY_ID
+        const principal = bindStudioRequest({ req, body, query: queryOf(url) })
+        const companyId = principal.companyId
         const headerKey = readIdempotencyKey(req)
         const input = {
           ...body,
           companyId,
           idempotencyKey: headerKey ?? body.idempotencyKey ?? null,
+          principal,
         }
         assertProposalAccess(companyId, input.subject ?? {})
         assertActivityEntityAccess(companyId, input.subject ?? {})
