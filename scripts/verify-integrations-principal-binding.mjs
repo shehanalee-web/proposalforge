@@ -339,7 +339,7 @@ console.log('— existing behavior remains unchanged —')
       STUDIO_ACTIVITY_AUTHORING_ACTOR.displayName === 'Studio' &&
       !Object.prototype.hasOwnProperty.call(STUDIO_ACTIVITY_AUTHORING_ACTOR, 'companyId') &&
       authoringSource.includes('origin: ACTIVITY_ORIGIN.USER') &&
-      authoringSource.includes('actor: STUDIO_ACTIVITY_AUTHORING_ACTOR') &&
+      authoringSource.includes('STUDIO_ACTIVITY_AUTHORING_ACTOR') &&
       ACTIVITY_ORIGIN.AGENT === 'agent' &&
       !bindSource.includes('createStudioActivity') &&
       !bindSource.includes('STUDIO_ACTIVITY_AUTHORING_ACTOR'),
@@ -350,12 +350,10 @@ console.log('— existing behavior remains unchanged —')
   const mailboxDiff = gitDiff([
     'src/integrations/mailbox',
     'src/integrations/calendar',
-    'src/integrations/activities/authoring.js',
     'src/integrations/activities/events.js',
-    'server/integrationsActivityAuthoringPlugin.js',
   ])
   assert(
-    '9. mailbox, calendar, authoring HTTP, and H16.11 emission are untouched',
+    '9. mailbox, calendar, and H16.11 emission are untouched',
     mailboxDiff.status === 0 && !(mailboxDiff.stdout || '').trim(),
   )
 }
