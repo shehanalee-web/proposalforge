@@ -57,12 +57,14 @@ function BlockMiniToolbar({
         onClick={onHide}
       />
       <Tool label="Delete" icon="trash" danger disabled={disabled} onClick={onDelete} />
-      <Tool
-        label="Save to Company Knowledge"
-        icon="bookmark"
-        disabled={disabled}
-        onClick={onSaveKnowledge}
-      />
+      {onSaveKnowledge ? (
+        <Tool
+          label="Save to Company Knowledge"
+          icon="bookmark"
+          disabled={disabled}
+          onClick={onSaveKnowledge}
+        />
+      ) : null}
       <Tool
         label="AI (coming later)"
         icon="spark"

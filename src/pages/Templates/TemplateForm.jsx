@@ -4,6 +4,13 @@ import { formatCurrency } from '../../utils/format.js'
 import { sumItemAmounts } from '../../models/template.js'
 import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
 import LayoutPicker from '../../layouts/screen/LayoutPicker.jsx'
+import { EditorWorkspaceProvider } from '../../components/Editor/EditorWorkspaceContext.jsx'
+import BlockEditor from '../../blocks/editor/BlockEditor.jsx'
+import {
+  convertLegacyTemplateToBlocks,
+  hasCanonicalBlocks,
+  mirrorLegacyFromBlocks,
+} from '../../utils/templateBlocks.js'
 import QuestionnaireBuilder from './QuestionnaireBuilder.jsx'
 import styles from './TemplateForm.module.css'
 
@@ -35,12 +42,23 @@ function TemplateForm({
   submittingLabel = 'Saving…',
 }) {
   const [tab, setTab] = useState('details')
+  const canonical = hasCanonicalBlocks(values.blocks)
+  const mirrored = canonical ? mirrorLegacyFromBlocks(values.blocks, values) : null
+  const pricingItems = mirrored?.items ?? values.items
   const pricingTotal = sumItemAmounts(
-    values.items.map((item) => ({
+    pricingItems.map((item) => ({
       ...item,
       amount: item.amount === '' ? 0 : Number(item.amount),
     })),
   )
+
+  function convertToBlocks() {
+    const blocks = convertLegacyTemplateToBlocks(values)
+    onChange({
+      blocks,
+      ...mirrorLegacyFromBlocks(blocks, values),
+    })
+  }
 
   function handleChange(event) {
     onChange(event.target.name, event.target.value)
@@ -161,6 +179,44 @@ function TemplateForm({
         label="Default layout"
       />
 
+      {canonical ? (
+        <fieldset className={styles.group}>
+          <legend className={styles.legend}>Block Engine assembly</legend>
+          <p className={styles.empty}>
+            This template owns a Block Engine assembly. Sections, pricing and terms
+            stay as compatibility mirrors and update when you save.
+          </p>
+          <EditorWorkspaceProvider>
+            <BlockEditor
+              blocks={values.blocks}
+              onChange={(blocks) => onChange('blocks', blocks)}
+              disabled={submitting}
+              currency={DEFAULT_CURRENCY}
+              knowledgeCompanyId={null}
+            />
+          </EditorWorkspaceProvider>
+        </fieldset>
+      ) : (
+        <fieldset className={styles.group}>
+          <legend className={styles.legend}>Block Engine assembly</legend>
+          <p className={styles.empty}>
+            This template still uses sections and line items. Convert it to a Block
+            Engine assembly when you want the same editor proposals use. Existing
+            proposals are not changed.
+          </p>
+          <button
+            type="button"
+            className={styles.add}
+            onClick={convertToBlocks}
+            disabled={submitting}
+          >
+            Convert to Block Engine assembly
+          </button>
+        </fieldset>
+      )}
+
+      {canonical ? null : (
+      <>
       <fieldset className={styles.group}>
         <legend className={styles.legend}>Sections</legend>
         {values.sections.length === 0 ? (
@@ -287,6 +343,8 @@ function TemplateForm({
           Add line item
         </button>
       </fieldset>
+      </>
+      )}
 
       <div className={styles.pricing}>
         <p className={styles.pricingLabel}>Pricing</p>
@@ -294,10 +352,13 @@ function TemplateForm({
           {formatCurrency(pricingTotal, DEFAULT_CURRENCY)}
         </p>
         <p className={styles.pricingHint}>
-          Total is the sum of line items. It is copied onto new proposals.
+          {canonical
+            ? 'Total is the sum of Block Engine pricing items. It is copied onto new proposals.'
+            : 'Total is the sum of line items. It is copied onto new proposals.'}
         </p>
       </div>
 
+      {canonical ? null : (
       <Field id="terms" label="Terms & conditions" error={fieldErrors.terms}>
         <textarea
           id="terms"
@@ -309,6 +370,7 @@ function TemplateForm({
           disabled={submitting}
         />
       </Field>
+      )}
 
       <Field id="notes" label="Notes" error={fieldErrors.notes}>
         <textarea
