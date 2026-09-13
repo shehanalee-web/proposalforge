@@ -7,8 +7,9 @@
  * read-only native_activity source. Slice 9.4 adds authoring HTTP. Slice 9.5
  * enables the activityAuthoring flag; runtime still requires durable health.
  * H16.15 Slice 15.1 exports the agent-origin request contract. Slice 15.2
- * exports the company-scoped approval-gate record. It does not persist Native
- * Activity or change createStudioActivity.
+ * exports the company-scoped approval-gate record. Slice 15.3 exports the
+ * execution-boundary authorization for an already-approved request. It does
+ * not persist Native Activity or change createStudioActivity.
  */
 
 export {
@@ -128,6 +129,12 @@ export {
   approveAgentOriginApproval,
   rejectAgentOriginApproval,
 } from './agentOriginApproval.js'
+
+export {
+  AGENT_ORIGIN_EXECUTION_SCHEMA_VERSION,
+  AGENT_ORIGIN_EXECUTION_STATUS,
+  authorizeAgentOriginExecution,
+} from './agentOriginExecution.js'
 
 export { emitNativeActivityCreated } from './events.js'
 
