@@ -2,7 +2,8 @@
  * H16.1–H16.15 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
  * + CRM + Activity Timeline + Activity persistence + Activity authoring facade
  * + Activity entity registry + Native Activity intake + mailbox envelope
- * + calendar event envelope + studio principal contract + agent-origin contract.
+ * + calendar event envelope + studio principal contract + agent-origin contract
+ * + agent-origin approval-gate contract.
  *
  * H16.7 adds a read-only activity timeline projection. It owns no store, writes
  * nothing, and exposes no mutation surface.
@@ -24,8 +25,10 @@
  * a resolved Studio Principal onto createStudioActivity. Direct callers without
  * a principal keep the authoring fixture fallback. It does not add login, JWT,
  * cookies, sessions, or OAuth.
- * H16.15 Slice 15.1 adds the agent-origin request contract. It does not
- * persist agent rows, add HTTP, or change createStudioActivity.
+ * H16.15 Slice 15.1 adds the agent-origin request contract. Slice 15.2 adds
+ * the company-scoped pending / approved / rejected approval-gate record.
+ * Approver is a Studio Principal. It does not persist Native Activity, add
+ * HTTP, or change createStudioActivity.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -469,6 +472,14 @@ export {
   updateStudioActivity,
   archiveStudioActivity,
   makeAgentOriginActivityRequest,
+  AGENT_ORIGIN_APPROVAL_SCHEMA_VERSION,
+  AGENT_ORIGIN_APPROVAL_ID_PREFIX,
+  AGENT_ORIGIN_APPROVAL_STATUS,
+  AGENT_ORIGIN_APPROVAL_STATUSES,
+  makeAgentOriginApproval,
+  cloneAgentOriginApproval,
+  approveAgentOriginApproval,
+  rejectAgentOriginApproval,
   emitNativeActivityCreated,
   deriveTimelineEntryId,
   sanitizeTimelineAttributes,
