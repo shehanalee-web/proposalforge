@@ -5,7 +5,8 @@
  * + calendar event envelope + studio principal contract + agent-origin contract
  * + agent-origin approval-gate contract + agent-origin execution-boundary
  * contract + agent-origin attribution contract + agent-origin write facade
- * + agent-origin read facade + agent-origin update facade.
+ * + agent-origin read facade + agent-origin update facade
+ * + agent-origin archive facade.
  *
  * H16.7 adds a read-only activity timeline projection. It owns no store, writes
  * nothing, and exposes no mutation surface.
@@ -35,7 +36,8 @@
  * ActivityRepository and emits H16.11. Slice 15.6 reads those persisted
  * agent-origin Native Activities through the same repository. Slice 15.7
  * updates mutable fields on those records and fails closed on attribution
- * and tenancy. Approver is a Studio Principal. It does not change
+ * and tenancy. Slice 15.8 archives those records through the same
+ * repository. Approver is a Studio Principal. It does not change
  * createStudioActivity.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
@@ -497,6 +499,7 @@ export {
   getAgentOriginActivity,
   listAgentOriginActivities,
   updateAgentOriginActivity,
+  archiveAgentOriginActivity,
   emitNativeActivityCreated,
   deriveTimelineEntryId,
   sanitizeTimelineAttributes,

@@ -14,7 +14,8 @@
  * ActivityRepository and emits H16.11. Slice 15.6 reads persisted
  * agent-origin Native Activities through the same repository. Slice 15.7
  * updates mutable fields on those records and fails closed on attribution
- * and tenancy. It does not change createStudioActivity.
+ * and tenancy. Slice 15.8 archives those records through the same
+ * repository. It does not change createStudioActivity.
  */
 
 export {
@@ -154,6 +155,8 @@ export {
 } from './agentOriginRead.js'
 
 export { updateAgentOriginActivity } from './agentOriginUpdate.js'
+
+export { archiveAgentOriginActivity } from './agentOriginArchive.js'
 
 export { emitNativeActivityCreated } from './events.js'
 
