@@ -4,8 +4,11 @@ import {
   syncLegacyFromBlocks,
 } from '../blocks/hydrate.js'
 import { insertLibraryBlock, makeBlock } from '../blocks/instance.js'
+import { findTemplateForService } from '../models/service.js'
 import { normalizeContentBlockIds } from '../models/template.js'
+import { NotFoundError } from '../services/errors.js'
 import { fetchLibraryBlockById } from '../services/libraryBlockService.js'
+import { fetchTemplateById, updateTemplate } from '../services/templateService.js'
 
 /**
  * Whether a template owns a canonical Block Engine assembly.
@@ -77,6 +80,51 @@ export async function composeTemplateContentBlocks(
     blocks: nextBlocks,
     contentBlockIds: contentBlockIdsFromBlocks(nextBlocks),
   }
+}
+
+/**
+ * Apply a service's Content Library composition intent onto a template.
+ * Delegates to composeTemplateContentBlocks; does not invent a second composer.
+ *
+ * @param {import('../models/template.js').ProposalTemplate | import('../blocks/instance.js').BlockInstance[]} template
+ * @param {Pick<import('../models/service.js').Service, 'contentBlockIds'>} [service]
+ */
+export async function composeTemplateFromService(template, service) {
+  return composeTemplateContentBlocks(template, service?.contentBlockIds ?? [])
+}
+
+function blockIds(blocks) {
+  return (blocks ?? []).map((block) => block.id)
+}
+
+/**
+ * Service Editor Apply path: resolve the linked template, fetch the stored
+ * record, compose into that record, and persist only when new instances appear.
+ *
+ * @param {import('../models/template.js').ProposalTemplate[]} templates
+ * @param {Pick<import('../models/service.js').Service, 'id' | 'templateId' | 'contentBlockIds'>} service
+ */
+export async function applyServiceComponentsToTemplate(templates, service) {
+  const resolved = findTemplateForService(templates, service)
+  if (!resolved) {
+    throw new NotFoundError('No default template is linked to this service.')
+  }
+
+  const stored = await fetchTemplateById(resolved.id)
+  const composed = await composeTemplateFromService(stored, service)
+  const storedIds = new Set(blockIds(stored.blocks))
+  const added = (composed.blocks ?? []).filter((block) => !storedIds.has(block.id))
+
+  if (added.length === 0) {
+    return { template: stored, updated: false }
+  }
+
+  const template = await updateTemplate(stored.id, {
+    blocks: composed.blocks,
+    contentBlockIds: composed.contentBlockIds,
+  })
+
+  return { template, updated: true }
 }
 
 function numericItems(items) {
