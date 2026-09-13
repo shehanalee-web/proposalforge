@@ -40,8 +40,9 @@
  * repository. Approver is a Studio Principal. It does not change
  * createStudioActivity.
  * H16.16 Slice 16.1 adds a vendor-neutral delivery execution contract over a
- * recorded H16.4 delivery intent. It does not send, persist, or enable
- * deliveryExecution.
+ * recorded H16.4 delivery intent. Slice 16.2 consumes that authorization and
+ * fail-closes because deliveryExecution stays false and null_delivery stays
+ * disabled. It does not send or enable deliveryExecution.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -250,9 +251,21 @@ export {
   DELIVERY_EXECUTION_STATUS,
   DELIVERY_EXECUTION_STATUSES,
   DELIVERY_EXECUTION_FORBIDDEN_FIELDS,
+  DELIVERY_OUTCOME_STATUS,
+  DELIVERY_OUTCOME_STATUSES,
+  DELIVERY_FAILURE_CODE,
+  DELIVERY_FAILURE_CODES,
   makeDeliveryExecutionRequest,
   cloneDeliveryExecutionRequest,
   presentStudioDeliveryExecutionRequest,
+  makeDeliveryExecutionOutcome,
+  cloneDeliveryExecutionOutcome,
+  presentStudioDeliveryExecutionOutcome,
+  findDeliveryOutcomeByIntentId,
+  listDeliveryOutcomesForCompany,
+  resetDeliveryOutcomeStore,
+  setDeliveryExecutionCapabilityOverrideForTests,
+  executeDeliveryForIntent,
 } from './delivery/index.js'
 
 export {

@@ -1,9 +1,9 @@
 /**
- * H16.16 Slice 16.1 — Vendor-neutral delivery execution contract.
+ * H16.16 — Vendor-neutral delivery execution contract.
  *
- * Authorization shape over a recorded H16.4 delivery AutomationActionIntent.
- * Does not send, persist, execute, or enable delivery. An agent-origin
- * activity facade is not a delivery executor.
+ * Slice 16.1: authorization shape over a recorded H16.4 delivery intent.
+ * Slice 16.2: fail-closed execute outcomes. Does not send or enable delivery.
+ * An agent-origin activity facade is not a delivery executor.
  */
 
 export const DELIVERY_EXECUTION_SCHEMA_VERSION = 1
@@ -14,6 +14,29 @@ export const DELIVERY_EXECUTION_STATUS = Object.freeze({
 
 export const DELIVERY_EXECUTION_STATUSES = Object.freeze(
   Object.values(DELIVERY_EXECUTION_STATUS),
+)
+
+/**
+ * H16.16 Slice 16.2 — Fail-closed execute outcomes only.
+ * There is no succeeded/sent/delivered/executing status.
+ */
+export const DELIVERY_OUTCOME_STATUS = Object.freeze({
+  REJECTED: 'rejected',
+})
+
+export const DELIVERY_OUTCOME_STATUSES = Object.freeze(
+  Object.values(DELIVERY_OUTCOME_STATUS),
+)
+
+export const DELIVERY_FAILURE_CODE = Object.freeze({
+  CAPABILITY_DISABLED: 'capability_disabled',
+  ADAPTER_DISABLED: 'adapter_disabled',
+  INTENT_CANCELLED: 'intent_cancelled',
+  INVALID_CONFIGURATION: 'invalid_configuration',
+})
+
+export const DELIVERY_FAILURE_CODES = Object.freeze(
+  Object.values(DELIVERY_FAILURE_CODE),
 )
 
 /**

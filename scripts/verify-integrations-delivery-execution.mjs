@@ -19,10 +19,12 @@ import {
   cloneDeliveryExecutionRequest,
   createNullDeliveryAdapter,
   makeAutomationActionIntent,
+  findDeliveryOutcomeByIntentId,
   makeDeliveryExecutionRequest,
   presentStudioDeliveryExecutionRequest,
   recordAutomationActionIntent,
   resetAutomationActionIntentStore,
+  resetDeliveryOutcomeStore,
 } from '../src/integrations/index.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
@@ -32,7 +34,15 @@ const schemaSource = readFileSync(
 )
 const typesSource = readFileSync(join(root, 'src/integrations/delivery/types.js'), 'utf8')
 const indexSource = readFileSync(join(root, 'src/integrations/delivery/index.js'), 'utf8')
-const deliverySource = `${typesSource}\n${schemaSource}\n${indexSource}`
+const executeSource = readFileSync(
+  join(root, 'src/integrations/delivery/execute.js'),
+  'utf8',
+)
+const outcomesSource = readFileSync(
+  join(root, 'src/integrations/delivery/outcomes.js'),
+  'utf8',
+)
+const deliverySource = `${typesSource}\n${schemaSource}\n${indexSource}\n${executeSource}\n${outcomesSource}`
 
 let passed = 0
 let failed = 0
@@ -73,6 +83,7 @@ function plant({ kind, actionType, companyId = DEFAULT_COMPANY_ID, extra = {} })
 }
 
 resetAutomationActionIntentStore({ intents: [] })
+resetDeliveryOutcomeStore({ outcomes: [] })
 
 const recorded = plant({
   kind: INTEGRATION_KIND.DELIVERY,
@@ -265,6 +276,7 @@ assert(
 )
 
 resetAutomationActionIntentStore({ intents: [] })
+resetDeliveryOutcomeStore({ outcomes: [] })
 const ledgerRow = plant({
   kind: INTEGRATION_KIND.DELIVERY,
   actionType: AUTOMATION_RULE_ACTION_TYPE.ENQUEUE_DELIVERY_INTENT,
@@ -282,6 +294,10 @@ assert(
     ledgerAfter[0].status === ledgerBefore[0].status &&
     ledgerAfter[0].updatedAt === ledgerBefore[0].updatedAt,
 )
+assert(
+  '17b. 16.1 authorization does not write a delivery outcome',
+  findDeliveryOutcomeByIntentId(ledgerRow.id) == null,
+)
 
 assert(
   '18. no fetch/http/nodemailer/vendor SDK/worker/execute function/applyMutation usage',
@@ -296,10 +312,10 @@ assert(
 )
 
 assert(
-  '19. no outcome ledger',
-    !existsSync(join(root, 'src/integrations/delivery/outcomes.js')) &&
-    !deliverySource.includes('recordDeliveryOutcome') &&
-    !existsSync(join(root, 'src/integrations/delivery/outcomes')),
+  '19. 16.1 schema does not write the outcome ledger',
+  !schemaSource.includes('recordDeliveryOutcome') &&
+    !schemaSource.includes("from './outcomes.js'") &&
+    !schemaSource.includes('executeDeliveryForIntent'),
 )
 
 assert(
@@ -371,8 +387,8 @@ const deliveryFiles = existsSync(join(root, 'src/integrations/delivery'))
   ? readdirSync(join(root, 'src/integrations/delivery')).filter((name) => name.endsWith('.js')).sort()
   : []
 assert(
-  '30. foundation layout permits ONLY the new contract files and still rejects execution infrastructure',
-  deliveryFiles.join(',') === 'index.js,schema.js,types.js' &&
+  '30. foundation layout permits fail-closed execute files and still rejects transport/oauth/store/outbox',
+  deliveryFiles.join(',') === 'execute.js,index.js,outcomes.js,schema.js,types.js' &&
     !existsSync(join(root, 'src/integrations/delivery/transport.js')) &&
     !existsSync(join(root, 'src/integrations/delivery/oauth.js')) &&
     !existsSync(join(root, 'src/integrations/delivery/store.js')) &&
