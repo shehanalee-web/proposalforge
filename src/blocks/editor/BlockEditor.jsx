@@ -16,6 +16,7 @@ import {
 import { touchLibraryBlock } from '../../services/libraryBlockService.js'
 import { DEFAULT_CURRENCY } from '../../models/proposal.js'
 import { DEFAULT_COMPANY_ID } from '../../knowledge/types.js'
+import { isBlockEditorKnowledgeEnabled } from './knowledgeGate.js'
 import AddBlockPicker from './AddBlockPicker.jsx'
 import BlockFields from './BlockFields.jsx'
 import BlockHeader from './BlockHeader.jsx'
@@ -43,6 +44,7 @@ function BlockEditor({
   proposalId = '',
   knowledgeCompanyId = DEFAULT_COMPANY_ID,
 }) {
+  const knowledgeEnabled = isBlockEditorKnowledgeEnabled(knowledgeCompanyId)
   const list = blocks ?? []
   const {
     previewMode,
@@ -99,7 +101,7 @@ function BlockEditor({
     setActiveBlockId(created.id)
     setInspectorOpen(true)
     update(next)
-    touchLibraryBlock(libraryBlock.id)
+    if (knowledgeEnabled) touchLibraryBlock(libraryBlock.id)
   }
 
   function handleAddAtIndex(type, index) {
@@ -300,7 +302,9 @@ function BlockEditor({
                   }}
                   onHide={() => handleToggleEnabled(block.id, !block.enabled)}
                   onDelete={() => handleRemove(block.id)}
-                  onSaveKnowledge={() => setKnowledgeBlock(block)}
+                  onSaveKnowledge={
+                    knowledgeEnabled ? () => setKnowledgeBlock(block) : undefined
+                  }
                 />
 
                 <BlockHeader
@@ -351,13 +355,15 @@ function BlockEditor({
         ) : null}
       </ol>
 
-      <SaveToKnowledgeDialog
-        open={Boolean(knowledgeBlock)}
-        block={knowledgeBlock}
-        proposalId={proposalId}
-        companyId={knowledgeCompanyId}
-        onClose={() => setKnowledgeBlock(null)}
-      />
+      {knowledgeEnabled ? (
+        <SaveToKnowledgeDialog
+          open={Boolean(knowledgeBlock)}
+          block={knowledgeBlock}
+          proposalId={proposalId}
+          companyId={knowledgeCompanyId}
+          onClose={() => setKnowledgeBlock(null)}
+        />
+      ) : null}
 
       {list.length === 0 ? (
         <div className={styles.empty}>

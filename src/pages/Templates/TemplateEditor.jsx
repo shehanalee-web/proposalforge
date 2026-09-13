@@ -5,6 +5,10 @@ import { useCreateTemplate } from '../../hooks/useCreateTemplate.js'
 import { useUpdateTemplate } from '../../hooks/useUpdateTemplate.js'
 import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
 import { makeQuestionnaire } from '../../models/questionnaire.js'
+import {
+  buildTemplateEditorPayload,
+  loadTemplateBlocks,
+} from '../../utils/templateBlocks.js'
 import TemplateForm from './TemplateForm.jsx'
 import styles from './TemplateEditor.module.css'
 
@@ -19,6 +23,7 @@ const EMPTY_FORM = {
   notes: '',
   defaultLayoutId: DEFAULT_LAYOUT_ID,
   questionnaire: makeQuestionnaire(),
+  blocks: [],
 }
 
 function valuesFromTemplate(template) {
@@ -39,35 +44,7 @@ function valuesFromTemplate(template) {
     notes: template.notes ?? '',
     defaultLayoutId: template.defaultLayoutId ?? DEFAULT_LAYOUT_ID,
     questionnaire: template.questionnaire ?? makeQuestionnaire(),
-  }
-}
-
-function toPayload(values) {
-  const sections = values.sections
-    .filter((section) => section.heading.trim() || section.body.trim())
-    .map((section) => ({
-      id: section.id,
-      heading: section.heading,
-      body: section.body,
-    }))
-
-  const items = values.items
-    .filter((item) => item.description.trim() || item.amount !== '')
-    .map((item) => ({
-      id: item.id,
-      description: item.description,
-      amount: item.amount === '' ? 0 : Number(item.amount),
-    }))
-
-  return {
-    title: values.title,
-    description: values.description,
-    sections,
-    items,
-    terms: values.terms,
-    notes: values.notes,
-    defaultLayoutId: values.defaultLayoutId ?? DEFAULT_LAYOUT_ID,
-    questionnaire: values.questionnaire ?? makeQuestionnaire(),
+    blocks: loadTemplateBlocks(template.blocks),
   }
 }
 
@@ -93,6 +70,11 @@ function TemplateEditor() {
   function handleChange(name, value) {
     if (!values) return
 
+    if (name && typeof name === 'object' && value === undefined) {
+      setDraft({ ...values, ...name })
+      return
+    }
+
     setDraft({ ...values, [name]: value })
   }
 
@@ -101,7 +83,7 @@ function TemplateEditor() {
 
     if (!values) return
 
-    const payload = toPayload(values)
+    const payload = buildTemplateEditorPayload(values)
     const saved = isNew
       ? await createFlow.create(payload)
       : await updateFlow.update(id, payload)
