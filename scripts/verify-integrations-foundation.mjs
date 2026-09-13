@@ -356,11 +356,17 @@ function pathExists(relativePath) {
   }
 }
 
+const deliveryFiles = pathExists('src/integrations/delivery')
+  ? readdirSync(join(root, 'src/integrations/delivery')).filter((name) => name.endsWith('.js')).sort()
+  : []
 assert(
-  'foundation file layout stays minimal (no outbox/delivery/messaging; calendar envelope only)',
+  'foundation file layout stays minimal (delivery contract only; no outbox/messaging/transport)',
   !integrationSources.includes('processOutbox') &&
     !pathExists('src/integrations/outbox') &&
-    !pathExists('src/integrations/delivery') &&
+    deliveryFiles.join(',') === 'index.js,schema.js,types.js' &&
+    !pathExists('src/integrations/delivery/transport.js') &&
+    !pathExists('src/integrations/delivery/oauth.js') &&
+    !pathExists('src/integrations/delivery/store.js') &&
     !pathExists('src/integrations/messaging') &&
     pathExists('src/integrations/calendar') &&
     !pathExists('src/integrations/calendar/provider.js') &&
