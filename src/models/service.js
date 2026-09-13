@@ -1,4 +1,5 @@
 import { createRecordId } from './ids.js'
+import { normalizeContentBlockIds } from './template.js'
 
 /**
  * Service Library model.
@@ -76,7 +77,7 @@ export function makeService(input = {}) {
     deliverables: [...(input.deliverables ?? [])],
     typicalDuration: input.typicalDuration ?? '',
     assetIds: [...(input.assetIds ?? [])],
-    contentBlockIds: [...(input.contentBlockIds ?? [])],
+    contentBlockIds: normalizeContentBlockIds(input.contentBlockIds),
     templateId: input.templateId ?? '',
     icon: input.icon ?? 'services',
     accent: input.accent ?? '',
@@ -104,6 +105,30 @@ export function validateService(service) {
   }
 
   return errors
+}
+
+/**
+ * Build the service editor payload. Details save persists composition IDs
+ * without fetching Content Library records or mutating a template.
+ *
+ * @param {object} [values]
+ */
+export function buildServiceEditorPayload(values = {}) {
+  return {
+    name: values.name,
+    description: values.description,
+    defaultDescription: values.defaultDescription,
+    pricingModel: values.pricingModel,
+    typicalDuration: values.typicalDuration,
+    templateId: values.templateId ?? '',
+    deliverables: Array.isArray(values.deliverables)
+      ? [...values.deliverables]
+      : String(values.deliverables ?? '')
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean),
+    contentBlockIds: normalizeContentBlockIds(values.contentBlockIds),
+  }
 }
 
 /**
