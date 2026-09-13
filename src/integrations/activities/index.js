@@ -6,7 +6,9 @@
  * only. Slice 9.2 makes the timeline engine async. Slice 9.3 adds the
  * read-only native_activity source. Slice 9.4 adds authoring HTTP. Slice 9.5
  * enables the activityAuthoring flag; runtime still requires durable health.
- * H16.15 Slice 15.1 exports the agent-origin request contract.
+ * H16.15 Slice 15.1 exports the agent-origin request contract. Slice 15.2
+ * exports the company-scoped approval-gate record. It does not persist Native
+ * Activity or change createStudioActivity.
  */
 
 export {
@@ -115,6 +117,17 @@ export {
 } from './authoring.js'
 
 export { makeAgentOriginActivityRequest } from './agentOrigin.js'
+
+export {
+  AGENT_ORIGIN_APPROVAL_SCHEMA_VERSION,
+  AGENT_ORIGIN_APPROVAL_ID_PREFIX,
+  AGENT_ORIGIN_APPROVAL_STATUS,
+  AGENT_ORIGIN_APPROVAL_STATUSES,
+  makeAgentOriginApproval,
+  cloneAgentOriginApproval,
+  approveAgentOriginApproval,
+  rejectAgentOriginApproval,
+} from './agentOriginApproval.js'
 
 export { emitNativeActivityCreated } from './events.js'
 
