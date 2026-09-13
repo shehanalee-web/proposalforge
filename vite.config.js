@@ -16,6 +16,7 @@ import { integrationsRulesPlugin } from './server/integrationsRulesPlugin.js'
 import { integrationsIntentsPlugin } from './server/integrationsIntentsPlugin.js'
 import { integrationsWebhooksPlugin } from './server/integrationsWebhooksPlugin.js'
 import { integrationsCrmPlugin } from './server/integrationsCrmPlugin.js'
+import { integrationsDeliveryPlugin } from './server/integrationsDeliveryPlugin.js'
 import { integrationsActivitiesPlugin } from './server/integrationsActivitiesPlugin.js'
 import { integrationsActivityAuthoringPlugin } from './server/integrationsActivityAuthoringPlugin.js'
 
@@ -28,6 +29,7 @@ export default defineConfig({
     integrationsIntentsPlugin(),
     integrationsWebhooksPlugin(),
     integrationsCrmPlugin(),
+    integrationsDeliveryPlugin(),
     integrationsActivitiesPlugin(),
     integrationsActivityAuthoringPlugin(),
     localUploadsPlugin(),

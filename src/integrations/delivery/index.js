@@ -2,7 +2,8 @@
  * H16.16 — Delivery execution barrel.
  *
  * Slice 16.1: authorization contract.
- * Slice 16.2: fail-closed execute + in-memory rejected outcome ledger.
+ * Slice 16.2: fail-closed execute + rejected outcome ledger.
+ * Slice 16.3: JSON persist-handler boot for that ledger.
  * No transport, OAuth, store.js, or outbox.
  */
 
@@ -27,6 +28,11 @@ export {
 } from './schema.js'
 
 export {
+  configureDeliveryOutcomeStore,
+  allDeliveryOutcomes,
+  parsePersistedDeliveryOutcomeSnapshot,
+  replaceDeliveryOutcomes,
+  serializeDeliveryOutcomes,
   findDeliveryOutcomeByIntentId,
   listDeliveryOutcomesForCompany,
   resetDeliveryOutcomeStore,
