@@ -3,7 +3,9 @@ import {
   hydrateBlocksFromProposal,
   syncLegacyFromBlocks,
 } from '../blocks/hydrate.js'
-import { makeBlock } from '../blocks/instance.js'
+import { insertLibraryBlock, makeBlock } from '../blocks/instance.js'
+import { normalizeContentBlockIds } from '../models/template.js'
+import { fetchLibraryBlockById } from '../services/libraryBlockService.js'
 
 /**
  * Whether a template owns a canonical Block Engine assembly.
@@ -24,6 +26,57 @@ export function hasCanonicalBlocks(blocks) {
 export function loadTemplateBlocks(blocks) {
   if (!hasCanonicalBlocks(blocks)) return []
   return blocks.map((block) => makeBlock(block))
+}
+
+/**
+ * Unique Content Library ids represented by a Block Engine assembly.
+ * Order follows first appearance of a non-empty `libraryId`.
+ *
+ * @param {import('../blocks/instance.js').BlockInstance[] | undefined} blocks
+ * @returns {string[]}
+ */
+export function contentBlockIdsFromBlocks(blocks) {
+  return normalizeContentBlockIds(
+    (blocks ?? []).map((block) => block?.libraryId).filter(Boolean),
+  )
+}
+
+/**
+ * Materialize Content Library records into a Block Engine assembly.
+ *
+ * Existing instances that already carry a requested `libraryId` are left
+ * alone. Missing library records throw the service `NotFoundError`. The
+ * source library definition is not written.
+ *
+ * @param {import('../blocks/instance.js').BlockInstance[] | { blocks?: import('../blocks/instance.js').BlockInstance[] }} [assembly]
+ * @param {string[]} [libraryIds]
+ * @param {(id: string) => Promise<import('../models/contentBlock.js').ContentBlock>} [fetchLibraryBlock]
+ */
+export async function composeTemplateContentBlocks(
+  assembly = [],
+  libraryIds = [],
+  fetchLibraryBlock = fetchLibraryBlockById,
+) {
+  const currentBlocks = Array.isArray(assembly)
+    ? [...assembly]
+    : [...(assembly?.blocks ?? [])]
+  const requested = normalizeContentBlockIds(libraryIds)
+  const present = new Set(contentBlockIdsFromBlocks(currentBlocks))
+  let nextBlocks = currentBlocks
+
+  for (const id of requested) {
+    if (present.has(id)) continue
+
+    const libraryBlock = await fetchLibraryBlock(id)
+    const inserted = insertLibraryBlock(nextBlocks, libraryBlock)
+    nextBlocks = inserted.blocks
+    present.add(libraryBlock.id)
+  }
+
+  return {
+    blocks: nextBlocks,
+    contentBlockIds: contentBlockIdsFromBlocks(nextBlocks),
+  }
 }
 
 function numericItems(items) {
@@ -75,8 +128,10 @@ export function mirrorLegacyFromBlocks(blocks, input = {}) {
 /**
  * Build the template service payload from editor values.
  *
- * Legacy forms omit `blocks` so a details save cannot invent DEFAULT_BLOCK_SEQUENCE.
- * Canonical forms persist the assembly and synced sections/items/terms.
+ * Legacy forms omit `blocks` and `contentBlockIds` so a details save cannot
+ * invent DEFAULT_BLOCK_SEQUENCE or compose the Content Library.
+ * Canonical forms persist the assembly, derive contentBlockIds from libraryId,
+ * and sync sections/items/terms.
  *
  * @param {object} values
  */
@@ -99,6 +154,8 @@ export function buildTemplateEditorPayload(values) {
       amount: item.amount === '' ? 0 : Number(item.amount),
     }))
 
+  const blocks = canonical ? values.blocks.map((block) => makeBlock(block)) : null
+
   return {
     title: values.title,
     description: canonical ? mirrored.description : values.description,
@@ -108,6 +165,11 @@ export function buildTemplateEditorPayload(values) {
     notes: values.notes,
     defaultLayoutId: values.defaultLayoutId ?? DEFAULT_LAYOUT_ID,
     questionnaire: values.questionnaire,
-    ...(canonical ? { blocks: values.blocks.map((block) => makeBlock(block)) } : {}),
+    ...(canonical
+      ? {
+          blocks,
+          contentBlockIds: contentBlockIdsFromBlocks(blocks),
+        }
+      : {}),
   }
 }

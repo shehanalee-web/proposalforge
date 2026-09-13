@@ -1,6 +1,7 @@
 import { makeBlock } from '../blocks/instance.js'
 import { makeLineItem, makeSection } from '../models/proposal.js'
 import { cloneQuestionnaireForTemplate } from '../models/questionnaire.js'
+import { normalizeContentBlockIds } from '../models/template.js'
 
 function copyBlocksWithNewIds(blocks) {
   if (!Array.isArray(blocks) || blocks.length === 0) return undefined
@@ -42,6 +43,7 @@ export function toDuplicateTemplate(template) {
     defaultLayoutId: template.defaultLayoutId,
     proposalType: template.proposalType ?? '',
     isDefault: false,
+    contentBlockIds: normalizeContentBlockIds(template.contentBlockIds),
     ...(blocks ? { blocks } : {}),
     questionnaire: cloneQuestionnaireForTemplate(template.questionnaire),
   }
