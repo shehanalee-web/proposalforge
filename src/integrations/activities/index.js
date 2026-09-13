@@ -11,7 +11,9 @@
  * execution-boundary authorization for an already-approved request. Slice 15.4
  * maps an authorized execution onto an agent-attributed Native Activity write
  * shape. Slice 15.5 persists that write shape through the existing
- * ActivityRepository and emits H16.11. It does not change createStudioActivity.
+ * ActivityRepository and emits H16.11. Slice 15.6 reads persisted
+ * agent-origin Native Activities through the same repository. It does not
+ * change createStudioActivity.
  */
 
 export {
@@ -144,6 +146,11 @@ export {
 } from './agentOriginAttribution.js'
 
 export { createAgentOriginActivity } from './agentOriginWrite.js'
+
+export {
+  getAgentOriginActivity,
+  listAgentOriginActivities,
+} from './agentOriginRead.js'
 
 export { emitNativeActivityCreated } from './events.js'
 
