@@ -12,8 +12,9 @@
  * maps an authorized execution onto an agent-attributed Native Activity write
  * shape. Slice 15.5 persists that write shape through the existing
  * ActivityRepository and emits H16.11. Slice 15.6 reads persisted
- * agent-origin Native Activities through the same repository. It does not
- * change createStudioActivity.
+ * agent-origin Native Activities through the same repository. Slice 15.7
+ * updates mutable fields on those records and fails closed on attribution
+ * and tenancy. It does not change createStudioActivity.
  */
 
 export {
@@ -151,6 +152,8 @@ export {
   getAgentOriginActivity,
   listAgentOriginActivities,
 } from './agentOriginRead.js'
+
+export { updateAgentOriginActivity } from './agentOriginUpdate.js'
 
 export { emitNativeActivityCreated } from './events.js'
 
