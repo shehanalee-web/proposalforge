@@ -43,8 +43,8 @@
  * recorded H16.4 delivery intent. Slice 16.2 consumes that authorization and
  * fail-closes because deliveryExecution stays false and null_delivery stays
  * disabled. Slice 16.3 persists the rejected outcome ledger through the
- * existing integration JSON boot pattern. It does not send or enable
- * deliveryExecution.
+ * existing integration JSON boot pattern. Slice 16.4 reads that ledger by
+ * companyId + intent.id. It does not send or enable deliveryExecution.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -269,6 +269,7 @@ export {
   replaceDeliveryOutcomes,
   serializeDeliveryOutcomes,
   findDeliveryOutcomeByIntentId,
+  getDeliveryOutcomeForCompany,
   listDeliveryOutcomesForCompany,
   resetDeliveryOutcomeStore,
   setDeliveryExecutionCapabilityOverrideForTests,

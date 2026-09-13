@@ -4,6 +4,7 @@
  * Slice 16.1: authorization contract.
  * Slice 16.2: fail-closed execute + rejected outcome ledger.
  * Slice 16.3: JSON persist-handler boot for that ledger.
+ * Slice 16.4: company-scoped read of persisted rejected outcomes.
  * No transport, OAuth, store.js, or outbox.
  */
 
@@ -34,6 +35,7 @@ export {
   replaceDeliveryOutcomes,
   serializeDeliveryOutcomes,
   findDeliveryOutcomeByIntentId,
+  getDeliveryOutcomeForCompany,
   listDeliveryOutcomesForCompany,
   resetDeliveryOutcomeStore,
 } from './outcomes.js'
