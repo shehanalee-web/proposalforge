@@ -24,6 +24,7 @@ import { makeQuestionnaire } from './questionnaire.js'
  * @property {string} notes
  * @property {string} defaultLayoutId         Layout applied to new proposals from this template.
  * @property {import('../blocks/instance.js').BlockInstance[]} blocks Canonical Block Engine assembly. Empty when the template still uses legacy sections/items only.
+ * @property {string[]} contentBlockIds       Content Library records composed into this template.
  * @property {string} proposalType            Catalog id from proposal types, if any.
  * @property {boolean} isDefault              Preferred template for its proposal type.
  * @property {string} createdAt
@@ -36,6 +37,27 @@ function createId(prefix) {
   }
 
   return `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`
+}
+
+/**
+ * Normalize Content Library composition ids. Empty values are dropped; order of
+ * first appearance is kept.
+ *
+ * @param {unknown} [ids]
+ * @returns {string[]}
+ */
+export function normalizeContentBlockIds(ids) {
+  const seen = new Set()
+  const next = []
+
+  for (const value of ids ?? []) {
+    const id = String(value ?? '').trim()
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    next.push(id)
+  }
+
+  return next
 }
 
 /**
@@ -70,6 +92,7 @@ export function makeTemplate(input = {}) {
     notes: input.notes ?? '',
     defaultLayoutId: resolveLayoutId(input.defaultLayoutId ?? DEFAULT_LAYOUT_ID),
     blocks: Array.isArray(input.blocks) ? input.blocks.map((block) => makeBlock(block)) : [],
+    contentBlockIds: normalizeContentBlockIds(input.contentBlockIds),
     proposalType: input.proposalType ?? '',
     isDefault: Boolean(input.isDefault),
     questionnaire: makeQuestionnaire({

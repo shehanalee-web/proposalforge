@@ -7,6 +7,7 @@ import LayoutPicker from '../../layouts/screen/LayoutPicker.jsx'
 import { EditorWorkspaceProvider } from '../../components/Editor/EditorWorkspaceContext.jsx'
 import BlockEditor from '../../blocks/editor/BlockEditor.jsx'
 import {
+  contentBlockIdsFromBlocks,
   convertLegacyTemplateToBlocks,
   hasCanonicalBlocks,
   mirrorLegacyFromBlocks,
@@ -56,7 +57,15 @@ function TemplateForm({
     const blocks = convertLegacyTemplateToBlocks(values)
     onChange({
       blocks,
+      contentBlockIds: contentBlockIdsFromBlocks(blocks),
       ...mirrorLegacyFromBlocks(blocks, values),
+    })
+  }
+
+  function handleBlocksChange(blocks) {
+    onChange({
+      blocks,
+      contentBlockIds: contentBlockIdsFromBlocks(blocks),
     })
   }
 
@@ -189,7 +198,7 @@ function TemplateForm({
           <EditorWorkspaceProvider>
             <BlockEditor
               blocks={values.blocks}
-              onChange={(blocks) => onChange('blocks', blocks)}
+              onChange={handleBlocksChange}
               disabled={submitting}
               currency={DEFAULT_CURRENCY}
               knowledgeCompanyId={null}

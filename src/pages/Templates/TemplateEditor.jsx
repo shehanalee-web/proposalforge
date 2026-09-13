@@ -7,6 +7,7 @@ import { DEFAULT_LAYOUT_ID } from '../../layouts/ids.js'
 import { makeQuestionnaire } from '../../models/questionnaire.js'
 import {
   buildTemplateEditorPayload,
+  contentBlockIdsFromBlocks,
   loadTemplateBlocks,
 } from '../../utils/templateBlocks.js'
 import TemplateForm from './TemplateForm.jsx'
@@ -24,6 +25,7 @@ const EMPTY_FORM = {
   defaultLayoutId: DEFAULT_LAYOUT_ID,
   questionnaire: makeQuestionnaire(),
   blocks: [],
+  contentBlockIds: [],
 }
 
 function valuesFromTemplate(template) {
@@ -45,6 +47,7 @@ function valuesFromTemplate(template) {
     defaultLayoutId: template.defaultLayoutId ?? DEFAULT_LAYOUT_ID,
     questionnaire: template.questionnaire ?? makeQuestionnaire(),
     blocks: loadTemplateBlocks(template.blocks),
+    contentBlockIds: contentBlockIdsFromBlocks(template.blocks),
   }
 }
 
