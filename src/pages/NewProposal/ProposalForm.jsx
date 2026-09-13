@@ -32,7 +32,10 @@ function ProposalForm({
   values,
   onChange,
   onSubmit,
+  onApplyToProposal,
   submitting,
+  applying = false,
+  applyDisabled = false,
   fieldErrors = {},
   submitLabel = 'Save changes',
   submittingLabel = 'Saving…',
@@ -56,6 +59,7 @@ function ProposalForm({
     )
       ? values.projectType
       : null
+  const busy = submitting || applying
 
   function handleChange(event) {
     onChange(event.target.name, event.target.value)
@@ -73,7 +77,7 @@ function ProposalForm({
             className={styles.input}
             value={values.title}
             onChange={handleChange}
-            disabled={submitting}
+            disabled={busy}
             autoComplete="off"
             aria-invalid={Boolean(fieldErrors.title)}
             aria-describedby={fieldErrors.title ? 'title-error' : undefined}
@@ -87,23 +91,35 @@ function ProposalForm({
           error={fieldErrors.projectType || fieldErrors.serviceId}
         >
           {useLibrary ? (
-            <select
-              id="projectType"
-              name="serviceId"
-              className={styles.input}
-              value={matchedServiceId}
-              onChange={(event) => onChange('serviceId', event.target.value)}
-              disabled={submitting}
-            >
-              {unmatchedType ? (
-                <option value="">{unmatchedType}</option>
+            <>
+              <select
+                id="projectType"
+                name="serviceId"
+                className={styles.input}
+                value={matchedServiceId}
+                onChange={(event) => onChange('serviceId', event.target.value)}
+                disabled={busy}
+              >
+                {unmatchedType ? (
+                  <option value="">{unmatchedType}</option>
+                ) : null}
+                {services.map((service) => (
+                  <option key={service.id} value={service.id}>
+                    {service.name}
+                  </option>
+                ))}
+              </select>
+              {onApplyToProposal ? (
+                <button
+                  type="button"
+                  className={styles.apply}
+                  onClick={onApplyToProposal}
+                  disabled={busy || applyDisabled}
+                >
+                  {applying ? 'Applying…' : 'Apply Default Components to Proposal'}
+                </button>
               ) : null}
-              {services.map((service) => (
-                <option key={service.id} value={service.id}>
-                  {service.name}
-                </option>
-              ))}
-            </select>
+            </>
           ) : (
             <select
               id="projectType"
@@ -111,7 +127,7 @@ function ProposalForm({
               className={styles.input}
               value={values.projectType}
               onChange={handleChange}
-              disabled={submitting}
+              disabled={busy}
             >
               {(PROJECT_TYPES.includes(values.projectType)
                 ? PROJECT_TYPES
@@ -137,7 +153,7 @@ function ProposalForm({
             className={styles.input}
             value={values.clientName}
             onChange={handleChange}
-            disabled={submitting}
+            disabled={busy}
             autoComplete="name"
             aria-invalid={Boolean(fieldErrors.clientName)}
             aria-describedby={
@@ -159,7 +175,7 @@ function ProposalForm({
             className={styles.input}
             value={values.clientEmail}
             onChange={handleChange}
-            disabled={submitting}
+            disabled={busy}
             autoComplete="email"
             aria-invalid={Boolean(fieldErrors.clientEmail)}
             aria-describedby={
@@ -176,7 +192,7 @@ function ProposalForm({
             className={styles.input}
             value={values.company}
             onChange={handleChange}
-            disabled={submitting}
+            disabled={busy}
             autoComplete="organization"
           />
         </Field>
@@ -213,7 +229,7 @@ function ProposalForm({
             className={styles.input}
             value={values.validUntil}
             onChange={handleChange}
-            disabled={submitting}
+            disabled={busy}
           />
         </Field>
         </div>
@@ -227,7 +243,7 @@ function ProposalForm({
         <LayoutPicker
           value={values.layoutId ?? DEFAULT_LAYOUT_ID}
           onChange={(layoutId) => onChange('layoutId', layoutId)}
-          disabled={submitting}
+          disabled={busy}
         />
       </EditorSection>
 
@@ -240,7 +256,7 @@ function ProposalForm({
             className={`${styles.input} ${styles.textarea}`}
             value={values.summary}
             onChange={handleChange}
-            disabled={submitting}
+            disabled={busy}
           />
         </Field>
 
@@ -248,7 +264,7 @@ function ProposalForm({
       </EditorSection>
 
       <StickySaveBar
-        submitting={submitting}
+        submitting={busy}
         submitLabel={submitLabel}
         submittingLabel={submittingLabel}
         saveStatus={saveStatus}

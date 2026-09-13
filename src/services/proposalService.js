@@ -253,6 +253,26 @@ export async function fetchProposalById(id) {
 }
 
 /**
+ * Load a stored proposal without recording a studio view or writing expiry.
+ * Composition/Apply paths must use this instead of {@link fetchProposalById}.
+ *
+ * @param {string} id
+ * @returns {Promise<import('../models/proposal.js').Proposal>}
+ * @throws {NotFoundError}
+ */
+export async function loadStoredProposalById(id) {
+  await boot()
+
+  const proposal = store.findById(id)
+
+  if (!proposal) {
+    throw new NotFoundError(`No proposal found with id "${id}".`)
+  }
+
+  return proposal
+}
+
+/**
  * Create a proposal from partial input.
  *
  * @param {Partial<import('../models/proposal.js').Proposal>} input
