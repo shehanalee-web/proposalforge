@@ -1,3 +1,4 @@
+import { makeBlock } from '../blocks/instance.js'
 import { DEFAULT_CURRENCY, makeLineItem, makeSection } from './proposal.js'
 import { DEFAULT_LAYOUT_ID } from '../layouts/ids.js'
 import { resolveLayoutId } from '../layouts/registry.js'
@@ -22,6 +23,7 @@ import { makeQuestionnaire } from './questionnaire.js'
  * @property {string} terms
  * @property {string} notes
  * @property {string} defaultLayoutId         Layout applied to new proposals from this template.
+ * @property {import('../blocks/instance.js').BlockInstance[]} blocks Canonical Block Engine assembly. Empty when the template still uses legacy sections/items only.
  * @property {string} proposalType            Catalog id from proposal types, if any.
  * @property {boolean} isDefault              Preferred template for its proposal type.
  * @property {string} createdAt
@@ -67,6 +69,7 @@ export function makeTemplate(input = {}) {
     terms: input.terms ?? '',
     notes: input.notes ?? '',
     defaultLayoutId: resolveLayoutId(input.defaultLayoutId ?? DEFAULT_LAYOUT_ID),
+    blocks: Array.isArray(input.blocks) ? input.blocks.map((block) => makeBlock(block)) : [],
     proposalType: input.proposalType ?? '',
     isDefault: Boolean(input.isDefault),
     questionnaire: makeQuestionnaire({
