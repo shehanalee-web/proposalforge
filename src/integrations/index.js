@@ -4,7 +4,7 @@
  * + Activity entity registry + Native Activity intake + mailbox envelope
  * + calendar event envelope + studio principal contract + agent-origin contract
  * + agent-origin approval-gate contract + agent-origin execution-boundary
- * contract + agent-origin attribution contract.
+ * contract + agent-origin attribution contract + agent-origin write facade.
  *
  * H16.7 adds a read-only activity timeline projection. It owns no store, writes
  * nothing, and exposes no mutation surface.
@@ -30,8 +30,9 @@
  * the company-scoped pending / approved / rejected approval-gate record.
  * Slice 15.3 authorizes an already-approved request for execution. Slice 15.4
  * maps that authorized execution onto an agent-attributed Native Activity
- * write shape. Approver is a Studio Principal. It does not persist Native
- * Activity, add HTTP, or change createStudioActivity.
+ * write shape. Slice 15.5 persists that write shape through the existing
+ * ActivityRepository and emits H16.11. Approver is a Studio Principal. It
+ * does not change createStudioActivity.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -488,6 +489,7 @@ export {
   authorizeAgentOriginExecution,
   AGENT_ORIGIN_ATTRIBUTION_SCHEMA_VERSION,
   makeAgentOriginAttributedActivity,
+  createAgentOriginActivity,
   emitNativeActivityCreated,
   deriveTimelineEntryId,
   sanitizeTimelineAttributes,
