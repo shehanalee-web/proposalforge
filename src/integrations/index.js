@@ -1,12 +1,12 @@
 /**
- * H16.1–H16.15 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
+ * H16.1–H16.16 — Foundation + Intake + Rules + Action Intents + Outbound Webhooks
  * + CRM + Activity Timeline + Activity persistence + Activity authoring facade
  * + Activity entity registry + Native Activity intake + mailbox envelope
  * + calendar event envelope + studio principal contract + agent-origin contract
  * + agent-origin approval-gate contract + agent-origin execution-boundary
  * contract + agent-origin attribution contract + agent-origin write facade
  * + agent-origin read facade + agent-origin update facade
- * + agent-origin archive facade.
+ * + agent-origin archive facade + delivery execution contract.
  *
  * H16.7 adds a read-only activity timeline projection. It owns no store, writes
  * nothing, and exposes no mutation surface.
@@ -39,6 +39,9 @@
  * and tenancy. Slice 15.8 archives those records through the same
  * repository. Approver is a Studio Principal. It does not change
  * createStudioActivity.
+ * H16.16 Slice 16.1 adds a vendor-neutral delivery execution contract over a
+ * recorded H16.4 delivery intent. It does not send, persist, or enable
+ * deliveryExecution.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -241,6 +244,16 @@ export {
   getStudioAutomationActionIntent,
   cancelStudioAutomationActionIntent,
 } from './intents/index.js'
+
+export {
+  DELIVERY_EXECUTION_SCHEMA_VERSION,
+  DELIVERY_EXECUTION_STATUS,
+  DELIVERY_EXECUTION_STATUSES,
+  DELIVERY_EXECUTION_FORBIDDEN_FIELDS,
+  makeDeliveryExecutionRequest,
+  cloneDeliveryExecutionRequest,
+  presentStudioDeliveryExecutionRequest,
+} from './delivery/index.js'
 
 export {
   OUTBOUND_WEBHOOK_SCHEMA_VERSION,
