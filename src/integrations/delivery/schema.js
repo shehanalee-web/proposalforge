@@ -18,6 +18,8 @@ import {
   DELIVERY_EXECUTION_FORBIDDEN_FIELDS,
   DELIVERY_EXECUTION_SCHEMA_VERSION,
   DELIVERY_EXECUTION_STATUS,
+  DELIVERY_FAILURE_CODES,
+  DELIVERY_OUTCOME_STATUS,
 } from './types.js'
 
 const DELIVERY_ACTION_TYPE = AUTOMATION_RULE_ACTION_TYPE.ENQUEUE_DELIVERY_INTENT
@@ -180,4 +182,135 @@ export function cloneDeliveryExecutionRequest(request) {
 export function presentStudioDeliveryExecutionRequest(request) {
   if (!request) return null
   return cloneDeliveryExecutionRequest(request)
+}
+
+function freezeOutcome({
+  companyId,
+  intentId,
+  idempotencyKey,
+  failureCode,
+}) {
+  return Object.freeze({
+    schemaVersion: DELIVERY_EXECUTION_SCHEMA_VERSION,
+    status: DELIVERY_OUTCOME_STATUS.REJECTED,
+    kind: INTEGRATION_KIND.DELIVERY,
+    companyId,
+    intentId,
+    idempotencyKey,
+    adapterId: NULL_DELIVERY_ADAPTER_ID,
+    failureCode,
+    retryable: false,
+    network: false,
+    oauth: false,
+  })
+}
+
+/**
+ * Frozen rejected delivery outcome. There is no succeeded path.
+ *
+ * @param {object} [input]
+ * @returns {object}
+ */
+export function makeDeliveryExecutionOutcome(input = {}) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    throw invalid('delivery execution outcome is required.', 'outcome')
+  }
+  if (
+    input.status != null &&
+    trim(input.status) !== DELIVERY_OUTCOME_STATUS.REJECTED
+  ) {
+    throw invalid('delivery execution outcome status must be rejected.', 'status')
+  }
+  if (input.kind != null && trim(input.kind) !== INTEGRATION_KIND.DELIVERY) {
+    throw invalid('kind must be delivery.', 'kind')
+  }
+  const intentId = trim(input.intentId)
+  if (!intentId) {
+    throw invalid('intent id is required.', 'intentId')
+  }
+  const idempotencyKey = trim(input.idempotencyKey)
+  if (!idempotencyKey) {
+    throw invalid('idempotencyKey is required.', 'idempotencyKey')
+  }
+  if (
+    input.adapterId != null &&
+    trim(input.adapterId) !== NULL_DELIVERY_ADAPTER_ID
+  ) {
+    throw invalid('adapterId must be null_delivery.', 'adapterId')
+  }
+  const failureCode = trim(input.failureCode)
+  if (!DELIVERY_FAILURE_CODES.includes(failureCode)) {
+    throw invalid('failureCode is required.', 'failureCode')
+  }
+  if (input.retryable != null && input.retryable !== false) {
+    throw invalid('retryable must be false.', 'retryable')
+  }
+  if (input.network != null && input.network !== false) {
+    throw invalid('network must be false.', 'network')
+  }
+  if (input.oauth != null && input.oauth !== false) {
+    throw invalid('oauth must be false.', 'oauth')
+  }
+  return freezeOutcome({
+    companyId: assertCompany(input.companyId),
+    intentId,
+    idempotencyKey: input.idempotencyKey,
+    failureCode,
+  })
+}
+
+/**
+ * @param {object} [outcome]
+ * @returns {object}
+ */
+export function cloneDeliveryExecutionOutcome(outcome) {
+  if (!outcome || typeof outcome !== 'object' || Array.isArray(outcome)) {
+    throw invalid('delivery execution outcome is required.', 'outcome')
+  }
+  if (outcome.status !== DELIVERY_OUTCOME_STATUS.REJECTED) {
+    throw invalid('delivery execution outcome status must be rejected.', 'status')
+  }
+  if (outcome.kind !== INTEGRATION_KIND.DELIVERY) {
+    throw invalid('kind must be delivery.', 'kind')
+  }
+  const intentId = trim(outcome.intentId)
+  if (!intentId) {
+    throw invalid('intent id is required.', 'intentId')
+  }
+  const idempotencyKey = trim(outcome.idempotencyKey)
+  if (!idempotencyKey) {
+    throw invalid('idempotencyKey is required.', 'idempotencyKey')
+  }
+  if (trim(outcome.adapterId) !== NULL_DELIVERY_ADAPTER_ID) {
+    throw invalid('adapterId must be null_delivery.', 'adapterId')
+  }
+  if (!DELIVERY_FAILURE_CODES.includes(trim(outcome.failureCode))) {
+    throw invalid('failureCode is required.', 'failureCode')
+  }
+  if (outcome.retryable !== false) {
+    throw invalid('retryable must be false.', 'retryable')
+  }
+  if (outcome.network !== false) {
+    throw invalid('network must be false.', 'network')
+  }
+  if (outcome.oauth !== false) {
+    throw invalid('oauth must be false.', 'oauth')
+  }
+  return freezeOutcome({
+    companyId: assertCompany(outcome.companyId),
+    intentId,
+    idempotencyKey: outcome.idempotencyKey,
+    failureCode: trim(outcome.failureCode),
+  })
+}
+
+/**
+ * Read/presentation only. No persistence, execution, or mutation.
+ *
+ * @param {object} [outcome]
+ * @returns {object | null}
+ */
+export function presentStudioDeliveryExecutionOutcome(outcome) {
+  if (!outcome) return null
+  return cloneDeliveryExecutionOutcome(outcome)
 }

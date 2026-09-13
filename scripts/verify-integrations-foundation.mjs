@@ -360,10 +360,10 @@ const deliveryFiles = pathExists('src/integrations/delivery')
   ? readdirSync(join(root, 'src/integrations/delivery')).filter((name) => name.endsWith('.js')).sort()
   : []
 assert(
-  'foundation file layout stays minimal (delivery contract only; no outbox/messaging/transport)',
+  'foundation file layout stays minimal (delivery execute+outcomes; no outbox/messaging/transport)',
   !integrationSources.includes('processOutbox') &&
     !pathExists('src/integrations/outbox') &&
-    deliveryFiles.join(',') === 'index.js,schema.js,types.js' &&
+    deliveryFiles.join(',') === 'execute.js,index.js,outcomes.js,schema.js,types.js' &&
     !pathExists('src/integrations/delivery/transport.js') &&
     !pathExists('src/integrations/delivery/oauth.js') &&
     !pathExists('src/integrations/delivery/store.js') &&
