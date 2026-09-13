@@ -42,7 +42,9 @@
  * H16.16 Slice 16.1 adds a vendor-neutral delivery execution contract over a
  * recorded H16.4 delivery intent. Slice 16.2 consumes that authorization and
  * fail-closes because deliveryExecution stays false and null_delivery stays
- * disabled. It does not send or enable deliveryExecution.
+ * disabled. Slice 16.3 persists the rejected outcome ledger through the
+ * existing integration JSON boot pattern. It does not send or enable
+ * deliveryExecution.
  *
  * Outbound webhook sync execution is capability-gated; live HTTPS requires
  * OUTBOUND_WEBHOOK_NETWORK=1. CRM execution is synchronous and ships with an
@@ -261,6 +263,11 @@ export {
   makeDeliveryExecutionOutcome,
   cloneDeliveryExecutionOutcome,
   presentStudioDeliveryExecutionOutcome,
+  configureDeliveryOutcomeStore,
+  allDeliveryOutcomes,
+  parsePersistedDeliveryOutcomeSnapshot,
+  replaceDeliveryOutcomes,
+  serializeDeliveryOutcomes,
   findDeliveryOutcomeByIntentId,
   listDeliveryOutcomesForCompany,
   resetDeliveryOutcomeStore,

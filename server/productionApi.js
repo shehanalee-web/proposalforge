@@ -12,6 +12,7 @@ import { integrationsRulesPlugin } from './integrationsRulesPlugin.js'
 import { integrationsIntentsPlugin } from './integrationsIntentsPlugin.js'
 import { integrationsWebhooksPlugin } from './integrationsWebhooksPlugin.js'
 import { integrationsCrmPlugin } from './integrationsCrmPlugin.js'
+import { integrationsDeliveryPlugin } from './integrationsDeliveryPlugin.js'
 import { integrationsActivitiesPlugin } from './integrationsActivitiesPlugin.js'
 import { integrationsActivityAuthoringPlugin } from './integrationsActivityAuthoringPlugin.js'
 import { localUploadsPlugin } from './localUploadsPlugin.js'
@@ -28,6 +29,7 @@ function getHandlers() {
     integrationsIntentsPlugin(),
     integrationsWebhooksPlugin(),
     integrationsCrmPlugin(),
+    integrationsDeliveryPlugin(),
     integrationsActivitiesPlugin(),
     integrationsActivityAuthoringPlugin(),
     localUploadsPlugin(),
