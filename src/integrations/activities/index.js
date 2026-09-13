@@ -10,7 +10,8 @@
  * exports the company-scoped approval-gate record. Slice 15.3 exports the
  * execution-boundary authorization for an already-approved request. Slice 15.4
  * maps an authorized execution onto an agent-attributed Native Activity write
- * shape. It does not persist Native Activity or change createStudioActivity.
+ * shape. Slice 15.5 persists that write shape through the existing
+ * ActivityRepository and emits H16.11. It does not change createStudioActivity.
  */
 
 export {
@@ -141,6 +142,8 @@ export {
   AGENT_ORIGIN_ATTRIBUTION_SCHEMA_VERSION,
   makeAgentOriginAttributedActivity,
 } from './agentOriginAttribution.js'
+
+export { createAgentOriginActivity } from './agentOriginWrite.js'
 
 export { emitNativeActivityCreated } from './events.js'
 
