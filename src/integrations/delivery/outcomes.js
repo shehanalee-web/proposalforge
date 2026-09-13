@@ -6,7 +6,7 @@
  * Not an outbox, retry queue, or Native Activity repository.
  */
 
-import { ForbiddenError, ValidationError } from '../../services/errors.js'
+import { ForbiddenError, NotFoundError, ValidationError } from '../../services/errors.js'
 import { evaluateIntegrationCompanyScope } from '../config.js'
 import {
   cloneDeliveryExecutionOutcome,
@@ -115,6 +115,29 @@ export function findDeliveryOutcomeByIntentId(intentId) {
   if (!id) return null
   const found = outcomes.find((item) => item.intentId === id)
   return found ? cloneDeliveryExecutionOutcome(found) : null
+}
+
+/**
+ * Tenant-scoped read. Does not execute, persist, or create rows.
+ *
+ * @param {string} companyId
+ * @param {string} intentId
+ * @returns {object}
+ */
+export function getDeliveryOutcomeForCompany(companyId, intentId) {
+  const scoped = scopedCompany(companyId)
+  const id = String(intentId ?? '').trim()
+  if (!id) {
+    throw new ValidationError('intent id is required.', [
+      { field: 'intentId', message: 'intent id is required.' },
+    ])
+  }
+  const found = outcomes.find((item) => item.intentId === id)
+  if (!found) throw new NotFoundError('Delivery execution outcome not found.')
+  if (found.companyId !== scoped) {
+    throw new ForbiddenError('You cannot access another company workspace.')
+  }
+  return cloneDeliveryExecutionOutcome(found)
 }
 
 /**
