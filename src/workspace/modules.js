@@ -98,10 +98,11 @@ export const WORKSPACE_MODULES = Object.freeze([
     status: 'live',
     summary: 'Company identity, inherited by every document.',
     description:
-      'Set logos, colours, type, contact details, legal copy, team and testimonials once. Studio preview, the client portal, templates and PDF export consume Brand Kit automatically.',
+      'Set logos, colours, type, contact details, legal copy, team, testimonials, watermark and footer once. Studio preview, the client portal, templates and PDF export consume Brand Kit automatically.',
     capabilities: [
       'Company logos, favicon and cover image',
       'Colour palette, type and contact details',
+      'PDF watermark, footer style and page numbers',
       'Team, testimonials, terms and payment details',
       'Inherited by proposals and templates at render time',
     ],

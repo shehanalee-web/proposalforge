@@ -1,7 +1,11 @@
 import ImageUpload from '../../components/ImageUpload/ImageUpload.jsx'
 import {
   BRAND_FONTS,
+  FOOTER_STYLE,
+  FOOTER_STYLES,
   HEX_COLOR_PATTERN,
+  PAGE_NUMBER_POSITION,
+  PAGE_NUMBER_POSITIONS,
   SOCIAL_NETWORK_LABELS,
   SOCIAL_NETWORKS,
   TAX_MODE,
@@ -17,6 +21,18 @@ const TAX_MODE_LABELS = {
   [TAX_MODE.NONE]: 'No tax',
   [TAX_MODE.EXCLUSIVE]: 'Exclusive — add tax on top',
   [TAX_MODE.INCLUSIVE]: 'Inclusive — prices already include tax',
+}
+
+const FOOTER_STYLE_LABELS = {
+  [FOOTER_STYLE.STANDARD]: 'Standard',
+  [FOOTER_STYLE.MINIMAL]: 'Minimal',
+  [FOOTER_STYLE.CONTACT]: 'Contact strip',
+}
+
+const PAGE_NUMBER_POSITION_LABELS = {
+  [PAGE_NUMBER_POSITION.HIDDEN]: 'Hidden',
+  [PAGE_NUMBER_POSITION.FOOTER_CENTER]: 'Footer centre',
+  [PAGE_NUMBER_POSITION.FOOTER_RIGHT]: 'Footer right',
 }
 
 function initials(name) {
@@ -327,6 +343,83 @@ function BrandKitForm({
             ))}
           </select>
         </Field>
+      </Card>
+
+      <Card
+        kicker="Document chrome"
+        title="Watermark and footer"
+        lede="PDF watermark, footer density and page numbers come from Brand Kit. Theme draft overlays stay separate."
+      >
+        <div className={styles.grid}>
+          <label className={styles.check}>
+            <input
+              id="watermarkEnabled"
+              type="checkbox"
+              checked={values.watermarkEnabled}
+              disabled={submitting}
+              onChange={(event) =>
+                patch({ watermarkEnabled: event.target.checked })
+              }
+            />
+            Show watermark on PDFs
+          </label>
+          <Field
+            id="watermarkText"
+            label="Watermark text"
+            hint="Leave blank to print CONFIDENTIAL when the watermark is on."
+            error={fieldErrors.watermarkText}
+          >
+            <input
+              id="watermarkText"
+              type="text"
+              className={styles.input}
+              value={values.watermarkText}
+              disabled={submitting || !values.watermarkEnabled}
+              onChange={(event) => patch({ watermarkText: event.target.value })}
+            />
+          </Field>
+          <Field
+            id="footerStyle"
+            label="Footer style"
+            hint="Standard prints studio, email and phone. Contact adds website and address. Minimal prints the studio name only."
+            error={fieldErrors.footerStyle}
+          >
+            <select
+              id="footerStyle"
+              className={styles.select}
+              value={values.footerStyle}
+              disabled={submitting}
+              onChange={(event) => patch({ footerStyle: event.target.value })}
+            >
+              {FOOTER_STYLES.map((style) => (
+                <option key={style} value={style}>
+                  {FOOTER_STYLE_LABELS[style]}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field
+            id="pageNumberPosition"
+            label="Page numbers"
+            error={fieldErrors.pageNumberPosition}
+          >
+            <select
+              id="pageNumberPosition"
+              className={styles.select}
+              value={values.pageNumberPosition}
+              disabled={submitting}
+              onChange={(event) =>
+                patch({ pageNumberPosition: event.target.value })
+              }
+            >
+              {PAGE_NUMBER_POSITIONS.map((position) => (
+                <option key={position} value={position}>
+                  {PAGE_NUMBER_POSITION_LABELS[position]}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
       </Card>
 
       <Card
