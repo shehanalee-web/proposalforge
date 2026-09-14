@@ -57,6 +57,64 @@ export const styles = StyleSheet.create({
     objectFit: 'contain',
     marginBottom: 10,
   },
+  cover: {
+    marginBottom: 16,
+  },
+  coverMinimal: {
+    padding: 0,
+    backgroundColor: 'transparent',
+  },
+  coverMinimalImage: {
+    width: '100%',
+    height: 120,
+    objectFit: 'cover',
+    marginTop: 10,
+  },
+  coverSplit: {
+    flexDirection: 'row',
+    gap: 18,
+    alignItems: 'stretch',
+  },
+  coverSplitCopy: {
+    flex: 1.4,
+  },
+  coverSplitMedia: {
+    flex: 1,
+  },
+  coverSplitImage: {
+    width: '100%',
+    height: 180,
+    objectFit: 'cover',
+  },
+  coverBleed: {
+    marginHorizontal: -48,
+    marginTop: -36,
+    marginBottom: 20,
+    paddingHorizontal: 48,
+    paddingTop: 36,
+    paddingBottom: 28,
+    backgroundColor: colors.band,
+  },
+  coverBleedCopy: {
+    position: 'relative',
+  },
+  coverBleedHeading: {
+    color: colors.bandText,
+  },
+  coverBleedKicker: {
+    color: '#a1a1aa',
+  },
+  coverBleedBody: {
+    color: colors.bandText,
+  },
+  coverBleedImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 220,
+    objectFit: 'cover',
+  },
   watermark: {
     position: 'absolute',
     top: '38%',

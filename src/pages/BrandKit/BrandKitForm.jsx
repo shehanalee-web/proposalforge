@@ -1,6 +1,8 @@
 import ImageUpload from '../../components/ImageUpload/ImageUpload.jsx'
 import {
   BRAND_FONTS,
+  COVER_STYLE,
+  COVER_STYLES,
   FOOTER_STYLE,
   FOOTER_STYLES,
   HEX_COLOR_PATTERN,
@@ -21,6 +23,12 @@ const TAX_MODE_LABELS = {
   [TAX_MODE.NONE]: 'No tax',
   [TAX_MODE.EXCLUSIVE]: 'Exclusive — add tax on top',
   [TAX_MODE.INCLUSIVE]: 'Inclusive — prices already include tax',
+}
+
+const COVER_STYLE_LABELS = {
+  [COVER_STYLE.FULL_BLEED]: 'Full bleed',
+  [COVER_STYLE.SPLIT]: 'Split',
+  [COVER_STYLE.MINIMAL]: 'Minimal',
 }
 
 const FOOTER_STYLE_LABELS = {
@@ -339,6 +347,33 @@ function BrandKitForm({
             {BRAND_FONTS.map((font) => (
               <option key={font.id} value={font.id} style={{ fontFamily: font.stack }}>
                 {font.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </Card>
+
+      <Card
+        kicker="Cover"
+        title="Cover style"
+        lede="Default cover treatment for studio preview, the client portal and PDF. A saved Theme hero layout on a proposal still wins on screen."
+      >
+        <Field
+          id="coverStyle"
+          label="Cover style"
+          hint="Full bleed, split or minimal. Theme cover extras stay on the proposal."
+          error={fieldErrors.coverStyle}
+        >
+          <select
+            id="coverStyle"
+            className={styles.select}
+            value={values.coverStyle}
+            disabled={submitting}
+            onChange={(event) => patch({ coverStyle: event.target.value })}
+          >
+            {COVER_STYLES.map((style) => (
+              <option key={style} value={style}>
+                {COVER_STYLE_LABELS[style]}
               </option>
             ))}
           </select>

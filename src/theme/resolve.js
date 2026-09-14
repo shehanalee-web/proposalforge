@@ -42,6 +42,9 @@ export function seedFromBrand(brand) {
       headingFont: matchFont(kit.typography?.headingFont) || undefined,
       bodyFont: matchFont(kit.typography?.bodyFont) || undefined,
     },
+    cover: {
+      layout: kit.coverStyle || undefined,
+    },
   }
 }
 
