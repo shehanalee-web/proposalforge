@@ -13,7 +13,6 @@ export const colors = {
 
 export const styles = StyleSheet.create({
   page: {
-    fontFamily: 'Helvetica',
     fontSize: 10,
     lineHeight: 1.45,
     color: colors.ink,
@@ -68,14 +67,14 @@ export const styles = StyleSheet.create({
     transform: 'rotate(-28deg)',
   },
   watermarkText: {
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 54,
     letterSpacing: 6,
     textTransform: 'uppercase',
     color: colors.ink,
   },
   studioName: {
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 14,
     color: colors.bandText,
     letterSpacing: 0.3,
@@ -87,7 +86,7 @@ export const styles = StyleSheet.create({
     maxWidth: 260,
   },
   proposalLabel: {
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 9,
     letterSpacing: 1.4,
     color: colors.accent,
@@ -96,7 +95,7 @@ export const styles = StyleSheet.create({
   },
   proposalTitle: {
     marginTop: 4,
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 13,
     color: colors.bandText,
     textAlign: 'right',
@@ -124,7 +123,7 @@ export const styles = StyleSheet.create({
     marginBottom: 2,
   },
   metaValue: {
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 9,
     color: colors.ink,
   },
@@ -133,7 +132,7 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 9,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -156,13 +155,13 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   clientName: {
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 11,
     marginBottom: 2,
   },
 
   projectHeading: {
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 16,
     marginBottom: 4,
   },
@@ -177,7 +176,7 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.soft,
   },
   scopeHeading: {
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 10,
     marginBottom: 4,
   },
@@ -192,7 +191,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   tableHeaderText: {
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 8,
     letterSpacing: 0.7,
     textTransform: 'uppercase',
@@ -229,7 +228,7 @@ export const styles = StyleSheet.create({
     fontSize: 9,
   },
   totalValue: {
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 9,
     width: 90,
     textAlign: 'right',
@@ -241,11 +240,11 @@ export const styles = StyleSheet.create({
     paddingTop: 6,
   },
   grandTotalLabel: {
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 10,
   },
   grandTotalValue: {
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 11,
     width: 90,
     textAlign: 'right',
@@ -256,7 +255,7 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
   },
   termTitle: {
-    fontFamily: 'Helvetica-Bold',
+    fontWeight: 700,
     fontSize: 9,
     marginBottom: 2,
   },
