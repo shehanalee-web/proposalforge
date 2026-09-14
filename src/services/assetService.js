@@ -164,4 +164,24 @@ export async function listAssets() {
   return store.all()
 }
 
+/**
+ * Replace the in-memory Asset Library. Intended for tests and verifiers.
+ */
+export function resetAssets() {
+  store.reset()
+}
+
+/**
+ * Metadata-only upsert. Does not upload bytes. Marks the store loaded so a
+ * later fetchAssetById() does not wipe seeded records via HTTP.
+ *
+ * @param {Partial<import('../models/asset.js').Asset>} [input]
+ * @returns {import('../models/asset.js').Asset}
+ */
+export function putAsset(input = {}) {
+  const saved = store.upsert(makeAsset(input))
+  store.markLoaded()
+  return saved
+}
+
 export const IMAGE_FILE_ACCEPT = IMAGE_ACCEPT

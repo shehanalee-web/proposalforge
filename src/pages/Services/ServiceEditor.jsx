@@ -1,16 +1,21 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import {
   PRICING_MODEL,
   buildServiceEditorPayload,
   findTemplateForService,
 } from '../../models/service.js'
+import { useAsyncData } from '../../hooks/useAsyncData.js'
 import { useService } from '../../hooks/useService.js'
 import { useCreateService } from '../../hooks/useCreateService.js'
 import { useUpdateService } from '../../hooks/useUpdateService.js'
 import { useTemplates } from '../../hooks/useTemplates.js'
+import { listAssets } from '../../services/assetService.js'
 import { PATH } from '../../workspace/paths.js'
-import { applyServiceComponentsToTemplate } from '../../utils/templateBlocks.js'
+import {
+  applyServiceAssetsToTemplate,
+  applyServiceComponentsToTemplate,
+} from '../../utils/templateBlocks.js'
 import ServiceForm from './ServiceForm.jsx'
 import styles from './ServiceEditor.module.css'
 
@@ -25,6 +30,7 @@ const EMPTY_FORM = {
   templateId: '',
   deliverables: '',
   contentBlockIds: [],
+  assetIds: [],
 }
 
 function valuesFromService(service) {
@@ -37,6 +43,7 @@ function valuesFromService(service) {
     templateId: service.templateId ?? '',
     deliverables: (service.deliverables ?? []).join('\n'),
     contentBlockIds: [...(service.contentBlockIds ?? [])],
+    assetIds: [...(service.assetIds ?? [])],
   }
 }
 
@@ -56,8 +63,15 @@ function ServiceEditor() {
   const [draft, setDraft] = useState(isNew ? EMPTY_FORM : null)
   const values = draft ?? (service && !isNew ? valuesFromService(service) : null)
 
+  const loadAssets = useCallback(() => listAssets(), [])
+  const { data: assets, loading: assetsLoading } = useAsyncData(loadAssets, {
+    initialData: [],
+  })
+
   const [applying, setApplying] = useState(false)
   const [applyError, setApplyError] = useState(null)
+  const [applyingAssets, setApplyingAssets] = useState(false)
+  const [applyAssetError, setApplyAssetError] = useState(null)
 
   const requestError =
     saveError && Object.keys(fieldErrors).length === 0 ? saveError : null
@@ -89,7 +103,7 @@ function ServiceEditor() {
   }
 
   async function handleApplyToTemplate() {
-    if (!values || applying || submitting) return
+    if (!values || applying || applyingAssets || submitting) return
 
     setApplying(true)
     setApplyError(null)
@@ -105,6 +119,26 @@ function ServiceEditor() {
       setApplyError(caught)
     } finally {
       setApplying(false)
+    }
+  }
+
+  async function handleApplyAssetsToTemplate() {
+    if (!values || applying || applyingAssets || submitting) return
+
+    setApplyingAssets(true)
+    setApplyAssetError(null)
+
+    try {
+      const serviceLike = {
+        id: service?.id ?? '',
+        templateId: values.templateId,
+        assetIds: values.assetIds,
+      }
+      await applyServiceAssetsToTemplate(templates, serviceLike)
+    } catch (caught) {
+      setApplyAssetError(caught)
+    } finally {
+      setApplyingAssets(false)
     }
   }
 
@@ -173,7 +207,7 @@ function ServiceEditor() {
             type="button"
             className={styles.retry}
             onClick={handleSubmit}
-            disabled={submitting || applying}
+            disabled={submitting || applying || applyingAssets}
           >
             Try again
           </button>
@@ -189,15 +223,28 @@ function ServiceEditor() {
         </div>
       ) : null}
 
+      {applyAssetError ? (
+        <div className={styles.banner} role="alert">
+          <p className={styles.bannerTitle}>Could not apply assets</p>
+          <p className={styles.bannerText}>
+            {applyAssetError.message || 'Something went wrong. Please try again.'}
+          </p>
+        </div>
+      ) : null}
+
       <div className={styles.panel}>
         <ServiceForm
           values={values}
           onChange={handleChange}
           onSubmit={handleSubmit}
           onApplyToTemplate={handleApplyToTemplate}
+          onApplyAssetsToTemplate={handleApplyAssetsToTemplate}
           submitting={submitting}
           applying={applying}
+          applyingAssets={applyingAssets}
           applyDisabled={!linkedTemplate}
+          assets={assets}
+          assetsLoading={assetsLoading}
           fieldErrors={fieldErrors}
           templates={templates}
           submitLabel={isNew ? 'Create service' : 'Save changes'}

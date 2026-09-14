@@ -1,4 +1,4 @@
-import { createRecordId } from './ids.js'
+import { createRecordId, normalizeIdList } from './ids.js'
 import { normalizeContentBlockIds } from './template.js'
 
 /**
@@ -76,7 +76,7 @@ export function makeService(input = {}) {
     pricingModel: input.pricingModel ?? PRICING_MODEL.FIXED,
     deliverables: [...(input.deliverables ?? [])],
     typicalDuration: input.typicalDuration ?? '',
-    assetIds: [...(input.assetIds ?? [])],
+    assetIds: normalizeIdList(input.assetIds),
     contentBlockIds: normalizeContentBlockIds(input.contentBlockIds),
     templateId: input.templateId ?? '',
     icon: input.icon ?? 'services',
@@ -109,7 +109,8 @@ export function validateService(service) {
 
 /**
  * Build the service editor payload. Details save persists composition IDs
- * without fetching Content Library records or mutating a template.
+ * without fetching Content Library or Asset Library records or mutating a
+ * template.
  *
  * @param {object} [values]
  */
@@ -128,6 +129,7 @@ export function buildServiceEditorPayload(values = {}) {
           .map((line) => line.trim())
           .filter(Boolean),
     contentBlockIds: normalizeContentBlockIds(values.contentBlockIds),
+    assetIds: normalizeIdList(values.assetIds),
   }
 }
 

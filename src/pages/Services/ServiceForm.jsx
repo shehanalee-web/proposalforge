@@ -30,20 +30,27 @@ function ServiceForm({
   onChange,
   onSubmit,
   onApplyToTemplate,
+  onApplyAssetsToTemplate,
   submitting,
   applying = false,
+  applyingAssets = false,
   applyDisabled = false,
   fieldErrors = {},
   templates = [],
+  assets = [],
+  assetsLoading = false,
   submitLabel = 'Save service',
   submittingLabel = 'Saving…',
 }) {
   const { blocks: library, loading: libraryLoading } = useLibraryBlocks()
   const selectedIds = values.contentBlockIds ?? []
+  const selectedAssetIds = values.assetIds ?? []
   const published = library.filter(
     (block) => block.status === LIBRARY_BLOCK_STATUS.PUBLISHED,
   )
-  const busy = submitting || applying
+  const listedAssetIds = new Set(assets.map((asset) => asset.id))
+  const extraAssetIds = selectedAssetIds.filter((id) => !listedAssetIds.has(id))
+  const busy = submitting || applying || applyingAssets
 
   function handleChange(event) {
     onChange(event.target.name, event.target.value)
@@ -54,6 +61,13 @@ function ServiceForm({
       ? selectedIds.filter((item) => item !== id)
       : [...selectedIds, id]
     onChange('contentBlockIds', next)
+  }
+
+  function toggleAsset(id) {
+    const next = selectedAssetIds.includes(id)
+      ? selectedAssetIds.filter((item) => item !== id)
+      : [...selectedAssetIds, id]
+    onChange('assetIds', next)
   }
 
   return (
@@ -201,6 +215,61 @@ function ServiceForm({
         </Field>
 
         <Field
+          id="assetIds"
+          label="Default assets"
+          hint="Asset Library records to compose into the default template. Save stores IDs only."
+          error={fieldErrors.assetIds}
+          className={styles.span2}
+        >
+          {assetsLoading ? (
+            <p className={styles.hint}>Loading Asset Library…</p>
+          ) : assets.length === 0 && extraAssetIds.length === 0 ? (
+            <p className={styles.hint}>No Asset Library files yet.</p>
+          ) : (
+            <ul className={styles.libraryList}>
+              {assets.map((asset) => {
+                const checked = selectedAssetIds.includes(asset.id)
+                return (
+                  <li key={asset.id}>
+                    <label className={styles.libraryOption}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleAsset(asset.id)}
+                        disabled={busy}
+                      />
+                      <span>
+                        {asset.name || asset.id}
+                        <span className={styles.libraryMeta}>
+                          {asset.kind}
+                          {asset.caption ? ` · ${asset.caption}` : ''}
+                        </span>
+                      </span>
+                    </label>
+                  </li>
+                )
+              })}
+              {extraAssetIds.map((id) => (
+                <li key={id}>
+                  <label className={styles.libraryOption}>
+                    <input
+                      type="checkbox"
+                      checked
+                      onChange={() => toggleAsset(id)}
+                      disabled={busy}
+                    />
+                    <span>
+                      {id}
+                      <span className={styles.libraryMeta}>Saved asset ID</span>
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Field>
+
+        <Field
           id="deliverables"
           label="Deliverables"
           hint="One per line. Stored on the service, not on each proposal until copied."
@@ -228,6 +297,16 @@ function ServiceForm({
             disabled={busy || applyDisabled}
           >
             {applying ? 'Applying…' : 'Apply Default Components to Template'}
+          </button>
+        ) : null}
+        {onApplyAssetsToTemplate ? (
+          <button
+            type="button"
+            className={styles.apply}
+            onClick={onApplyAssetsToTemplate}
+            disabled={busy || applyDisabled}
+          >
+            {applyingAssets ? 'Applying…' : 'Apply Assets to Template'}
           </button>
         ) : null}
         <button type="submit" className={styles.submit} disabled={busy}>
