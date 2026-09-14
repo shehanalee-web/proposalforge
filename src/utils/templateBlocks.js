@@ -129,6 +129,33 @@ export async function composeServiceComponentsForCreate(payload = {}, service) {
   }
 }
 
+/**
+ * Create Proposal path: hydrate the initial assembly, then compose the
+ * service's Asset Library intent into it. Does not persist. Empty or
+ * absent assetIds leave the payload unchanged so createProposal stays on
+ * the existing hydrate path and assets are not fetched.
+ *
+ * @param {Partial<import('../models/proposal.js').Proposal>} [payload]
+ * @param {Pick<import('../models/service.js').Service, 'assetIds'>} [service]
+ */
+export async function composeServiceAssetsForCreate(payload = {}, service) {
+  const requested = normalizeIdList(service?.assetIds)
+  if (requested.length === 0) {
+    return payload
+  }
+
+  const initialBlocks = ensureProposalBlocks(payload)
+  const composed = await composeTemplateAssets(
+    { ...payload, blocks: initialBlocks },
+    service?.assetIds,
+  )
+
+  return {
+    ...payload,
+    blocks: composed.blocks,
+  }
+}
+
 function blockIds(blocks) {
   return (blocks ?? []).map((block) => block.id)
 }
