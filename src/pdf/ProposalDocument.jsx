@@ -16,6 +16,7 @@ import { getPdfRenderer } from '../blocks/pdfRegistry.js'
 import { shouldRenderBlock } from '../blocks/visibility.js'
 import { buildVariableContext, interpolateInstance } from '../blocks/variables.js'
 import ProposalWatermark from './ProposalWatermark.jsx'
+import { registerPdfFonts, resolvePdfFontFamily } from './pdfFonts.js'
 
 function NotesChrome({ proposal }) {
   if (!proposal.notes?.trim()) return null
@@ -41,6 +42,7 @@ function renderChrome(id, props) {
 }
 
 function ProposalDocument({ proposal, settings, kit }) {
+  registerPdfFonts()
   const resolvedBrand = resolveBrand(settings, kit)
   const design = resolveDesign(readDesign(proposal.id), proposal, resolvedBrand)
   const brand = applyDesignToBrand(resolvedBrand, design)
@@ -58,6 +60,7 @@ function ProposalDocument({ proposal, settings, kit }) {
   const brandedPage = [
     styles.page,
     layout.orientation === 'landscape' ? styles.pageLandscape : null,
+    { fontFamily: resolvePdfFontFamily(brand.typography?.fontFamily) },
     brand.colors?.background ? { backgroundColor: brand.colors.background } : null,
     brand.colors?.text ? { color: brand.colors.text } : null,
   ].filter(Boolean)
