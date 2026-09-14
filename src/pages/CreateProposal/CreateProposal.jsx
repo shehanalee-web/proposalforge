@@ -16,7 +16,10 @@ import { useCreateProposal } from '../../hooks/useCreateProposal.js'
 import { useServices } from '../../hooks/useServices.js'
 import { useTemplates } from '../../hooks/useTemplates.js'
 import { proposalFromTemplate } from '../../utils/proposalFromTemplate.js'
-import { composeServiceComponentsForCreate } from '../../utils/templateBlocks.js'
+import {
+  composeServiceComponentsForCreate,
+  composeServiceAssetsForCreate,
+} from '../../utils/templateBlocks.js'
 import { filterServices } from '../../utils/serviceDiscovery.js'
 import { PATH, proposalEditPath } from '../../workspace/paths.js'
 import styles from './CreateProposal.module.css'
@@ -206,7 +209,10 @@ function CreateProposal() {
     }
 
     try {
-      const composed = await composeServiceComponentsForCreate(payload, service)
+      const composed = await composeServiceAssetsForCreate(
+        await composeServiceComponentsForCreate(payload, service),
+        service,
+      )
       const created = await create(composed)
 
       if (created) {
