@@ -300,6 +300,29 @@ export async function applyServiceAssetsToTemplate(templates, service) {
   return { template, updated: true }
 }
 
+/**
+ * Proposal Editor Asset Apply path: load the stored proposal (no studio view),
+ * compose gallery items into that record, and persist only when new items
+ * appear. Does not use block-id comparison; appending gallery items is the
+ * persistence signal.
+ *
+ * @param {string} proposalId
+ * @param {Pick<import('../models/service.js').Service, 'assetIds'>} [service]
+ */
+export async function applyServiceAssetsToProposal(proposalId, service) {
+  const stored = await loadStoredProposalById(proposalId)
+  const composed = await composeTemplateAssets(stored, service?.assetIds)
+  if (composed.added.length === 0) {
+    return { proposal: stored, updated: false }
+  }
+
+  const proposal = await updateProposal(stored.id, {
+    blocks: composed.blocks,
+  })
+
+  return { proposal, updated: true }
+}
+
 function numericItems(items) {
   return (items ?? []).map((item) => ({
     id: item.id,

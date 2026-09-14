@@ -11,7 +11,7 @@ import { useSaveStatus } from '../../hooks/useSaveStatus.js'
 import { useEditorKeyboard } from '../../hooks/useEditorKeyboard.js'
 import ProposalForm from '../NewProposal/ProposalForm.jsx'
 import { PATH, proposalPath } from '../../workspace/paths.js'
-import { applyServiceComponentsToProposal } from '../../utils/templateBlocks.js'
+import { applyServiceAssetsToProposal, applyServiceComponentsToProposal } from '../../utils/templateBlocks.js'
 import { ensureProposalBlocks } from '../../blocks/hydrate.js'
 import { computeCommercials } from '../../utils/commercialTotals.js'
 import { BLOCK_TYPE } from '../../blocks/ids.js'
@@ -171,6 +171,8 @@ function ProposalEditContent() {
   const [sendOpen, setSendOpen] = useState(false)
   const [applying, setApplying] = useState(false)
   const [applyError, setApplyError] = useState(null)
+  const [applyingAssets, setApplyingAssets] = useState(false)
+  const [applyAssetError, setApplyAssetError] = useState(null)
   const values = draft ?? (proposal ? valuesFromProposal(proposal) : null)
   const documentBlocks = blocks ?? (proposal ? ensureProposalBlocks(proposal) : [])
   const snapshot = useMemo(
@@ -296,7 +298,7 @@ function ProposalEditContent() {
   }
 
   async function handleApplyToProposal() {
-    if (!id || !values || applying || submitting) return
+    if (!id || !values || applying || applyingAssets || submitting) return
     const service = services.find((entry) => entry.id === values.serviceId)
     if (!service) return
 
@@ -315,6 +317,29 @@ function ProposalEditContent() {
       setApplyError(caught)
     } finally {
       setApplying(false)
+    }
+  }
+
+  async function handleApplyAssetsToProposal() {
+    if (!id || !values || applying || applyingAssets || submitting) return
+    const service = services.find((entry) => entry.id === values.serviceId)
+    if (!service) return
+
+    setApplyingAssets(true)
+    setApplyAssetError(null)
+
+    try {
+      const result = await applyServiceAssetsToProposal(id, {
+        assetIds: service.assetIds,
+      })
+      if (result.updated) {
+        applyProposalRecord(result.proposal)
+        save.markSaved()
+      }
+    } catch (caught) {
+      setApplyAssetError(caught)
+    } finally {
+      setApplyingAssets(false)
     }
   }
 
@@ -720,7 +745,7 @@ function ProposalEditContent() {
             type="button"
             className={styles.retry}
             onClick={handleSubmit}
-            disabled={submitting || applying}
+            disabled={submitting || applying || applyingAssets}
           >
             Try again
           </button>
@@ -732,6 +757,15 @@ function ProposalEditContent() {
           <p className={styles.bannerTitle}>Could not apply default components</p>
           <p className={styles.bannerText}>
             {applyError.message || 'Something went wrong. Please try again.'}
+          </p>
+        </div>
+      ) : null}
+
+      {applyAssetError ? (
+        <div className={styles.banner} role="alert">
+          <p className={styles.bannerTitle}>Could not apply assets</p>
+          <p className={styles.bannerText}>
+            {applyAssetError.message || 'Something went wrong. Please try again.'}
           </p>
         </div>
       ) : null}
@@ -760,8 +794,10 @@ function ProposalEditContent() {
               onChange={handleChange}
               onSubmit={handleSubmit}
               onApplyToProposal={handleApplyToProposal}
+              onApplyAssetsToProposal={handleApplyAssetsToProposal}
               submitting={submitting}
               applying={applying}
+              applyingAssets={applyingAssets}
               applyDisabled={!values.serviceId}
               fieldErrors={fieldErrors}
               services={services}
@@ -773,7 +809,7 @@ function ProposalEditContent() {
               <BlockEditor
                 blocks={documentBlocks}
                 onChange={handleBlocksChange}
-                disabled={submitting || applying}
+                disabled={submitting || applying || applyingAssets}
                 currency={proposal.currency}
                 proposalId={proposal.id}
               />
