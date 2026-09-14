@@ -5,6 +5,8 @@ import {
   LIBRARY_BLOCK_STATUS,
 } from '../../models/contentBlock.js'
 import { useLibraryBlocks } from '../../hooks/useLibraryBlocks.js'
+import AssetPicker from '../../components/AssetPicker/AssetPicker.jsx'
+import { toggleAssetId } from '../../components/AssetPicker/libraryAsset.js'
 import styles from './ServiceForm.module.css'
 
 function Field({ id, label, error, hint, className, children }) {
@@ -47,7 +49,7 @@ function ServiceForm({
   const published = library.filter(
     (block) => block.status === LIBRARY_BLOCK_STATUS.PUBLISHED,
   )
-  const [assetDraft, setAssetDraft] = useState('')
+  const [libraryOpen, setLibraryOpen] = useState(false)
   const busy = submitting || applying || applyingAssets
 
   function handleChange(event) {
@@ -59,22 +61,6 @@ function ServiceForm({
       ? selectedIds.filter((item) => item !== id)
       : [...selectedIds, id]
     onChange('contentBlockIds', next)
-  }
-
-  function toggleAsset(id) {
-    const next = selectedAssetIds.includes(id)
-      ? selectedAssetIds.filter((item) => item !== id)
-      : [...selectedAssetIds, id]
-    onChange('assetIds', next)
-  }
-
-  function addAssetId() {
-    const id = assetDraft.trim()
-    if (!id) return
-    if (!selectedAssetIds.includes(id)) {
-      onChange('assetIds', [...selectedAssetIds, id])
-    }
-    setAssetDraft('')
   }
 
   return (
@@ -224,28 +210,31 @@ function ServiceForm({
         <Field
           id="assetIds"
           label="Default assets"
-          hint="Asset Library IDs to compose into the default template. Save stores IDs only."
+          hint="Asset Library records to compose into the default template. Save stores IDs only."
           error={fieldErrors.assetIds}
           className={styles.span2}
         >
-          <input
+          <button
             id="assetIds"
-            type="text"
-            className={styles.input}
-            value={assetDraft}
-            onChange={(event) => setAssetDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault()
-                addAssetId()
-              }
-            }}
-            disabled={busy}
-            autoComplete="off"
-            placeholder="asset-…"
-          />
+            type="button"
+            className={styles.apply}
+            onClick={() => setLibraryOpen(true)}
+            disabled={busy || libraryOpen}
+          >
+            Choose from library
+          </button>
+          {libraryOpen ? (
+            <AssetPicker
+              multiple
+              variant="file"
+              selectedIds={selectedAssetIds}
+              disabled={busy}
+              onToggleId={(id) => onChange('assetIds', toggleAssetId(selectedAssetIds, id))}
+              onClose={() => setLibraryOpen(false)}
+            />
+          ) : null}
           {selectedAssetIds.length === 0 ? (
-            <p className={styles.hint}>No default assets yet. Enter an ID and press Enter to add it.</p>
+            <p className={styles.hint}>No default assets yet.</p>
           ) : (
             <ul className={styles.libraryList}>
               {selectedAssetIds.map((id) => (
@@ -254,7 +243,7 @@ function ServiceForm({
                     <input
                       type="checkbox"
                       checked
-                      onChange={() => toggleAsset(id)}
+                      onChange={() => onChange('assetIds', toggleAssetId(selectedAssetIds, id))}
                       disabled={busy}
                     />
                     <span>
