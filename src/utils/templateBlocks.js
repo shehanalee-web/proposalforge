@@ -1,5 +1,6 @@
 import { DEFAULT_LAYOUT_ID } from '../layouts/ids.js'
 import {
+  ensureProposalBlocks,
   hydrateBlocksFromProposal,
   syncLegacyFromBlocks,
 } from '../blocks/hydrate.js'
@@ -95,6 +96,33 @@ export async function composeTemplateContentBlocks(
  */
 export async function composeTemplateFromService(template, service) {
   return composeTemplateContentBlocks(template, service?.contentBlockIds ?? [])
+}
+
+/**
+ * Create Proposal path: hydrate the initial assembly, then compose the
+ * service's Content Library intent into it. Does not persist. Empty or
+ * absent contentBlockIds leave the payload unchanged so createProposal
+ * stays on the existing hydrate path and the library is not fetched.
+ *
+ * @param {Partial<import('../models/proposal.js').Proposal>} [payload]
+ * @param {Pick<import('../models/service.js').Service, 'contentBlockIds'>} [service]
+ */
+export async function composeServiceComponentsForCreate(payload = {}, service) {
+  const requested = normalizeContentBlockIds(service?.contentBlockIds)
+  if (requested.length === 0) {
+    return payload
+  }
+
+  const initialBlocks = ensureProposalBlocks(payload)
+  const composed = await composeTemplateFromService(
+    { ...payload, blocks: initialBlocks },
+    service,
+  )
+
+  return {
+    ...payload,
+    blocks: composed.blocks,
+  }
 }
 
 function blockIds(blocks) {
