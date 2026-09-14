@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { PRICING_MODEL, PRICING_MODELS, PRICING_MODEL_LABELS } from '../../models/service.js'
 import {
   CONTENT_BLOCK_TYPE_LABELS,
@@ -30,8 +31,10 @@ function ServiceForm({
   onChange,
   onSubmit,
   onApplyToTemplate,
+  onApplyAssetsToTemplate,
   submitting,
   applying = false,
+  applyingAssets = false,
   applyDisabled = false,
   fieldErrors = {},
   templates = [],
@@ -40,10 +43,12 @@ function ServiceForm({
 }) {
   const { blocks: library, loading: libraryLoading } = useLibraryBlocks()
   const selectedIds = values.contentBlockIds ?? []
+  const selectedAssetIds = values.assetIds ?? []
   const published = library.filter(
     (block) => block.status === LIBRARY_BLOCK_STATUS.PUBLISHED,
   )
-  const busy = submitting || applying
+  const [assetDraft, setAssetDraft] = useState('')
+  const busy = submitting || applying || applyingAssets
 
   function handleChange(event) {
     onChange(event.target.name, event.target.value)
@@ -54,6 +59,22 @@ function ServiceForm({
       ? selectedIds.filter((item) => item !== id)
       : [...selectedIds, id]
     onChange('contentBlockIds', next)
+  }
+
+  function toggleAsset(id) {
+    const next = selectedAssetIds.includes(id)
+      ? selectedAssetIds.filter((item) => item !== id)
+      : [...selectedAssetIds, id]
+    onChange('assetIds', next)
+  }
+
+  function addAssetId() {
+    const id = assetDraft.trim()
+    if (!id) return
+    if (!selectedAssetIds.includes(id)) {
+      onChange('assetIds', [...selectedAssetIds, id])
+    }
+    setAssetDraft('')
   }
 
   return (
@@ -201,6 +222,53 @@ function ServiceForm({
         </Field>
 
         <Field
+          id="assetIds"
+          label="Default assets"
+          hint="Asset Library IDs to compose into the default template. Save stores IDs only."
+          error={fieldErrors.assetIds}
+          className={styles.span2}
+        >
+          <input
+            id="assetIds"
+            type="text"
+            className={styles.input}
+            value={assetDraft}
+            onChange={(event) => setAssetDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                addAssetId()
+              }
+            }}
+            disabled={busy}
+            autoComplete="off"
+            placeholder="asset-…"
+          />
+          {selectedAssetIds.length === 0 ? (
+            <p className={styles.hint}>No default assets yet. Enter an ID and press Enter to add it.</p>
+          ) : (
+            <ul className={styles.libraryList}>
+              {selectedAssetIds.map((id) => (
+                <li key={id}>
+                  <label className={styles.libraryOption}>
+                    <input
+                      type="checkbox"
+                      checked
+                      onChange={() => toggleAsset(id)}
+                      disabled={busy}
+                    />
+                    <span>
+                      {id}
+                      <span className={styles.libraryMeta}>Saved asset ID</span>
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Field>
+
+        <Field
           id="deliverables"
           label="Deliverables"
           hint="One per line. Stored on the service, not on each proposal until copied."
@@ -228,6 +296,16 @@ function ServiceForm({
             disabled={busy || applyDisabled}
           >
             {applying ? 'Applying…' : 'Apply Default Components to Template'}
+          </button>
+        ) : null}
+        {onApplyAssetsToTemplate ? (
+          <button
+            type="button"
+            className={styles.apply}
+            onClick={onApplyAssetsToTemplate}
+            disabled={busy || applyDisabled}
+          >
+            {applyingAssets ? 'Applying…' : 'Apply Assets to Template'}
           </button>
         ) : null}
         <button type="submit" className={styles.submit} disabled={busy}>

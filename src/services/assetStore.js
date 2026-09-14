@@ -46,6 +46,11 @@ export function upsert(asset) {
   return remember(asset)
 }
 
+export function markLoaded() {
+  loaded = true
+  pending = null
+}
+
 export function findById(id) {
   return records.get(id)
 }

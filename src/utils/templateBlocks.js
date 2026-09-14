@@ -5,9 +5,13 @@ import {
   syncLegacyFromBlocks,
 } from '../blocks/hydrate.js'
 import { insertLibraryBlock, makeBlock } from '../blocks/instance.js'
+import { BLOCK_TYPE } from '../blocks/ids.js'
+import { makeGalleryItem } from '../blocks/schemas.js'
+import { normalizeIdList } from '../models/ids.js'
 import { findTemplateForService } from '../models/service.js'
 import { normalizeContentBlockIds } from '../models/template.js'
 import { NotFoundError } from '../services/errors.js'
+import { fetchAssetById } from '../services/assetService.js'
 import { fetchLibraryBlockById } from '../services/libraryBlockService.js'
 import {
   loadStoredProposalById,
@@ -181,6 +185,119 @@ export async function applyServiceComponentsToProposal(proposalId, service) {
   })
 
   return { proposal, updated: true }
+}
+
+function galleryAssetIds(blocks) {
+  const ids = []
+
+  for (const block of blocks ?? []) {
+    if (block?.type !== BLOCK_TYPE.GALLERY) continue
+    for (const item of block.data?.items ?? []) {
+      const id = String(item?.assetId ?? '').trim()
+      if (id) ids.push(id)
+    }
+  }
+
+  return ids
+}
+
+function cloneAssemblyBlocks(assembly = []) {
+  const current = Array.isArray(assembly) ? assembly : assembly?.blocks ?? []
+  return current.map((block) => makeBlock(block))
+}
+
+/**
+ * Materialize Asset Library ids into Block Engine gallery items.
+ * Does not persist. Empty assetIds skip fetching. Existing gallery items
+ * that already carry a requested assetId are left alone.
+ *
+ * @param {import('../models/template.js').ProposalTemplate | import('../blocks/instance.js').BlockInstance[]} [assembly]
+ * @param {string[]} [assetIds]
+ */
+export async function composeTemplateAssets(assembly = [], assetIds = []) {
+  const requested = normalizeIdList(assetIds)
+  const currentBlocks = cloneAssemblyBlocks(assembly)
+
+  if (requested.length === 0) {
+    return { blocks: currentBlocks, added: [] }
+  }
+
+  const present = new Set(galleryAssetIds(currentBlocks))
+  const missing = requested.filter((id) => !present.has(id))
+
+  if (missing.length === 0) {
+    return { blocks: currentBlocks, added: [] }
+  }
+
+  const fetched = []
+  for (const id of missing) {
+    fetched.push(await fetchAssetById(id))
+  }
+
+  const added = fetched.map((asset) =>
+    makeGalleryItem({
+      assetId: asset.id,
+      url: asset.url ?? asset.thumbnailUrl ?? '',
+      caption: asset.caption ?? asset.alt ?? asset.name ?? '',
+    }),
+  )
+
+  const galleryIndex = currentBlocks.findIndex((block) => block.type === BLOCK_TYPE.GALLERY)
+
+  if (galleryIndex >= 0) {
+    const gallery = currentBlocks[galleryIndex]
+    const items = [...(gallery.data?.items ?? []), ...added]
+    const nextBlocks = currentBlocks.map((block, index) =>
+      index === galleryIndex
+        ? makeBlock({
+            ...gallery,
+            enabled: true,
+            data: { ...gallery.data, items },
+          })
+        : block,
+    )
+    return { blocks: nextBlocks, added }
+  }
+
+  const gallery = makeBlock({
+    type: BLOCK_TYPE.GALLERY,
+    enabled: true,
+    data: { items: added },
+  })
+
+  return { blocks: [...currentBlocks, gallery], added }
+}
+
+/**
+ * Service Editor Asset Apply path: resolve the linked template from the
+ * current editor list, then fetch and compose against the stored record so a
+ * stale useTemplates() snapshot cannot drop newer blocks. Persist only when
+ * new gallery items appear.
+ *
+ * @param {import('../models/template.js').ProposalTemplate[]} templates
+ * @param {Pick<import('../models/service.js').Service, 'id' | 'templateId' | 'assetIds'>} service
+ */
+export async function applyServiceAssetsToTemplate(templates, service) {
+  const resolved = findTemplateForService(templates, service)
+  if (!resolved) {
+    throw new NotFoundError('No default template is linked to this service.')
+  }
+
+  const stored = await fetchTemplateById(resolved.id)
+  if (!hasCanonicalBlocks(stored.blocks)) {
+    throw new NotFoundError('Linked template has no Block Engine assembly.')
+  }
+
+  const composed = await composeTemplateAssets(stored, service?.assetIds)
+  if (composed.added.length === 0) {
+    return { template: stored, updated: false }
+  }
+
+  const template = await updateTemplate(stored.id, {
+    blocks: composed.blocks,
+  })
+
+  return { template, updated: true }
 }
 
 function numericItems(items) {
