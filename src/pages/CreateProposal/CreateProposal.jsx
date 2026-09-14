@@ -16,6 +16,7 @@ import { useCreateProposal } from '../../hooks/useCreateProposal.js'
 import { useServices } from '../../hooks/useServices.js'
 import { useTemplates } from '../../hooks/useTemplates.js'
 import { proposalFromTemplate } from '../../utils/proposalFromTemplate.js'
+import { composeServiceComponentsForCreate } from '../../utils/templateBlocks.js'
 import { filterServices } from '../../utils/serviceDiscovery.js'
 import { PATH, proposalEditPath } from '../../workspace/paths.js'
 import styles from './CreateProposal.module.css'
@@ -93,6 +94,7 @@ function CreateProposal() {
   const [step, setStep] = useState(1)
   const [workspaceId, setWorkspaceId] = useState(null)
   const [creatingServiceId, setCreatingServiceId] = useState(null)
+  const [composeError, setComposeError] = useState(null)
   const [serviceQuery, setServiceQuery] = useState('')
   const [serviceIndustry, setServiceIndustry] = useState('')
   const [serviceCategory, setServiceCategory] = useState('')
@@ -169,7 +171,10 @@ function CreateProposal() {
   const workspace = MOCK_WORKSPACES[0]
   const workspaceName = kit?.companyName?.trim() || workspace.name
   const logoUrl = kit?.logos?.primary?.url
-  const requestError = error?.message || (error ? 'Could not create the proposal.' : null)
+  const requestError =
+    composeError?.message ||
+    error?.message ||
+    (error ? 'Could not create the proposal.' : null)
 
   function selectWorkspace() {
     setWorkspaceId(workspace.id)
@@ -184,10 +189,11 @@ function CreateProposal() {
     if (submitting) return
 
     setCreatingServiceId(service.id)
+    setComposeError(null)
 
     const template = findTemplateForService(templates, service)
     const extras = template ? proposalFromTemplate(template, service) : {}
-    const created = await create({
+    const payload = {
       ...extras,
       title: extras.title || `${service.name} proposal`,
       clientName: extras.clientName?.trim() || DEFAULT_CLIENT_NAME,
@@ -197,11 +203,18 @@ function CreateProposal() {
         extras.summary ||
         service.defaultDescription ||
         service.description,
-    })
+    }
 
-    if (created) {
-      navigate(proposalEditPath(created.id))
-      return
+    try {
+      const composed = await composeServiceComponentsForCreate(payload, service)
+      const created = await create(composed)
+
+      if (created) {
+        navigate(proposalEditPath(created.id))
+        return
+      }
+    } catch (caught) {
+      setComposeError(caught)
     }
 
     setCreatingServiceId(null)
