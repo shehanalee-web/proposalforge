@@ -269,8 +269,10 @@ export async function composeTemplateAssets(assembly = [], assetIds = []) {
 }
 
 /**
- * Service Editor Asset Apply path: resolve the linked canonical template,
- * compose gallery items, and persist only when new items appear.
+ * Service Editor Asset Apply path: resolve the linked template from the
+ * current editor list, then fetch and compose against the stored record so a
+ * stale useTemplates() snapshot cannot drop newer blocks. Persist only when
+ * new gallery items appear.
  *
  * @param {import('../models/template.js').ProposalTemplate[]} templates
  * @param {Pick<import('../models/service.js').Service, 'id' | 'templateId' | 'assetIds'>} service

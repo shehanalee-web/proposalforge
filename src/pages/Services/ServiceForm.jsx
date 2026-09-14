@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { PRICING_MODEL, PRICING_MODELS, PRICING_MODEL_LABELS } from '../../models/service.js'
 import {
   CONTENT_BLOCK_TYPE_LABELS,
@@ -37,8 +38,6 @@ function ServiceForm({
   applyDisabled = false,
   fieldErrors = {},
   templates = [],
-  assets = [],
-  assetsLoading = false,
   submitLabel = 'Save service',
   submittingLabel = 'Saving…',
 }) {
@@ -48,8 +47,7 @@ function ServiceForm({
   const published = library.filter(
     (block) => block.status === LIBRARY_BLOCK_STATUS.PUBLISHED,
   )
-  const listedAssetIds = new Set(assets.map((asset) => asset.id))
-  const extraAssetIds = selectedAssetIds.filter((id) => !listedAssetIds.has(id))
+  const [assetDraft, setAssetDraft] = useState('')
   const busy = submitting || applying || applyingAssets
 
   function handleChange(event) {
@@ -68,6 +66,15 @@ function ServiceForm({
       ? selectedAssetIds.filter((item) => item !== id)
       : [...selectedAssetIds, id]
     onChange('assetIds', next)
+  }
+
+  function addAssetId() {
+    const id = assetDraft.trim()
+    if (!id) return
+    if (!selectedAssetIds.includes(id)) {
+      onChange('assetIds', [...selectedAssetIds, id])
+    }
+    setAssetDraft('')
   }
 
   return (
@@ -217,39 +224,31 @@ function ServiceForm({
         <Field
           id="assetIds"
           label="Default assets"
-          hint="Asset Library records to compose into the default template. Save stores IDs only."
+          hint="Asset Library IDs to compose into the default template. Save stores IDs only."
           error={fieldErrors.assetIds}
           className={styles.span2}
         >
-          {assetsLoading ? (
-            <p className={styles.hint}>Loading Asset Library…</p>
-          ) : assets.length === 0 && extraAssetIds.length === 0 ? (
-            <p className={styles.hint}>No Asset Library files yet.</p>
+          <input
+            id="assetIds"
+            type="text"
+            className={styles.input}
+            value={assetDraft}
+            onChange={(event) => setAssetDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                addAssetId()
+              }
+            }}
+            disabled={busy}
+            autoComplete="off"
+            placeholder="asset-…"
+          />
+          {selectedAssetIds.length === 0 ? (
+            <p className={styles.hint}>No default assets yet. Enter an ID and press Enter to add it.</p>
           ) : (
             <ul className={styles.libraryList}>
-              {assets.map((asset) => {
-                const checked = selectedAssetIds.includes(asset.id)
-                return (
-                  <li key={asset.id}>
-                    <label className={styles.libraryOption}>
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleAsset(asset.id)}
-                        disabled={busy}
-                      />
-                      <span>
-                        {asset.name || asset.id}
-                        <span className={styles.libraryMeta}>
-                          {asset.kind}
-                          {asset.caption ? ` · ${asset.caption}` : ''}
-                        </span>
-                      </span>
-                    </label>
-                  </li>
-                )
-              })}
-              {extraAssetIds.map((id) => (
+              {selectedAssetIds.map((id) => (
                 <li key={id}>
                   <label className={styles.libraryOption}>
                     <input

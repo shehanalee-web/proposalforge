@@ -214,6 +214,8 @@ assert(
       .split('async function handleSubmit')[1]
       .split('async function handleApplyToTemplate')[0]
       .includes('fetchAssetById') &&
+    !sourceOf('src', 'pages', 'Services', 'ServiceEditor.jsx').includes('listAssets') &&
+    !sourceOf('src', 'pages', 'Services', 'ServiceEditor.jsx').includes('useAsyncData') &&
     !sourceOf('src', 'pages', 'Services', 'ServiceForm.jsx').includes('fetchAssetById') &&
     !sourceOf('src', 'pages', 'Services', 'ServiceForm.jsx').includes('listAssets'),
 )
@@ -355,6 +357,8 @@ assert(
     firstGalleryItems.some((item) => item.assetId === assetC.id) &&
     firstGalleryItems.some((item) => item.id === 'img-existing-a') &&
     afterSecondSpread.blocks[2].data.items[0].id === 'img-existing-b' &&
+    afterSecondSpread.blocks[1].data.items.find((item) => item.assetId === assetA.id)
+      ?.id === 'img-existing-a' &&
     afterSecondSpread.contentBlockIds.join() === 'block-keep-h17-6',
 )
 
@@ -374,10 +378,18 @@ assert(
   'H. empty assetIds → no fetch and no template persistence',
   emptyApply.updated === false &&
     emptyAfter.updatedAt === emptyBefore.updatedAt &&
-    JSON.stringify(emptyAfter.blocks) === JSON.stringify(emptyBefore.blocks) &&
+    JSON.stringify(emptyAfter) === JSON.stringify(emptyBefore) &&
     composeAssetsSrc.indexOf('requested.length === 0') <
       composeAssetsSrc.indexOf('fetchAssetById') &&
-    composeAssetsSrc.includes('return { blocks: currentBlocks, added: [] }'),
+    composeAssetsSrc.includes('return { blocks: currentBlocks, added: [] }') &&
+    sliceExport(
+      sourceOf('src', 'utils', 'templateBlocks.js'),
+      'applyServiceAssetsToTemplate',
+    ).indexOf('composed.added.length === 0') <
+      sliceExport(
+        sourceOf('src', 'utils', 'templateBlocks.js'),
+        'applyServiceAssetsToTemplate',
+      ).indexOf('updateTemplate'),
 )
 
 const unknownBefore = await fetchTemplateById(linkedTemplate.id)
@@ -434,6 +446,104 @@ assert(
     JSON.stringify(legacyAfter.sections) === JSON.stringify(legacyBefore.sections),
 )
 
+const storedExtra = makeBlock({
+  id: 'blk-store-extra-h17-6',
+  type: BLOCK_TYPE.TERMS,
+  data: { body: 'Present in store, missing from stale UI snapshot.' },
+})
+const existingGallery = makeBlock({
+  id: 'blk-gallery-stale-h17-6',
+  type: BLOCK_TYPE.GALLERY,
+  enabled: true,
+  data: {
+    items: [
+      {
+        id: 'img-stale-existing-a',
+        assetId: assetA.id,
+        url: assetA.url,
+        caption: assetA.caption,
+      },
+    ],
+  },
+})
+const freshStoreTemplate = await createTemplate({
+  id: 'tpl-h17-6-fresh-store',
+  title: 'Fresh store template',
+  notes: 'Unrelated notes must survive Apply.',
+  defaultLayoutId: LAYOUT_ID.LANDSCAPE,
+  sections: [{ heading: 'Scope', body: 'Unrelated section.' }],
+  contentBlockIds: ['block-keep-h17-6'],
+  blocks: [authoredKeep, storedExtra, existingGallery],
+})
+const freshStoreService = await createService({
+  id: 'svc-h17-6-fresh-store',
+  name: 'Fresh store service',
+  templateId: freshStoreTemplate.id,
+  assetIds: [assetA.id, assetB.id],
+})
+const staleSnapshot = {
+  ...freshStoreTemplate,
+  blocks: [authoredKeep],
+}
+const staleApply = await applyServiceAssetsToTemplate(
+  [staleSnapshot],
+  freshStoreService,
+)
+const staleStored = await fetchTemplateById(freshStoreTemplate.id)
+const staleItemIds = galleryItems(staleStored.blocks).map((item) => item.id)
+const staleUpdatedAt = staleStored.updatedAt
+
+assert(
+  'T. stale template snapshot cannot overwrite newer stored blocks',
+  staleApply.updated === true &&
+    staleStored.blocks.some((block) => block.id === 'blk-keep-h17-6') &&
+    staleStored.blocks.some((block) => block.id === 'blk-store-extra-h17-6') &&
+    staleStored.blocks.some((block) => block.id === 'blk-gallery-stale-h17-6') &&
+    staleStored.blocks.find((block) => block.id === 'blk-store-extra-h17-6')?.data
+      .body === 'Present in store, missing from stale UI snapshot.' &&
+    galleryItems(staleStored.blocks).some((item) => item.id === 'img-stale-existing-a') &&
+    galleryItems(staleStored.blocks).filter((item) => item.assetId === assetA.id)
+      .length === 1 &&
+    galleryItems(staleStored.blocks).some((item) => item.assetId === assetB.id) &&
+    staleStored.notes === 'Unrelated notes must survive Apply.' &&
+    staleStored.defaultLayoutId === LAYOUT_ID.LANDSCAPE &&
+    staleStored.sections[0].heading === 'Scope' &&
+    staleStored.contentBlockIds.join() === 'block-keep-h17-6',
+)
+
+const repeatStale = await applyServiceAssetsToTemplate(
+  [staleSnapshot],
+  freshStoreService,
+)
+const repeatStored = await fetchTemplateById(freshStoreTemplate.id)
+
+assert(
+  'U. repeated Apply is a true persist no-op',
+  repeatStale.updated === false &&
+    repeatStored.updatedAt === staleUpdatedAt &&
+    JSON.stringify(repeatStored.blocks) === JSON.stringify(staleStored.blocks) &&
+    galleryItems(repeatStored.blocks).map((item) => item.id).join() ===
+      staleItemIds.join() &&
+    galleryItems(repeatStored.blocks).filter((item) => item.assetId === assetA.id)
+      .length === 1 &&
+    galleryItems(repeatStored.blocks).filter((item) => item.assetId === assetB.id)
+      .length === 1,
+)
+
+const emptyStale = await applyServiceAssetsToTemplate([staleSnapshot], {
+  id: freshStoreService.id,
+  templateId: freshStoreTemplate.id,
+  assetIds: [],
+})
+const emptyStaleStored = await fetchTemplateById(freshStoreTemplate.id)
+
+assert(
+  'V. empty assetIds Apply is a true persist no-op',
+  emptyStale.updated === false &&
+    emptyStaleStored.updatedAt === staleUpdatedAt &&
+    JSON.stringify(emptyStaleStored) === JSON.stringify(repeatStored),
+)
+
 assert(
   'K. asset records remain unchanged',
   (await fetchAssetById(assetA.id)).url === assetA.url &&
@@ -465,6 +575,9 @@ assert(
     formSource.includes('Apply Assets to Template') &&
     editorSource.includes('applyServiceComponentsToTemplate') &&
     editorSource.includes('applyServiceAssetsToTemplate') &&
+    !editorSource.includes('listAssets') &&
+    assetApplySrc.includes('fetchTemplateById(resolved.id)') &&
+    assetApplySrc.includes('composeTemplateAssets(stored, service?.assetIds)') &&
     !sourceOf('src', 'utils', 'proposalFromTemplate.js').includes('fetchAssetById'),
 )
 
