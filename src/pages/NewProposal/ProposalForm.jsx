@@ -33,8 +33,10 @@ function ProposalForm({
   onChange,
   onSubmit,
   onApplyToProposal,
+  onApplyAssetsToProposal,
   submitting,
   applying = false,
+  applyingAssets = false,
   applyDisabled = false,
   fieldErrors = {},
   submitLabel = 'Save changes',
@@ -59,7 +61,7 @@ function ProposalForm({
     )
       ? values.projectType
       : null
-  const busy = submitting || applying
+  const busy = submitting || applying || applyingAssets
 
   function handleChange(event) {
     onChange(event.target.name, event.target.value)
@@ -117,6 +119,16 @@ function ProposalForm({
                   disabled={busy || applyDisabled}
                 >
                   {applying ? 'Applying…' : 'Apply Default Components to Proposal'}
+                </button>
+              ) : null}
+              {onApplyAssetsToProposal ? (
+                <button
+                  type="button"
+                  className={styles.apply}
+                  onClick={onApplyAssetsToProposal}
+                  disabled={busy || applyDisabled}
+                >
+                  {applyingAssets ? 'Applying…' : 'Apply Assets to Proposal'}
                 </button>
               ) : null}
             </>
