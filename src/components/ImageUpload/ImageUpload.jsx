@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { ValidationError } from '../../services/errors.js'
 import { uploadAsset, IMAGE_FILE_ACCEPT } from '../../services/assetService.js'
 import { isImageFile, isImageMime } from '../../utils/imageThumbnail.js'
+import AssetPicker from '../AssetPicker/AssetPicker.jsx'
+import { selectLibraryAsset } from '../AssetPicker/libraryAsset.js'
 import styles from './ImageUpload.module.css'
 
 function capitalize(value) {
@@ -65,6 +67,7 @@ function ImageUpload({
   const [progress, setProgress] = useState(null)
   const [error, setError] = useState(null)
   const [localPreview, setLocalPreview] = useState(null)
+  const [libraryOpen, setLibraryOpen] = useState(false)
 
   const url = typeof value === 'string' ? value : ''
   const uploading = progress !== null && progress < 100
@@ -95,8 +98,21 @@ function ImageUpload({
   }, [armed, disabled])
 
   function openPicker() {
-    if (disabled || uploading) return
+    if (disabled || uploading || libraryOpen) return
     inputRef.current?.click()
+  }
+
+  function openLibrary(event) {
+    event.preventDefault()
+    event.stopPropagation()
+    if (disabled || uploading) return
+    setError(null)
+    setLibraryOpen(true)
+  }
+
+  function handleLibrarySelect(asset) {
+    selectLibraryAsset(onChange, asset)
+    setLibraryOpen(false)
   }
 
   async function handleFiles(files) {
@@ -241,8 +257,16 @@ function ImageUpload({
               {variant === 'file' ? 'Drop a file here' : 'Drop an image here'}
             </p>
             <p className={styles.emptyHint} id={`${inputId}-hint`}>
-              Click to browse, or paste from the clipboard
+              Click to browse, paste, or choose from the library
             </p>
+            <button
+              type="button"
+              className={styles.library}
+              onClick={openLibrary}
+              disabled={disabled || uploading}
+            >
+              Choose from library
+            </button>
           </div>
         )}
 
@@ -255,6 +279,14 @@ function ImageUpload({
 
         {hasFile && !uploading ? (
           <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.action}
+              onClick={openLibrary}
+              disabled={disabled}
+            >
+              Library
+            </button>
             <button
               type="button"
               className={styles.action}
@@ -277,6 +309,15 @@ function ImageUpload({
           </div>
         ) : null}
       </div>
+
+      {libraryOpen ? (
+        <AssetPicker
+          variant={variant}
+          disabled={disabled || uploading}
+          onSelect={handleLibrarySelect}
+          onClose={() => setLibraryOpen(false)}
+        />
+      ) : null}
 
       {error ? (
         <p id={`${inputId}-error`} className={styles.error} role="alert">
