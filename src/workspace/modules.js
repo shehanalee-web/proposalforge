@@ -134,7 +134,7 @@ export const WORKSPACE_MODULES = Object.freeze([
     status: 'live',
     summary: 'Reusable media for proposals, services and brand.',
     description:
-      'Files uploaded from Brand Kit and proposal blocks. Proposals store asset IDs; layouts decide crop and size.',
+      'Files uploaded from this library, Brand Kit, and proposal blocks. Proposals store asset IDs; layouts decide crop and size.',
     capabilities: [
       'Images, renders, videos, documents and certificates',
       'Referenced by Brand Kit, services, components and proposals',

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import ImageUpload from '../../components/ImageUpload/ImageUpload.jsx'
 import WorkspacePlaceholder from '../../components/WorkspacePlaceholder/WorkspacePlaceholder.jsx'
 import styles from '../../components/WorkspacePlaceholder/WorkspacePlaceholder.module.css'
 import { listAssets } from '../../services/assetService.js'
@@ -26,8 +27,25 @@ function Assets() {
     }
   }, [])
 
+  async function handleLibraryUpload(_url, asset) {
+    if (!asset?.id) return
+    const records = await listAssets()
+    setAssets(records)
+  }
+
   return (
-    <WorkspacePlaceholder moduleId={WORKSPACE_MODULE.ASSETS}>
+    <WorkspacePlaceholder
+      moduleId={WORKSPACE_MODULE.ASSETS}
+      action={
+        <ImageUpload
+          label="Upload to library"
+          variant="file"
+          accept="application/pdf,image/*,.pdf"
+          value=""
+          onChange={handleLibraryUpload}
+        />
+      }
+    >
       {assets.length === 0 ? (
         <p className={styles.emptyNote}>
           No files yet. Uploads from Brand Kit and proposal blocks appear here.
