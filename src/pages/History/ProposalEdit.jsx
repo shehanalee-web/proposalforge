@@ -11,6 +11,7 @@ import { useSaveStatus } from '../../hooks/useSaveStatus.js'
 import { useEditorKeyboard } from '../../hooks/useEditorKeyboard.js'
 import ProposalForm from '../NewProposal/ProposalForm.jsx'
 import { PATH, proposalPath } from '../../workspace/paths.js'
+import { applyServiceComponentsToProposal } from '../../utils/templateBlocks.js'
 import { ensureProposalBlocks } from '../../blocks/hydrate.js'
 import { computeCommercials } from '../../utils/commercialTotals.js'
 import { BLOCK_TYPE } from '../../blocks/ids.js'
@@ -168,6 +169,8 @@ function ProposalEditContent() {
   const [historyOpen, setHistoryOpen] = useState(false)
   const [activityOpen, setActivityOpen] = useState(false)
   const [sendOpen, setSendOpen] = useState(false)
+  const [applying, setApplying] = useState(false)
+  const [applyError, setApplyError] = useState(null)
   const values = draft ?? (proposal ? valuesFromProposal(proposal) : null)
   const documentBlocks = blocks ?? (proposal ? ensureProposalBlocks(proposal) : [])
   const snapshot = useMemo(
@@ -290,6 +293,29 @@ function ProposalEditContent() {
     setProposal(next)
     setDraft(valuesFromProposal(next))
     setBlocks(ensureProposalBlocks(next))
+  }
+
+  async function handleApplyToProposal() {
+    if (!id || !values || applying || submitting) return
+    const service = services.find((entry) => entry.id === values.serviceId)
+    if (!service) return
+
+    setApplying(true)
+    setApplyError(null)
+
+    try {
+      const result = await applyServiceComponentsToProposal(id, {
+        contentBlockIds: service.contentBlockIds,
+      })
+      if (result.updated) {
+        applyProposalRecord(result.proposal)
+        save.markSaved()
+      }
+    } catch (caught) {
+      setApplyError(caught)
+    } finally {
+      setApplying(false)
+    }
   }
 
   async function handleRestoreVersion(versionId) {
@@ -694,10 +720,19 @@ function ProposalEditContent() {
             type="button"
             className={styles.retry}
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || applying}
           >
             Try again
           </button>
+        </div>
+      ) : null}
+
+      {applyError ? (
+        <div className={styles.banner} role="alert">
+          <p className={styles.bannerTitle}>Could not apply default components</p>
+          <p className={styles.bannerText}>
+            {applyError.message || 'Something went wrong. Please try again.'}
+          </p>
         </div>
       ) : null}
 
@@ -724,7 +759,10 @@ function ProposalEditContent() {
               values={values}
               onChange={handleChange}
               onSubmit={handleSubmit}
+              onApplyToProposal={handleApplyToProposal}
               submitting={submitting}
+              applying={applying}
+              applyDisabled={!values.serviceId}
               fieldErrors={fieldErrors}
               services={services}
               submitLabel="Save changes"
@@ -735,7 +773,7 @@ function ProposalEditContent() {
               <BlockEditor
                 blocks={documentBlocks}
                 onChange={handleBlocksChange}
-                disabled={submitting}
+                disabled={submitting || applying}
                 currency={proposal.currency}
                 proposalId={proposal.id}
               />

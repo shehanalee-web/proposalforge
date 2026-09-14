@@ -8,6 +8,10 @@ import { findTemplateForService } from '../models/service.js'
 import { normalizeContentBlockIds } from '../models/template.js'
 import { NotFoundError } from '../services/errors.js'
 import { fetchLibraryBlockById } from '../services/libraryBlockService.js'
+import {
+  loadStoredProposalById,
+  updateProposal,
+} from '../services/proposalService.js'
 import { fetchTemplateById, updateTemplate } from '../services/templateService.js'
 
 /**
@@ -125,6 +129,30 @@ export async function applyServiceComponentsToTemplate(templates, service) {
   })
 
   return { template, updated: true }
+}
+
+/**
+ * Proposal Editor Apply path: load the stored proposal (no studio view),
+ * compose into that record, and persist only when new instances appear.
+ *
+ * @param {string} proposalId
+ * @param {Pick<import('../models/service.js').Service, 'contentBlockIds'>} [service]
+ */
+export async function applyServiceComponentsToProposal(proposalId, service) {
+  const stored = await loadStoredProposalById(proposalId)
+  const composed = await composeTemplateFromService(stored, service)
+  const storedIds = new Set(blockIds(stored.blocks))
+  const added = (composed.blocks ?? []).filter((block) => !storedIds.has(block.id))
+
+  if (added.length === 0) {
+    return { proposal: stored, updated: false }
+  }
+
+  const proposal = await updateProposal(stored.id, {
+    blocks: composed.blocks,
+  })
+
+  return { proposal, updated: true }
 }
 
 function numericItems(items) {
