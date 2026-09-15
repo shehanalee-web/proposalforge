@@ -180,15 +180,116 @@ const coverPdfSource = pdfSource.slice(
   pdfSource.indexOf('export function CoverPdf'),
   pdfSource.indexOf('export function ExecutiveSummaryPdf'),
 )
+const coverCopySource = pdfSource.slice(
+  pdfSource.indexOf('function CoverCopy'),
+  pdfSource.indexOf('export function CoverPdf'),
+)
+const coverSplitBlock = stylesSource.slice(
+  stylesSource.indexOf('coverSplit:'),
+  stylesSource.indexOf('coverSplitFallback:'),
+)
+const coverBleedBlock = stylesSource.slice(
+  stylesSource.indexOf('coverBleed:'),
+  stylesSource.indexOf('watermark:'),
+)
+const bleedImageBlock = stylesSource.slice(
+  stylesSource.indexOf('coverBleedImage:'),
+  stylesSource.indexOf('watermark:'),
+)
+const headerSource = sourceOf('src', 'pdf', 'ProposalHeader.jsx')
 assert(
   'F. PDF cover is no longer a single unstyled stack for all kits',
   stylesSource.includes('coverMinimal:') &&
     stylesSource.includes('coverSplit:') &&
+    stylesSource.includes('coverSplitFallback:') &&
     stylesSource.includes('coverBleed:') &&
     coverPdfSource.includes('styles.coverSplit') &&
     coverPdfSource.includes('styles.coverBleed') &&
     coverPdfSource.includes('styles.coverMinimal') &&
     !coverPdfSource.includes('styles.section'),
+)
+
+assert(
+  'F2. Split is two-column only when an image exists',
+  coverPdfSource.includes('coverStyle === COVER_STYLE.SPLIT && coverImage') &&
+    coverPdfSource.includes('styles.coverSplitFallback') &&
+    coverSplitBlock.includes("flexDirection: 'row'") &&
+    coverSplitBlock.includes('coverSplit:') &&
+    !coverSplitBlock.includes("flexDirection: 'column'") &&
+    stylesSource.includes('coverSplitFallback:'),
+)
+
+assert(
+  'F3. Full-bleed image is in-flow and contained by the cover',
+  bleedImageBlock.includes("width: '100%'") &&
+    bleedImageBlock.includes('height: 148') &&
+    !bleedImageBlock.includes("position: 'absolute'") &&
+    !bleedImageBlock.includes('top: 0') &&
+    !coverBleedBlock.includes("position: 'absolute'") &&
+    coverPdfSource.includes('styles.coverBleedImage') &&
+    coverPdfSource.includes('<Image src={coverImage} style={styles.coverBleedImage}') &&
+    !coverPdfSource.includes("position: 'absolute'"),
+)
+
+assert(
+  'F4. Full-bleed insets share page / pageLandscape padding',
+  stylesSource.includes('paddingTop: PAGE_PADDING.portrait.top') &&
+    stylesSource.includes('paddingBottom: PAGE_PADDING.portrait.bottom') &&
+    stylesSource.includes('paddingHorizontal: PAGE_PADDING.portrait.horizontal') &&
+    stylesSource.includes('paddingTop: PAGE_PADDING.landscape.top') &&
+    stylesSource.includes('paddingBottom: PAGE_PADDING.landscape.bottom') &&
+    stylesSource.includes('paddingHorizontal: PAGE_PADDING.landscape.horizontal') &&
+    coverPdfSource.includes('PAGE_PADDING.landscape') &&
+    coverPdfSource.includes('PAGE_PADDING.portrait') &&
+    coverPdfSource.includes('marginHorizontal: -inset.horizontal') &&
+    coverPdfSource.includes('marginTop: -inset.top') &&
+    coverPdfSource.includes('paddingTop: coverImage ? 14 : inset.top') &&
+    !stylesSource.includes('paddingTop: 36') &&
+    !stylesSource.includes('paddingHorizontal: 48') &&
+    !stylesSource.includes('marginHorizontal: -48'),
+)
+
+assert(
+  'F5. Full-bleed keeps header metadata and skips only the dark brand band',
+  headerSource.includes('fullBleed = brand?.coverStyle === COVER_STYLE.FULL_BLEED') &&
+    headerSource.includes('styles.brandBand') &&
+    headerSource.includes('styles.metaRow') &&
+    headerSource.includes('<Meta label="Status"') &&
+    headerSource.includes('<Meta label="Issued"') &&
+    headerSource.includes('<Meta label="Updated"') &&
+    headerSource.includes('<Meta label="Valid until"') &&
+    headerSource.includes('<Meta label="Number"') &&
+    headerSource.includes('{fullBleed ? (') &&
+    headerSource.includes('[styles.body, styles.muted]') &&
+    !headerSource.includes('return null') &&
+    coverPdfSource.includes('styles.coverBleed'),
+)
+
+assert(
+  'F6. Logo follows the cover surface, not a single light mark',
+  coverPdfSource.includes("resolvePdfLogo(brand, onDark ? 'light' : 'dark')") &&
+    coverPdfSource.includes('onDark = coverStyle === COVER_STYLE.FULL_BLEED') &&
+    !coverPdfSource.includes("resolvePdfLogo(brand, 'light')"),
+)
+
+assert(
+  'F7. Studio name is readable on the full-bleed dark surface',
+  coverCopySource.includes("tone === 'dark' ? [styles.sectionTitle, styles.coverBleedHeading]") &&
+    coverCopySource.includes(': titleStyle(brand)') &&
+    coverCopySource.includes('<Text style={studioStyle}>{studioName}</Text>') &&
+    !coverCopySource.includes('<Text style={titleStyle(brand)}>{studioName}</Text>'),
+)
+
+assert(
+  'F8. Cover views wrap; only images stay atomic',
+  !coverPdfSource.includes('<View style={[styles.cover, styles.coverSplit]} wrap={false}>') &&
+    !coverPdfSource.includes('<View style={[styles.cover, styles.coverSplitFallback]} wrap={false}>') &&
+    !coverPdfSource.includes('<View style={[styles.cover, styles.coverMinimal]} wrap={false}>') &&
+    !coverPdfSource.includes('wrap={false}\n        style={[') &&
+    coverPdfSource.includes('style={styles.coverBleedImage} wrap={false}') &&
+    coverPdfSource.includes('style={styles.coverSplitImage}') &&
+    coverPdfSource.includes('wrap={false}') &&
+    coverPdfSource.includes('style={styles.coverMinimalImage} wrap={false}'),
 )
 
 const splitBrand = makeBrandKit({

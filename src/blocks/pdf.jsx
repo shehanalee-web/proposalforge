@@ -19,7 +19,8 @@ import {
 import { resolvePdfLogo } from '../pdf/pdfBrand.js'
 import { BLOCK_TYPE } from './ids.js'
 import { isBlockDataEmpty } from './schemas.js'
-import { styles } from '../pdf/pdfStyles.js'
+import { PAGE_PADDING, styles } from '../pdf/pdfStyles.js'
+import { getLayout } from '../layouts/registry.js'
 import { toAbsoluteUrl } from '../utils/publicUrl.js'
 
 function titleStyle(brand) {
@@ -42,11 +43,13 @@ function CoverCopy({ brand, logoUrl, studioName, kicker, heading, subheading, to
   const kickerStyle =
     tone === 'dark' ? [styles.projectType, styles.coverBleedKicker] : styles.projectType
   const bodyStyle = tone === 'dark' ? [styles.body, styles.coverBleedBody] : styles.body
+  const studioStyle =
+    tone === 'dark' ? [styles.sectionTitle, styles.coverBleedHeading] : titleStyle(brand)
 
   return (
     <View>
       {logoUrl ? <Image src={logoUrl} style={styles.coverLogo} /> : null}
-      <Text style={titleStyle(brand)}>{studioName}</Text>
+      <Text style={studioStyle}>{studioName}</Text>
       {kicker ? <Text style={kickerStyle}>{kicker}</Text> : null}
       <Text style={headingStyle}>{heading}</Text>
       {subheading ? <Text style={bodyStyle}>{subheading}</Text> : null}
@@ -60,8 +63,9 @@ export function CoverPdf({ instance, proposal, brand, settings }) {
   const subheading = instance.data.subheading?.trim()
   const studioName = studioNameFromBrand(brand, settings)
   const coverImage = resolveCoverImage(instance, brand)
-  const logoUrl = resolvePdfLogo(brand, 'light')
   const coverStyle = brand?.coverStyle
+  const onDark = coverStyle === COVER_STYLE.FULL_BLEED
+  const logoUrl = resolvePdfLogo(brand, onDark ? 'light' : 'dark')
   const copy = (
     <CoverCopy
       brand={brand}
@@ -70,38 +74,56 @@ export function CoverPdf({ instance, proposal, brand, settings }) {
       kicker={kicker}
       heading={heading}
       subheading={subheading}
+      tone={onDark ? 'dark' : 'paper'}
     />
   )
+  const landscape = getLayout(proposal.layoutId).orientation === 'landscape'
+  const inset = landscape ? PAGE_PADDING.landscape : PAGE_PADDING.portrait
 
-  if (coverStyle === COVER_STYLE.SPLIT) {
+  if (coverStyle === COVER_STYLE.SPLIT && coverImage) {
     return (
       <View style={[styles.cover, styles.coverSplit]}>
         <View style={styles.coverSplitCopy}>{copy}</View>
-        {coverImage ? (
-          <View style={styles.coverSplitMedia}>
-            <Image src={coverImage} style={styles.coverSplitImage} />
-          </View>
-        ) : null}
+        <View style={styles.coverSplitMedia} wrap={false}>
+          <Image src={coverImage} style={styles.coverSplitImage} />
+        </View>
+      </View>
+    )
+  }
+
+  if (coverStyle === COVER_STYLE.SPLIT) {
+    return (
+      <View style={[styles.cover, styles.coverSplitFallback]}>
+        {copy}
       </View>
     )
   }
 
   if (coverStyle === COVER_STYLE.FULL_BLEED) {
     return (
-      <View style={[styles.cover, styles.coverBleed]}>
+      <View
+        style={[
+          styles.cover,
+          styles.coverBleed,
+          {
+            marginHorizontal: -inset.horizontal,
+            marginTop: -inset.top,
+          },
+        ]}
+      >
         {coverImage ? (
-          <Image src={coverImage} style={styles.coverBleedImage} />
+          <Image src={coverImage} style={styles.coverBleedImage} wrap={false} />
         ) : null}
-        <View style={styles.coverBleedCopy}>
-          <CoverCopy
-            brand={brand}
-            logoUrl={logoUrl}
-            studioName={studioName}
-            kicker={kicker}
-            heading={heading}
-            subheading={subheading}
-            tone="dark"
-          />
+        <View
+          style={[
+            styles.coverBleedCopy,
+            {
+              paddingHorizontal: inset.horizontal,
+              paddingTop: coverImage ? 14 : inset.top,
+            },
+          ]}
+        >
+          {copy}
         </View>
       </View>
     )
@@ -111,7 +133,7 @@ export function CoverPdf({ instance, proposal, brand, settings }) {
     <View style={[styles.cover, styles.coverMinimal]}>
       {copy}
       {coverImage ? (
-        <Image src={coverImage} style={styles.coverMinimalImage} />
+        <Image src={coverImage} style={styles.coverMinimalImage} wrap={false} />
       ) : null}
     </View>
   )

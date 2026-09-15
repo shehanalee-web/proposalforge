@@ -11,20 +11,26 @@ export const colors = {
   soft: '#f4f4f5',
 }
 
+/** Single source of truth for `page` / `pageLandscape` padding and cover bleed insets. */
+export const PAGE_PADDING = Object.freeze({
+  portrait: Object.freeze({ top: 36, bottom: 56, horizontal: 48 }),
+  landscape: Object.freeze({ top: 28, bottom: 48, horizontal: 36 }),
+})
+
 export const styles = StyleSheet.create({
   page: {
     fontSize: 10,
     lineHeight: 1.45,
     color: colors.ink,
     backgroundColor: colors.paper,
-    paddingTop: 36,
-    paddingBottom: 56,
-    paddingHorizontal: 48,
+    paddingTop: PAGE_PADDING.portrait.top,
+    paddingBottom: PAGE_PADDING.portrait.bottom,
+    paddingHorizontal: PAGE_PADDING.portrait.horizontal,
   },
   pageLandscape: {
-    paddingTop: 28,
-    paddingBottom: 48,
-    paddingHorizontal: 36,
+    paddingTop: PAGE_PADDING.landscape.top,
+    paddingBottom: PAGE_PADDING.landscape.bottom,
+    paddingHorizontal: PAGE_PADDING.landscape.horizontal,
   },
 
   header: {
@@ -66,14 +72,20 @@ export const styles = StyleSheet.create({
   },
   coverMinimalImage: {
     width: '100%',
-    height: 120,
+    height: 96,
     objectFit: 'cover',
-    marginTop: 10,
+    marginTop: 8,
   },
   coverSplit: {
     flexDirection: 'row',
     gap: 18,
     alignItems: 'stretch',
+  },
+  coverSplitFallback: {
+    flexDirection: 'column',
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
   },
   coverSplitCopy: {
     flex: 1.4,
@@ -87,16 +99,11 @@ export const styles = StyleSheet.create({
     objectFit: 'cover',
   },
   coverBleed: {
-    marginHorizontal: -48,
-    marginTop: -36,
     marginBottom: 20,
-    paddingHorizontal: 48,
-    paddingTop: 36,
-    paddingBottom: 28,
     backgroundColor: colors.band,
   },
   coverBleedCopy: {
-    position: 'relative',
+    paddingBottom: 20,
   },
   coverBleedHeading: {
     color: colors.bandText,
@@ -108,11 +115,8 @@ export const styles = StyleSheet.create({
     color: colors.bandText,
   },
   coverBleedImage: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 220,
+    width: '100%',
+    height: 148,
     objectFit: 'cover',
   },
   watermark: {
