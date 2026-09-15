@@ -8,6 +8,7 @@ import {
 } from '../utils/commercialTotals.js'
 import CommercialDocument from '../components/CommercialBuilder/CommercialDocument.jsx'
 import {
+  resolveBankDetails,
   resolveCoverImage,
   resolveLogoUrl,
   resolvePaymentTerms,
@@ -292,7 +293,8 @@ export function FaqScreen({ instance }) {
 export function TermsScreen({ instance, proposal, brand }) {
   const body = resolveTermsBody(instance, proposal, brand)
   const payment = resolvePaymentTerms(instance, proposal, brand)
-  if (!body && !payment) return null
+  const bank = resolveBankDetails(brand)
+  if (!body && !payment && bank.length === 0) return null
 
   return (
     <BlockFrame title="Terms & conditions">
@@ -301,6 +303,16 @@ export function TermsScreen({ instance, proposal, brand }) {
         <>
           <h3 className={styles.blockTitle}>Payment terms</h3>
           <p className={`${styles.body} ${styles.prewrap}`}>{payment}</p>
+        </>
+      ) : null}
+      {bank.length > 0 ? (
+        <>
+          <h3 className={styles.blockTitle}>Payment details</h3>
+          {bank.map((row) => (
+            <p key={row.id} className={styles.body}>
+              {row.label}: {row.value}
+            </p>
+          ))}
         </>
       ) : null}
     </BlockFrame>
