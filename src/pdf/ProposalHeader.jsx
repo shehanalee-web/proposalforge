@@ -1,6 +1,6 @@
 import { View, Text, Image } from '@react-pdf/renderer'
 import { formatDate } from '../utils/format.js'
-import { COVER_STYLE } from '../models/brandKit.js'
+import { COVER_STYLE, HEADER_STYLE } from '../models/brandKit.js'
 import { PROPOSAL_STATUS_LABELS } from '../models/proposal.js'
 import { studioNameFromBrand } from '../blocks/brand.js'
 import { resolvePdfLogo } from './pdfBrand.js'
@@ -17,35 +17,44 @@ function Meta({ label, value }) {
 }
 
 function ProposalHeader({ proposal, settings, brand }) {
+  const headerStyle = brand?.headerStyle || HEADER_STYLE.STANDARD
   const fullBleed = brand?.coverStyle === COVER_STYLE.FULL_BLEED
+  const showDarkBand =
+    !fullBleed && headerStyle !== HEADER_STYLE.MINIMAL
+  const centered = headerStyle === HEADER_STYLE.CENTERED
   const studioName = studioNameFromBrand(brand, settings)
   const about = brand?.description?.trim() || settings?.about?.trim()
   const status = PROPOSAL_STATUS_LABELS[proposal.status] ?? proposal.status
   const accent = brand?.colors?.accent
-  const logoUrl = resolvePdfLogo(brand, 'dark')
+  const logoUrl = showDarkBand ? resolvePdfLogo(brand, 'light') : ''
   const versionLabel = proposal.currentVersion
     ? `v${proposal.currentVersion}`
     : null
 
+  const mark = logoUrl ? (
+    <Image src={logoUrl} style={styles.logo} />
+  ) : (
+    <View
+      style={[styles.brandMark, accent ? { backgroundColor: accent } : null]}
+    />
+  )
+
   return (
     <View style={styles.header}>
-      {fullBleed ? (
-        about ? (
-          <Text style={[styles.body, styles.muted]}>{about}</Text>
-        ) : null
-      ) : (
+      {showDarkBand && centered ? (
+        <View style={styles.headerCenteredBand}>
+          {mark}
+          <Text style={styles.headerCenteredStudio}>{studioName}</Text>
+          {about ? (
+            <Text style={styles.headerCenteredAbout}>{about}</Text>
+          ) : null}
+          <Text style={styles.headerCenteredLabel}>Proposal</Text>
+          <Text style={styles.headerCenteredTitle}>{proposal.title}</Text>
+        </View>
+      ) : showDarkBand ? (
         <View style={styles.brandBand}>
           <View>
-            {logoUrl ? (
-              <Image src={logoUrl} style={styles.logo} />
-            ) : (
-              <View
-                style={[
-                  styles.brandMark,
-                  accent ? { backgroundColor: accent } : null,
-                ]}
-              />
-            )}
+            {mark}
             <Text style={styles.studioName}>{studioName}</Text>
             {about ? (
               <Text style={styles.studioAbout}>{about}</Text>
@@ -57,7 +66,9 @@ function ProposalHeader({ proposal, settings, brand }) {
             <Text style={styles.proposalTitle}>{proposal.title}</Text>
           </View>
         </View>
-      )}
+      ) : about ? (
+        <Text style={[styles.body, styles.muted]}>{about}</Text>
+      ) : null}
 
       <View style={[styles.accentBar, accent ? { backgroundColor: accent } : null]} />
 
