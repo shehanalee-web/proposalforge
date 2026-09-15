@@ -5,6 +5,8 @@ import {
   COVER_STYLES,
   FOOTER_STYLE,
   FOOTER_STYLES,
+  HEADER_STYLE,
+  HEADER_STYLES,
   HEX_COLOR_PATTERN,
   PAGE_NUMBER_POSITION,
   PAGE_NUMBER_POSITIONS,
@@ -29,6 +31,12 @@ const COVER_STYLE_LABELS = {
   [COVER_STYLE.FULL_BLEED]: 'Full bleed',
   [COVER_STYLE.SPLIT]: 'Split',
   [COVER_STYLE.MINIMAL]: 'Minimal',
+}
+
+const HEADER_STYLE_LABELS = {
+  [HEADER_STYLE.STANDARD]: 'Standard',
+  [HEADER_STYLE.MINIMAL]: 'Minimal',
+  [HEADER_STYLE.CENTERED]: 'Centered',
 }
 
 const FOOTER_STYLE_LABELS = {
@@ -374,6 +382,33 @@ function BrandKitForm({
             {COVER_STYLES.map((style) => (
               <option key={style} value={style}>
                 {COVER_STYLE_LABELS[style]}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </Card>
+
+      <Card
+        kicker="Header"
+        title="Header style"
+        lede="PDF header density comes from Brand Kit. Theme document chrome stays on the proposal."
+      >
+        <Field
+          id="headerStyle"
+          label="Header style"
+          hint="Standard keeps the dark identity band. Minimal prints about and metadata only. Centered stacks logo, studio and title."
+          error={fieldErrors.headerStyle}
+        >
+          <select
+            id="headerStyle"
+            className={styles.select}
+            value={values.headerStyle}
+            disabled={submitting}
+            onChange={(event) => patch({ headerStyle: event.target.value })}
+          >
+            {HEADER_STYLES.map((style) => (
+              <option key={style} value={style}>
+                {HEADER_STYLE_LABELS[style]}
               </option>
             ))}
           </select>
