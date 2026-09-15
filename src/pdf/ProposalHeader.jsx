@@ -1,5 +1,6 @@
 import { View, Text, Image } from '@react-pdf/renderer'
 import { formatDate } from '../utils/format.js'
+import { COVER_STYLE } from '../models/brandKit.js'
 import { PROPOSAL_STATUS_LABELS } from '../models/proposal.js'
 import { studioNameFromBrand } from '../blocks/brand.js'
 import { resolvePdfLogo } from './pdfBrand.js'
@@ -16,6 +17,7 @@ function Meta({ label, value }) {
 }
 
 function ProposalHeader({ proposal, settings, brand }) {
+  const fullBleed = brand?.coverStyle === COVER_STYLE.FULL_BLEED
   const studioName = studioNameFromBrand(brand, settings)
   const about = brand?.description?.trim() || settings?.about?.trim()
   const status = PROPOSAL_STATUS_LABELS[proposal.status] ?? proposal.status
@@ -27,29 +29,35 @@ function ProposalHeader({ proposal, settings, brand }) {
 
   return (
     <View style={styles.header}>
-      <View style={styles.brandBand}>
-        <View>
-          {logoUrl ? (
-            <Image src={logoUrl} style={styles.logo} />
-          ) : (
-            <View
-              style={[
-                styles.brandMark,
-                accent ? { backgroundColor: accent } : null,
-              ]}
-            />
-          )}
-          <Text style={styles.studioName}>{studioName}</Text>
-          {about ? (
-            <Text style={styles.studioAbout}>{about}</Text>
-          ) : null}
-        </View>
+      {fullBleed ? (
+        about ? (
+          <Text style={[styles.body, styles.muted]}>{about}</Text>
+        ) : null
+      ) : (
+        <View style={styles.brandBand}>
+          <View>
+            {logoUrl ? (
+              <Image src={logoUrl} style={styles.logo} />
+            ) : (
+              <View
+                style={[
+                  styles.brandMark,
+                  accent ? { backgroundColor: accent } : null,
+                ]}
+              />
+            )}
+            <Text style={styles.studioName}>{studioName}</Text>
+            {about ? (
+              <Text style={styles.studioAbout}>{about}</Text>
+            ) : null}
+          </View>
 
-        <View>
-          <Text style={styles.proposalLabel}>Proposal</Text>
-          <Text style={styles.proposalTitle}>{proposal.title}</Text>
+          <View>
+            <Text style={styles.proposalLabel}>Proposal</Text>
+            <Text style={styles.proposalTitle}>{proposal.title}</Text>
+          </View>
         </View>
-      </View>
+      )}
 
       <View style={[styles.accentBar, accent ? { backgroundColor: accent } : null]} />
 

@@ -4,7 +4,7 @@ import {
   formatMoney,
   getCommercialModules,
 } from '../utils/commercialTotals.js'
-import { TAX_MODE } from '../models/brandKit.js'
+import { COVER_STYLE, TAX_MODE } from '../models/brandKit.js'
 import { RECURRING_INTERVAL_LABELS } from '../models/commercial.js'
 import { presentOfferGroups } from '../models/offer.js'
 import {
@@ -19,7 +19,8 @@ import {
 import { resolvePdfLogo } from '../pdf/pdfBrand.js'
 import { BLOCK_TYPE } from './ids.js'
 import { isBlockDataEmpty } from './schemas.js'
-import { styles } from '../pdf/pdfStyles.js'
+import { PAGE_PADDING, styles } from '../pdf/pdfStyles.js'
+import { getLayout } from '../layouts/registry.js'
 import { toAbsoluteUrl } from '../utils/publicUrl.js'
 
 function titleStyle(brand) {
@@ -36,24 +37,103 @@ function Section({ title, children, brand }) {
   )
 }
 
+function CoverCopy({ brand, logoUrl, studioName, kicker, heading, subheading, tone = 'paper' }) {
+  const headingStyle =
+    tone === 'dark' ? [styles.projectHeading, styles.coverBleedHeading] : styles.projectHeading
+  const kickerStyle =
+    tone === 'dark' ? [styles.projectType, styles.coverBleedKicker] : styles.projectType
+  const bodyStyle = tone === 'dark' ? [styles.body, styles.coverBleedBody] : styles.body
+  const studioStyle =
+    tone === 'dark' ? [styles.sectionTitle, styles.coverBleedHeading] : titleStyle(brand)
+
+  return (
+    <View>
+      {logoUrl ? <Image src={logoUrl} style={styles.coverLogo} /> : null}
+      <Text style={studioStyle}>{studioName}</Text>
+      {kicker ? <Text style={kickerStyle}>{kicker}</Text> : null}
+      <Text style={headingStyle}>{heading}</Text>
+      {subheading ? <Text style={bodyStyle}>{subheading}</Text> : null}
+    </View>
+  )
+}
+
 export function CoverPdf({ instance, proposal, brand, settings }) {
   const heading = instance.data.heading?.trim() || proposal.title
   const kicker = instance.data.kicker?.trim() || proposal.projectType
+  const subheading = instance.data.subheading?.trim()
   const studioName = studioNameFromBrand(brand, settings)
   const coverImage = resolveCoverImage(instance, brand)
-  const logoUrl = resolvePdfLogo(brand, 'light')
+  const coverStyle = brand?.coverStyle
+  const onDark = coverStyle === COVER_STYLE.FULL_BLEED
+  const logoUrl = resolvePdfLogo(brand, onDark ? 'light' : 'dark')
+  const copy = (
+    <CoverCopy
+      brand={brand}
+      logoUrl={logoUrl}
+      studioName={studioName}
+      kicker={kicker}
+      heading={heading}
+      subheading={subheading}
+      tone={onDark ? 'dark' : 'paper'}
+    />
+  )
+  const landscape = getLayout(proposal.layoutId).orientation === 'landscape'
+  const inset = landscape ? PAGE_PADDING.landscape : PAGE_PADDING.portrait
+
+  if (coverStyle === COVER_STYLE.SPLIT && coverImage) {
+    return (
+      <View style={[styles.cover, styles.coverSplit]}>
+        <View style={styles.coverSplitCopy}>{copy}</View>
+        <View style={styles.coverSplitMedia} wrap={false}>
+          <Image src={coverImage} style={styles.coverSplitImage} />
+        </View>
+      </View>
+    )
+  }
+
+  if (coverStyle === COVER_STYLE.SPLIT) {
+    return (
+      <View style={[styles.cover, styles.coverSplitFallback]}>
+        {copy}
+      </View>
+    )
+  }
+
+  if (coverStyle === COVER_STYLE.FULL_BLEED) {
+    return (
+      <View
+        style={[
+          styles.cover,
+          styles.coverBleed,
+          {
+            marginHorizontal: -inset.horizontal,
+            marginTop: -inset.top,
+          },
+        ]}
+      >
+        {coverImage ? (
+          <Image src={coverImage} style={styles.coverBleedImage} wrap={false} />
+        ) : null}
+        <View
+          style={[
+            styles.coverBleedCopy,
+            {
+              paddingHorizontal: inset.horizontal,
+              paddingTop: coverImage ? 14 : inset.top,
+            },
+          ]}
+        >
+          {copy}
+        </View>
+      </View>
+    )
+  }
 
   return (
-    <View style={styles.section}>
-      {logoUrl ? <Image src={logoUrl} style={styles.coverLogo} /> : null}
-      <Text style={titleStyle(brand)}>{studioName}</Text>
-      {kicker ? <Text style={styles.projectType}>{kicker}</Text> : null}
-      <Text style={styles.projectHeading}>{heading}</Text>
-      {instance.data.subheading?.trim() ? (
-        <Text style={styles.body}>{instance.data.subheading}</Text>
-      ) : null}
+    <View style={[styles.cover, styles.coverMinimal]}>
+      {copy}
       {coverImage ? (
-        <Image src={coverImage} style={styles.coverImage} />
+        <Image src={coverImage} style={styles.coverMinimalImage} wrap={false} />
       ) : null}
     </View>
   )
