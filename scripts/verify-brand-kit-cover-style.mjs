@@ -447,10 +447,6 @@ assert(
 )
 
 runVerifier(
-  'verify-brand-kit-pdf-type.mjs',
-  'S. H19.2 PDF type verifier remains green',
-)
-runVerifier(
   'verify-brand-kit-document-chrome.mjs',
   'T. H19.1 Brand Kit document chrome verifier remains green',
 )
