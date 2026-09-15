@@ -1,5 +1,6 @@
-import { View, Text } from '@react-pdf/renderer'
+import { View, Text, Link } from '@react-pdf/renderer'
 import { FOOTER_STYLE, PAGE_NUMBER_POSITION } from '../models/brandKit.js'
+import { resolveSocialLinks } from '../blocks/brand.js'
 import { styles } from './pdfStyles.js'
 
 function contactLine(brand, settings) {
@@ -30,6 +31,7 @@ function ProposalFooter({ settings, brand }) {
   const position = brand?.pageNumberPosition || PAGE_NUMBER_POSITION.FOOTER_RIGHT
   const showPages = position !== PAGE_NUMBER_POSITION.HIDDEN
   const centerPages = position === PAGE_NUMBER_POSITION.FOOTER_CENTER
+  const social = resolveSocialLinks(brand)
 
   return (
     <View style={styles.footer} fixed>
@@ -53,6 +55,18 @@ function ProposalFooter({ settings, brand }) {
           />
         ) : null}
       </View>
+      {social.length > 0 ? (
+        <View style={styles.footerSocialRow}>
+          {social.map((link, index) => (
+            <View key={link.id || `${link.network}-${index}`} style={styles.footerSocialItem}>
+              {index > 0 ? <Text style={styles.footerText}>  ·  </Text> : null}
+              <Link src={link.href} style={styles.footerSocialLink}>
+                {link.label}
+              </Link>
+            </View>
+          ))}
+        </View>
+      ) : null}
     </View>
   )
 }
