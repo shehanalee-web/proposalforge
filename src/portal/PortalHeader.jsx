@@ -2,6 +2,7 @@ import Icon from '../components/Icon/Icon.jsx'
 import StatusBadge from '../components/StatusBadge/StatusBadge.jsx'
 import { getDisplayStatus } from '../models/proposal.js'
 import { assetRefUrl } from '../models/brandKit.js'
+import { resolveSocialLinks } from '../blocks/brand.js'
 import { formatDate } from '../utils/format.js'
 import { useBrandKit } from '../hooks/useBrandKit.js'
 import { usePortal } from './PortalContext.jsx'
@@ -16,6 +17,7 @@ function PortalHeader({ asideOpen, onToggleAside }) {
     assetRefUrl(kit?.logos?.primary) ||
     ''
   const status = getDisplayStatus(proposal)
+  const social = resolveSocialLinks(kit)
 
   return (
     <header className={styles.header}>
@@ -30,6 +32,18 @@ function PortalHeader({ asideOpen, onToggleAside }) {
         <div>
           <p className={styles.company}>{company}</p>
           <p className={styles.kicker}>Client proposal</p>
+          {social.length > 0 ? (
+            <p className={styles.kicker}>
+              {social.map((link, index) => (
+                <span key={link.id || `${link.network}-${index}`}>
+                  {index > 0 ? ' · ' : null}
+                  <a href={link.href} rel="noreferrer" target="_blank">
+                    {link.label}
+                  </a>
+                </span>
+              ))}
+            </p>
+          ) : null}
         </div>
       </div>
 

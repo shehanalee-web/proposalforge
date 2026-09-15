@@ -2,12 +2,65 @@ import {
   assetRefUrl,
   fontStackFor,
   makeBrandKit,
+  SOCIAL_NETWORK,
+  SOCIAL_NETWORK_LABELS,
 } from '../models/brandKit.js'
 
 const DEFAULT_ACCENT = '#14b8a6'
 
+const SOCIAL_HREF = Object.freeze({
+  [SOCIAL_NETWORK.LINKEDIN]: (handle) => `https://www.linkedin.com/in/${handle}`,
+  [SOCIAL_NETWORK.INSTAGRAM]: (handle) => `https://www.instagram.com/${handle}`,
+  [SOCIAL_NETWORK.X]: (handle) => `https://x.com/${handle}`,
+  [SOCIAL_NETWORK.FACEBOOK]: (handle) => `https://www.facebook.com/${handle}`,
+  [SOCIAL_NETWORK.YOUTUBE]: (handle) => `https://www.youtube.com/@${handle}`,
+  [SOCIAL_NETWORK.BEHANCE]: (handle) => `https://www.behance.net/${handle}`,
+  [SOCIAL_NETWORK.DRIBBBLE]: (handle) => `https://dribbble.com/${handle}`,
+})
+
 function logoUrl(kit, key) {
   return assetRefUrl(kit?.logos?.[key])
+}
+
+function socialHref(network, handle) {
+  const trimmed = handle?.trim?.() ?? ''
+  if (!trimmed) return ''
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+
+  const build = SOCIAL_HREF[network]
+  if (!build) return ''
+
+  const slug = trimmed.replace(/^@+/, '')
+  if (!slug) return ''
+  return build(slug)
+}
+
+/**
+ * Resolve Brand Kit social links for document renderers.
+ *
+ * Authored http(s) handles are kept as-is. Other handles are mapped from
+ * SOCIAL_NETWORK. Blank handles and networks with no canonical host are omitted.
+ *
+ * @param {Partial<import('../models/brandKit.js').BrandKit> | null | undefined} brand
+ * @returns {{ id: string, network: string, handle: string, href: string, label: string }[]}
+ */
+export function resolveSocialLinks(brand) {
+  return (brand?.socialLinks ?? [])
+    .map((link) => {
+      const handle = link?.handle?.trim?.() ?? ''
+      const href = socialHref(link?.network, handle)
+      const label = SOCIAL_NETWORK_LABELS[link?.network]
+      if (!href || !label) return null
+
+      return {
+        id: link.id,
+        network: link.network,
+        handle,
+        href,
+        label,
+      }
+    })
+    .filter(Boolean)
 }
 
 /**

@@ -390,6 +390,21 @@ export const styles = StyleSheet.create({
     fontSize: 8,
     color: colors.muted,
   },
+  footerSocialRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  footerSocialItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  footerSocialLink: {
+    fontSize: 8,
+    color: colors.muted,
+    textDecoration: 'none',
+  },
 
   pageRow: {
     flexDirection: 'row',
