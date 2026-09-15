@@ -184,6 +184,65 @@ export function resolvePaymentTerms(instance, proposal, brand) {
   return brand?.paymentTerms?.trim() || ''
 }
 
+const BANK_DETAIL_FIELDS = Object.freeze([
+  {
+    id: 'accountName',
+    label: 'Account name',
+    read: (brand) => brand?.bank?.accountName,
+  },
+  {
+    id: 'bankName',
+    label: 'Bank name',
+    read: (brand) => brand?.bank?.bankName,
+  },
+  {
+    id: 'accountNumber',
+    label: 'Account number',
+    read: (brand) => brand?.bank?.accountNumber,
+  },
+  {
+    id: 'sortCode',
+    label: 'Sort code',
+    read: (brand) => brand?.bank?.sortCode,
+  },
+  {
+    id: 'iban',
+    label: 'IBAN',
+    read: (brand) => brand?.bank?.iban,
+  },
+  {
+    id: 'swift',
+    label: 'SWIFT / BIC',
+    read: (brand) => brand?.bank?.swift,
+  },
+  {
+    id: 'vatNumber',
+    label: 'VAT number',
+    read: (brand) => brand?.vatNumber,
+  },
+  {
+    id: 'taxId',
+    label: 'Tax ID',
+    read: (brand) => brand?.tax?.taxId,
+  },
+])
+
+/**
+ * Resolve Brand Kit bank / VAT identity for document Terms surfaces.
+ *
+ * Blank fields are omitted. Filled values are returned as authored.
+ *
+ * @param {Partial<import('../models/brandKit.js').BrandKit> | null | undefined} brand
+ * @returns {{ id: string, label: string, value: string }[]}
+ */
+export function resolveBankDetails(brand) {
+  return BANK_DETAIL_FIELDS.map((field) => {
+    const value = field.read(brand)?.trim?.() ?? ''
+    if (!value) return null
+    return { id: field.id, label: field.label, value }
+  }).filter(Boolean)
+}
+
 export function resolveTeamMembers(instance, brand) {
   const local = (instance?.data?.members ?? []).filter((member) =>
     member.name?.trim(),

@@ -8,6 +8,7 @@ import { COVER_STYLE, TAX_MODE } from '../models/brandKit.js'
 import { RECURRING_INTERVAL_LABELS } from '../models/commercial.js'
 import { presentOfferGroups } from '../models/offer.js'
 import {
+  resolveBankDetails,
   resolveCoverImage,
   resolvePaymentTerms,
   resolveTeamMembers,
@@ -512,7 +513,8 @@ export function FaqPdf({ instance, brand }) {
 export function TermsPdf({ instance, proposal, brand }) {
   const body = resolveTermsBody(instance, proposal, brand)
   const payment = resolvePaymentTerms(instance, proposal, brand)
-  if (!body && !payment) return null
+  const bank = resolveBankDetails(brand)
+  if (!body && !payment && bank.length === 0) return null
 
   return (
     <Section title="Terms & conditions" brand={brand}>
@@ -521,6 +523,16 @@ export function TermsPdf({ instance, proposal, brand }) {
         <View style={styles.scopeBlock}>
           <Text style={styles.scopeHeading}>Payment terms</Text>
           <Text style={styles.body}>{payment}</Text>
+        </View>
+      ) : null}
+      {bank.length > 0 ? (
+        <View style={styles.scopeBlock}>
+          <Text style={styles.scopeHeading}>Payment details</Text>
+          {bank.map((row) => (
+            <Text key={row.id} style={styles.body}>
+              {row.label}: {row.value}
+            </Text>
+          ))}
         </View>
       ) : null}
     </Section>
