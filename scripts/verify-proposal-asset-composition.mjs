@@ -87,6 +87,16 @@ globalThis.fetch = async (url, init) => {
       json: async () => (href.includes('/api/proposals') ? { records: [] } : []),
     }
   }
+  if (
+    href.includes('/api/templates') ||
+    href.includes('/api/services') ||
+    href.includes('/api/library-blocks')
+  ) {
+    return { ok: true, json: async () => ({ records: null }) }
+  }
+  if (href.includes('/api/settings')) {
+    return { ok: true, json: async () => ({ record: null }) }
+  }
   if (typeof originalFetch === 'function') {
     return originalFetch(url, init)
   }
@@ -95,7 +105,7 @@ globalThis.fetch = async (url, init) => {
 
 resetAssets()
 await resetServices()
-resetTemplates()
+await resetTemplates()
 await resetProposals()
 
 const helperSource = sourceOf('src', 'utils', 'templateBlocks.js')
@@ -501,7 +511,7 @@ runVerifier(
 
 resetAssets()
 await resetServices()
-resetTemplates()
+await resetTemplates()
 await resetProposals()
 globalThis.fetch = originalFetch
 

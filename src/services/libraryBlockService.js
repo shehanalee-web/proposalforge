@@ -22,11 +22,13 @@ function compareLibrary(a, b) {
 }
 
 export async function fetchLibraryBlocks() {
+  await store.ready()
   await delay()
   return store.all().sort(compareLibrary)
 }
 
 export async function fetchLibraryBlockById(id) {
+  await store.ready()
   await delay()
   const block = store.findById(id)
   if (!block) {
@@ -41,11 +43,13 @@ export async function createLibraryBlock(input) {
   if (errors.length > 0) {
     throw new ValidationError('Block is not valid.', errors)
   }
+  await store.ready()
   await delay()
   return store.insert(block)
 }
 
 export async function updateLibraryBlock(id, changes = {}) {
+  await store.ready()
   const existing = store.findById(id)
   if (!existing) {
     throw new NotFoundError(`No library block found with id "${id}".`)
@@ -74,8 +78,9 @@ export async function updateLibraryBlock(id, changes = {}) {
 }
 
 export async function deleteLibraryBlock(id) {
+  await store.ready()
   await delay()
-  const deleted = store.remove(id)
+  const deleted = await store.remove(id)
   if (!deleted) {
     throw new NotFoundError(`No library block found with id "${id}".`)
   }
@@ -83,6 +88,7 @@ export async function deleteLibraryBlock(id) {
 }
 
 export async function touchLibraryBlock(id) {
+  await store.ready()
   const existing = store.findById(id)
   if (!existing) return null
   return store.replace(
@@ -97,5 +103,5 @@ export async function touchLibraryBlock(id) {
 }
 
 export async function resetLibraryBlocks() {
-  store.reset()
+  await store.reset()
 }

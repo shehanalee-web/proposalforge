@@ -21,6 +21,7 @@ function delay(ms = MOCK_LATENCY_MS) {
  * @returns {Promise<import('../models/settings.js').Settings>}
  */
 export async function fetchSettings() {
+  await store.ready()
   await delay()
   return store.get()
 }
@@ -35,6 +36,7 @@ export async function fetchSettings() {
  * @throws {ValidationError}
  */
 export async function updateSettings(changes = {}) {
+  await store.ready()
   const updated = makeSettings({
     ...store.get(),
     ...changes,
@@ -52,6 +54,6 @@ export async function updateSettings(changes = {}) {
   return store.set(updated)
 }
 
-export function resetSettings() {
-  store.reset()
+export async function resetSettings() {
+  await store.reset()
 }
