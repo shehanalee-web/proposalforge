@@ -25,6 +25,7 @@ function compareName(a, b) {
  * @returns {Promise<import('../models/service.js').Service[]>}
  */
 export async function fetchServices() {
+  await store.ready()
   await delay()
 
   return store.all().sort(compareName)
@@ -36,6 +37,7 @@ export async function fetchServices() {
  * @throws {NotFoundError}
  */
 export async function fetchServiceById(id) {
+  await store.ready()
   await delay()
 
   const service = store.findById(id)
@@ -60,6 +62,7 @@ export async function createService(input) {
     throw new ValidationError('Service is not valid.', errors)
   }
 
+  await store.ready()
   await delay()
 
   return store.insert(service)
@@ -72,6 +75,7 @@ export async function createService(input) {
  * @throws {NotFoundError|ValidationError}
  */
 export async function updateService(id, changes = {}) {
+  await store.ready()
   const existing = store.findById(id)
 
   if (!existing) {
@@ -103,9 +107,10 @@ export async function updateService(id, changes = {}) {
  * @throws {NotFoundError}
  */
 export async function deleteService(id) {
+  await store.ready()
   await delay()
 
-  const deleted = store.remove(id)
+  const deleted = await store.remove(id)
 
   if (!deleted) {
     throw new NotFoundError(`No service found with id "${id}".`)
@@ -116,5 +121,5 @@ export async function deleteService(id) {
 
 /** Restore seed data. Intended for tests and development tooling. */
 export async function resetServices() {
-  store.reset()
+  await store.reset()
 }

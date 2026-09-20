@@ -53,6 +53,7 @@ function runVerifier(file, label) {
 }
 
 let storedKit = null
+let storedSettings = null
 const originalFetch = globalThis.fetch
 
 globalThis.fetch = async (url, init) => {
@@ -72,6 +73,17 @@ globalThis.fetch = async (url, init) => {
     return {
       ok: true,
       json: async () => (storedKit ? { record: storedKit } : { record: null }),
+    }
+  }
+
+  if (href.includes('/api/settings')) {
+    if (method === 'PUT') {
+      storedSettings = JSON.parse(init.body)
+      return { ok: true, json: async () => ({ ok: true }) }
+    }
+    return {
+      ok: true,
+      json: async () => ({ record: storedSettings }),
     }
   }
 

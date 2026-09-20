@@ -91,6 +91,16 @@ globalThis.fetch = async (url, init) => {
       json: async () => ({ records: [] }),
     }
   }
+  if (
+    href.includes('/api/templates') ||
+    href.includes('/api/services') ||
+    href.includes('/api/library-blocks')
+  ) {
+    return { ok: true, json: async () => ({ records: null }) }
+  }
+  if (href.includes('/api/settings')) {
+    return { ok: true, json: async () => ({ record: null }) }
+  }
   if (typeof originalFetch === 'function') {
     return originalFetch(url, init)
   }
@@ -99,7 +109,7 @@ globalThis.fetch = async (url, init) => {
 
 await resetLibraryBlocks()
 await resetServices()
-resetTemplates()
+await resetTemplates()
 await resetProposals()
 
 const libraryId = 'block-about-us'
@@ -378,7 +388,7 @@ runVerifier(
 
 await resetLibraryBlocks()
 await resetServices()
-resetTemplates()
+await resetTemplates()
 await resetProposals()
 globalThis.fetch = originalFetch
 

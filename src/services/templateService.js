@@ -25,6 +25,7 @@ function compareUpdatedDesc(a, b) {
  * @returns {Promise<import('../models/template.js').ProposalTemplate[]>}
  */
 export async function fetchTemplates() {
+  await store.ready()
   await delay()
 
   return store.all().sort(compareUpdatedDesc)
@@ -36,6 +37,7 @@ export async function fetchTemplates() {
  * @throws {NotFoundError}
  */
 export async function fetchTemplateById(id) {
+  await store.ready()
   await delay()
 
   const template = store.findById(id)
@@ -60,6 +62,7 @@ export async function createTemplate(input) {
     throw new ValidationError('Template is not valid.', errors)
   }
 
+  await store.ready()
   await delay()
 
   return store.insert(template)
@@ -72,6 +75,7 @@ export async function createTemplate(input) {
  * @throws {NotFoundError|ValidationError}
  */
 export async function updateTemplate(id, changes = {}) {
+  await store.ready()
   const existing = store.findById(id)
 
   if (!existing) {
@@ -103,9 +107,10 @@ export async function updateTemplate(id, changes = {}) {
  * @throws {NotFoundError}
  */
 export async function deleteTemplate(id) {
+  await store.ready()
   await delay()
 
-  const deleted = store.remove(id)
+  const deleted = await store.remove(id)
 
   if (!deleted) {
     throw new NotFoundError(`No template found with id "${id}".`)
@@ -123,6 +128,7 @@ export async function deleteTemplate(id) {
  * @throws {NotFoundError}
  */
 export async function setDefaultTemplate(id) {
+  await store.ready()
   const existing = store.findById(id)
 
   if (!existing) {
@@ -138,7 +144,7 @@ export async function setDefaultTemplate(id) {
 
     if (record.isDefault === isDefault) continue
 
-    store.replace(
+    await store.replace(
       record.id,
       makeTemplate({
         ...record,
@@ -153,6 +159,6 @@ export async function setDefaultTemplate(id) {
   return store.findById(id)
 }
 
-export function resetTemplates() {
-  store.reset()
+export async function resetTemplates() {
+  await store.reset()
 }

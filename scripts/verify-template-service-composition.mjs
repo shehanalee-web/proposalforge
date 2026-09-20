@@ -70,9 +70,28 @@ function runVerifier(file, label) {
   )
 }
 
+const originalFetch = globalThis.fetch
+globalThis.fetch = async (url, init) => {
+  const href = String(url)
+  if (
+    href.includes('/api/templates') ||
+    href.includes('/api/services') ||
+    href.includes('/api/library-blocks')
+  ) {
+    return { ok: true, json: async () => ({ records: null }) }
+  }
+  if (href.includes('/api/settings')) {
+    return { ok: true, json: async () => ({ record: null }) }
+  }
+  if (typeof originalFetch === 'function') {
+    return originalFetch(url, init)
+  }
+  throw new TypeError(`Unexpected fetch: ${href}`)
+}
+
 await resetLibraryBlocks()
 await resetServices()
-resetTemplates()
+await resetTemplates()
 
 const defaultService = makeService({
   id: 'svc-h17-4-default',
@@ -396,7 +415,7 @@ assert(
 
 await resetLibraryBlocks()
 await resetServices()
-resetTemplates()
+await resetTemplates()
 
 console.log('')
 console.log(`${passed} passed, ${failed} failed`)

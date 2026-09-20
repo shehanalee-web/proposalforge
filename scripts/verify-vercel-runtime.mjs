@@ -105,6 +105,30 @@ assert(
   proposals.status === 200 && Array.isArray(proposals.json?.records),
 )
 
+const templates = await call('/api/templates')
+assert(
+  'GET /api/templates',
+  templates.status === 200 && Object.hasOwn(templates.json || {}, 'records'),
+)
+
+const services = await call('/api/services')
+assert(
+  'GET /api/services',
+  services.status === 200 && Object.hasOwn(services.json || {}, 'records'),
+)
+
+const libraryBlocks = await call('/api/library-blocks')
+assert(
+  'GET /api/library-blocks',
+  libraryBlocks.status === 200 && Object.hasOwn(libraryBlocks.json || {}, 'records'),
+)
+
+const settings = await call('/api/settings')
+assert(
+  'GET /api/settings',
+  settings.status === 200 && Object.hasOwn(settings.json || {}, 'record'),
+)
+
 const workflow = await call('/api/workflow/capabilities')
 assert(
   'GET /api/workflow/capabilities',

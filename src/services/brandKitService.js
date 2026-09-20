@@ -42,10 +42,11 @@ function withResolvedType(kit) {
   })
 }
 
-function syncSettingsFromKit(kit) {
+async function syncSettingsFromKit(kit) {
+  await settingsStore.ready()
   const current = settingsStore.get()
 
-  settingsStore.set(
+  await settingsStore.set(
     makeSettings({
       ...current,
       studioName: kit.companyName.trim() || current.studioName,
@@ -89,7 +90,7 @@ export async function updateBrandKit(changes = {}) {
   await delay()
 
   const saved = await store.set(updated)
-  syncSettingsFromKit(saved)
+  await syncSettingsFromKit(saved)
   return saved
 }
 

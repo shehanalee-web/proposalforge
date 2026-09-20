@@ -46,6 +46,25 @@ function assert(name, condition, detail = '') {
   console.error(`FAIL  ${name}${detail ? ` — ${detail}` : ''}`)
 }
 
+const originalFetch = globalThis.fetch
+globalThis.fetch = async (url, init) => {
+  const href = String(url)
+  if (
+    href.includes('/api/templates') ||
+    href.includes('/api/services') ||
+    href.includes('/api/library-blocks')
+  ) {
+    return { ok: true, json: async () => ({ records: null }) }
+  }
+  if (href.includes('/api/settings')) {
+    return { ok: true, json: async () => ({ record: null }) }
+  }
+  if (typeof originalFetch === 'function') {
+    return originalFetch(url, init)
+  }
+  throw new TypeError(`Unexpected fetch: ${href}`)
+}
+
 await resetLibraryBlocks()
 
 const defaultTemplate = makeTemplate({

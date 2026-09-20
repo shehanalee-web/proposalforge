@@ -123,6 +123,10 @@ export function localUploadsPlugin() {
   const brandKitFile = join(dataDir, 'brand-kit.json')
   const activityEventsFile = join(dataDir, 'activityEvents.json')
   const notificationsFile = join(dataDir, 'notifications.json')
+  const templatesFile = join(dataDir, 'templates.json')
+  const servicesFile = join(dataDir, 'services.json')
+  const libraryBlocksFile = join(dataDir, 'library-blocks.json')
+  const settingsFile = join(dataDir, 'settings.json')
 
   function loadAssets() {
     const records = readJson(assetsFile, [])
@@ -302,6 +306,61 @@ export function localUploadsPlugin() {
         }
         writeJson(notificationsFile, body)
         return json(res, 200, { ok: true, count: body.length })
+      }
+
+      if (method === 'GET' && matchRoute(url, '/api/templates')) {
+        const records = readJson(templatesFile, null)
+        return json(res, 200, { records })
+      }
+
+      if (method === 'PUT' && matchRoute(url, '/api/templates')) {
+        const body = JSON.parse((await readBody(req, 32 * 1024 * 1024)).toString('utf8') || 'null')
+        if (!Array.isArray(body)) {
+          return json(res, 400, { message: 'Expected an array of templates.' })
+        }
+        writeJson(templatesFile, body)
+        return json(res, 200, { ok: true, count: body.length })
+      }
+
+      if (method === 'GET' && matchRoute(url, '/api/services')) {
+        const records = readJson(servicesFile, null)
+        return json(res, 200, { records })
+      }
+
+      if (method === 'PUT' && matchRoute(url, '/api/services')) {
+        const body = JSON.parse((await readBody(req, 8 * 1024 * 1024)).toString('utf8') || 'null')
+        if (!Array.isArray(body)) {
+          return json(res, 400, { message: 'Expected an array of services.' })
+        }
+        writeJson(servicesFile, body)
+        return json(res, 200, { ok: true, count: body.length })
+      }
+
+      if (method === 'GET' && matchRoute(url, '/api/library-blocks')) {
+        const records = readJson(libraryBlocksFile, null)
+        return json(res, 200, { records })
+      }
+
+      if (method === 'PUT' && matchRoute(url, '/api/library-blocks')) {
+        const body = JSON.parse((await readBody(req, 32 * 1024 * 1024)).toString('utf8') || 'null')
+        if (!Array.isArray(body)) {
+          return json(res, 400, { message: 'Expected an array of library blocks.' })
+        }
+        writeJson(libraryBlocksFile, body)
+        return json(res, 200, { ok: true, count: body.length })
+      }
+
+      if (method === 'GET' && matchRoute(url, '/api/settings')) {
+        return json(res, 200, { record: readJson(settingsFile, null) })
+      }
+
+      if (method === 'PUT' && matchRoute(url, '/api/settings')) {
+        const body = JSON.parse((await readBody(req, 4 * 1024 * 1024)).toString('utf8') || 'null')
+        if (!body || typeof body !== 'object' || Array.isArray(body)) {
+          return json(res, 400, { message: 'Expected a settings object.' })
+        }
+        writeJson(settingsFile, body)
+        return json(res, 200, { ok: true })
       }
     } catch (error) {
       const status = error.status || (error instanceof SyntaxError ? 400 : 500)
