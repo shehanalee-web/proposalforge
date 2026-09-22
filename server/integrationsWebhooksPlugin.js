@@ -4,9 +4,7 @@
  * Sync execution only. Live HTTPS requires OUTBOUND_WEBHOOK_NETWORK=1.
  * Not an outbox, worker, or retry scheduler. Never writes proposals.json.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData } from './dataPaths.js'
+import { assertStorageWritable, endJsonResponse, flushAndNext, ignoreUnavailableWrite, readJson, writeJson } from './runtimeStore.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import {
@@ -28,24 +26,7 @@ import {
 } from '../src/integrations/index.js'
 
 function json(res, status, body) {
-  const payload = JSON.stringify(body)
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Content-Length', Buffer.byteLength(payload))
-  res.end(payload)
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+  return endJsonResponse(res, status, body)
 }
 
 function readBody(req, limit = 2 * 1024 * 1024) {
@@ -106,47 +87,46 @@ function fail(res, error) {
  * Load/persist webhook destinations + outcomes and expose a thin studio API.
  */
 export function integrationsWebhooksPlugin() {
-  const dataDir = ensureRuntimeData()
-  const destinationsFile = join(dataDir, 'outbound-webhook-destinations.json')
-  const outcomesFile = join(dataDir, 'outbound-webhook-outcomes.json')
   let ready = false
 
   function persistDestinations(bag) {
-    writeJson(destinationsFile, {
+    assertStorageWritable()
+    return writeJson('outbound-webhook-destinations.json', {
       destinations: Array.isArray(bag?.destinations) ? bag.destinations : [],
     })
   }
 
   function persistOutcomes(bag) {
-    writeJson(outcomesFile, {
+    assertStorageWritable()
+    return writeJson('outbound-webhook-outcomes.json', {
       outcomes: Array.isArray(bag?.outcomes) ? bag.outcomes : [],
     })
   }
 
-  function ensureStore() {
+  async function ensureStore() {
     if (ready) return
-    const storedDestinations = readJson(destinationsFile, null)
+    const storedDestinations = await readJson('outbound-webhook-destinations.json', null)
     if (storedDestinations && typeof storedDestinations === 'object') {
       replaceOutboundWebhookDestinations(storedDestinations)
     } else {
       replaceOutboundWebhookDestinations({ destinations: [] })
-      persistDestinations(serializeOutboundWebhookDestinations())
+      await ignoreUnavailableWrite(() => persistDestinations(serializeOutboundWebhookDestinations()))
     }
     configureOutboundWebhookDestinationStore({ persist: persistDestinations })
 
-    const storedOutcomes = readJson(outcomesFile, null)
+    const storedOutcomes = await readJson('outbound-webhook-outcomes.json', null)
     if (storedOutcomes && typeof storedOutcomes === 'object') {
       replaceOutboundWebhookOutcomes(storedOutcomes)
     } else {
       replaceOutboundWebhookOutcomes({ outcomes: [] })
-      persistOutcomes(serializeOutboundWebhookOutcomes())
+      await ignoreUnavailableWrite(() => persistOutcomes(serializeOutboundWebhookOutcomes()))
     }
     configureOutboundWebhookOutcomeStore({ persist: persistOutcomes })
     ready = true
   }
 
   async function handle(req, res, next) {
-    ensureStore()
+    await ensureStore()
     const url = req.url || ''
 
     if (req.method === 'GET' && matchRoute(url, '/api/integrations/capabilities')) {
@@ -266,11 +246,11 @@ export function integrationsWebhooksPlugin() {
       }
     }
 
-    return next()
+    return flushAndNext(next)
   }
 
   function attach(server) {
-    ensureStore()
+    void ensureStore()
     server.middlewares.use((req, res, next) => {
       handle(req, res, next)
     })

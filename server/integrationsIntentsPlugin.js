@@ -3,9 +3,7 @@
  *
  * Not an outbox, worker, or delivery executor. Never writes proposals.json.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData } from './dataPaths.js'
+import { assertStorageWritable, endJsonResponse, flushAndNext, ignoreUnavailableWrite, readJson, writeJson } from './runtimeStore.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import {
@@ -19,24 +17,7 @@ import {
 } from '../src/integrations/index.js'
 
 function json(res, status, body) {
-  const payload = JSON.stringify(body)
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Content-Length', Buffer.byteLength(payload))
-  res.end(payload)
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+  return endJsonResponse(res, status, body)
 }
 
 function readBody(req, limit = 2 * 1024 * 1024) {
@@ -97,31 +78,30 @@ function fail(res, error) {
  * Load/persist action intents and expose a thin studio API.
  */
 export function integrationsIntentsPlugin() {
-  const dataDir = ensureRuntimeData()
-  const intentsFile = join(dataDir, 'automation-action-intents.json')
   let ready = false
 
   function persist(bag) {
-    writeJson(intentsFile, {
+    assertStorageWritable()
+    return writeJson('automation-action-intents.json', {
       intents: Array.isArray(bag?.intents) ? bag.intents : [],
     })
   }
 
-  function ensureStore() {
+  async function ensureStore() {
     if (ready) return
-    const stored = readJson(intentsFile, null)
+    const stored = await readJson('automation-action-intents.json', null)
     if (stored && typeof stored === 'object') {
       replaceAutomationActionIntents(stored)
     } else {
       replaceAutomationActionIntents({ intents: [] })
-      persist(serializeAutomationActionIntents())
+      await ignoreUnavailableWrite(() => persist(serializeAutomationActionIntents()))
     }
     configureAutomationActionIntentStore({ persist })
     ready = true
   }
 
   async function handle(req, res, next) {
-    ensureStore()
+    await ensureStore()
     const url = req.url || ''
 
     if (req.method === 'GET' && matchRoute(url, '/api/integrations/capabilities')) {
@@ -171,11 +151,11 @@ export function integrationsIntentsPlugin() {
       }
     }
 
-    return next()
+    return flushAndNext(next)
   }
 
   function attach(server) {
-    ensureStore()
+    void ensureStore()
     server.middlewares.use((req, res, next) => {
       handle(req, res, next)
     })

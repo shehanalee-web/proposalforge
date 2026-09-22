@@ -1,6 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData } from './dataPaths.js'
+import { assertStorageWritable, endJsonResponse, flushAndNext, ignoreUnavailableWrite, readJson, writeJson } from './runtimeStore.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import {
   addComment,
@@ -32,24 +30,7 @@ import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import { studioRequestIdentity } from '../src/integrations/identity/index.js'
 
 function json(res, status, body) {
-  const payload = JSON.stringify(body)
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Content-Length', Buffer.byteLength(payload))
-  res.end(payload)
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
+  return endJsonResponse(res, status, body)
 }
 
 function readBody(req, limit = 2 * 1024 * 1024) {
@@ -114,21 +95,21 @@ function companyFrom(body, query) {
  * Never writes `data/proposals.json`.
  */
 export function workflowPlugin() {
-  const workflowFile = join(ensureRuntimeData(), 'workflow.json')
   let ready = false
 
   function persist(records) {
-    writeJson(workflowFile, records)
+    assertStorageWritable()
+    return writeJson('workflow.json', records)
   }
 
-  function ensureStore() {
+  async function ensureStore() {
     if (ready) return
-    const stored = readJson(workflowFile, null)
+    const stored = await readJson('workflow.json', null)
     if (Array.isArray(stored)) {
       replaceWorkflowRecords(stored)
     } else {
       replaceWorkflowRecords([])
-      persist(allWorkflowRecords())
+      await ignoreUnavailableWrite(() => persist(allWorkflowRecords()))
     }
     configureWorkflowStore({ persist })
     ready = true
@@ -136,10 +117,10 @@ export function workflowPlugin() {
 
   async function handle(req, res, next) {
     const url = req.url || '/'
-    if (!url.startsWith('/api/workflow')) return next()
+    if (!url.startsWith('/api/workflow')) return flushAndNext(next)
 
     const method = req.method || 'GET'
-    ensureStore()
+    await ensureStore()
 
     try {
       if (method === 'GET' && matchRoute(url, '/api/workflow/capabilities')) {
@@ -307,7 +288,7 @@ export function workflowPlugin() {
         return json(res, 200, { workflow })
       }
 
-      return next()
+      return flushAndNext(next)
     } catch (error) {
       return fail(res, error)
     }

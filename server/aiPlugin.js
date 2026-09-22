@@ -1,6 +1,12 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData, projectRoot } from './dataPaths.js'
+import { projectRoot } from './dataPaths.js'
+import {
+  endJsonResponse,
+  flushAndNext,
+  flushRuntimeWrites,
+  readJson,
+  trackRuntimeOperation,
+  writeJson,
+} from './runtimeStore.js'
 import { describeAiEngine, generateImprovement, loadAiProvider } from '../src/improve/engine.js'
 import { generateCoachAdvice } from '../src/coach/ai.js'
 import { generateProposal } from '../src/generate/ai.js'
@@ -9,24 +15,7 @@ import { ImproveError, IMPROVE_ERROR_CODE, isImproveAbort } from '../src/improve
 const ACTIVITY_LIMIT = 400
 
 function json(res, status, body) {
-  const payload = JSON.stringify(body)
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Content-Length', Buffer.byteLength(payload))
-  res.end(payload)
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
+  return endJsonResponse(res, status, body)
 }
 
 function readBody(req, limit = 1 * 1024 * 1024) {
@@ -56,19 +45,37 @@ function publicError() {
   return { message: 'Generation failed.', retryable: true }
 }
 
+async function endSse(res, payload) {
+  try {
+    await flushRuntimeWrites()
+  } catch (error) {
+    res.write(
+      `data: ${JSON.stringify({
+        type: 'error',
+        message: error.message || 'Could not persist.',
+      })}\n\n`,
+    )
+    res.end()
+    return
+  }
+  if (payload) res.write(payload)
+  res.end()
+}
+
 export function aiPlugin() {
   const root = projectRoot()
-  const activityFile = join(ensureRuntimeData(), 'aiActivity.json')
 
-  function loadActivity() {
-    const records = readJson(activityFile, [])
+  async function loadActivity() {
+    const records = await readJson('aiActivity.json', [])
     return Array.isArray(records) ? records : []
   }
 
   function saveActivity(record) {
-    if (!record) return
-    const records = [...loadActivity(), record].slice(-ACTIVITY_LIMIT)
-    writeJson(activityFile, records)
+    if (!record) return undefined
+    return trackRuntimeOperation(async () => {
+      const records = [...(await loadActivity()), record].slice(-ACTIVITY_LIMIT)
+      await writeJson('aiActivity.json', records)
+    })
   }
 
   async function handle(req, res, next, env) {
@@ -82,7 +89,7 @@ export function aiPlugin() {
       }
 
       if (method === 'GET' && matchRoute(url, '/api/ai/activity')) {
-        return json(res, 200, { records: loadActivity().slice(-50).reverse() })
+        return json(res, 200, { records: (await loadActivity()).slice(-50).reverse() })
       }
 
       if (method === 'POST' && matchRoute(url, '/api/ai/coach')) {
@@ -153,14 +160,12 @@ export function aiPlugin() {
             },
           })
 
-          res.write(`data: ${JSON.stringify({ type: 'done', result })}\n\n`)
-          res.end()
+          await endSse(res, `data: ${JSON.stringify({ type: 'done', result })}\n\n`)
           return
         } catch (error) {
           if (isImproveAbort(error) || controller.signal.aborted) {
             if (!res.headersSent) return json(res, 499, publicError())
-            res.write(`data: ${JSON.stringify({ type: 'error', ...publicError() })}\n\n`)
-            res.end()
+            await endSse(res, `data: ${JSON.stringify({ type: 'error', ...publicError() })}\n\n`)
             return
           }
           const failed = error instanceof ImproveError ? error : null
@@ -182,8 +187,7 @@ export function aiPlugin() {
             }
             return json(res, status, publicError())
           }
-          res.write(`data: ${JSON.stringify({ type: 'error', ...publicError() })}\n\n`)
-          res.end()
+          await endSse(res, `data: ${JSON.stringify({ type: 'error', ...publicError() })}\n\n`)
           return
         } finally {
           req.off('close', onClose)
@@ -227,7 +231,8 @@ export function aiPlugin() {
             },
           })
 
-          res.write(
+          await endSse(
+            res,
             `data: ${JSON.stringify({
               type: 'done',
               draft: result.draft,
@@ -235,13 +240,11 @@ export function aiPlugin() {
               provider: result.provider,
             })}\n\n`,
           )
-          res.end()
           return
         } catch (error) {
           if (isImproveAbort(error) || controller.signal.aborted) {
             if (!res.headersSent) return json(res, 499, publicError())
-            res.write(`data: ${JSON.stringify({ type: 'error', ...publicError() })}\n\n`)
-            res.end()
+            await endSse(res, `data: ${JSON.stringify({ type: 'error', ...publicError() })}\n\n`)
             return
           }
           const failed = error instanceof ImproveError ? error : null
@@ -252,8 +255,7 @@ export function aiPlugin() {
                 ? 429
                 : 502
           if (!res.headersSent) return json(res, status, publicError())
-          res.write(`data: ${JSON.stringify({ type: 'error', ...publicError() })}\n\n`)
-          res.end()
+          await endSse(res, `data: ${JSON.stringify({ type: 'error', ...publicError() })}\n\n`)
           return
         } finally {
           req.off('close', onClose)
@@ -264,11 +266,10 @@ export function aiPlugin() {
       return json(res, status, publicError())
     }
 
-    return next()
+    return flushAndNext(next)
   }
 
   function attach(server) {
-    mkdirSync(ensureRuntimeData(), { recursive: true })
     server.middlewares.use((req, res, next) => {
       import('vite')
         .then(({ loadEnv }) => handle(req, res, next, loadEnv(server.config.mode, root, '')))

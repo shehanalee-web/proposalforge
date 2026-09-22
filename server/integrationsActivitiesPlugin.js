@@ -6,11 +6,9 @@
  * not served here. Boot registers the null ActivityRepository, then postgres
  * when a DSN resolves. Migrations are an ops command, not this plugin.
  */
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
-import { ensureRuntimeData } from './dataPaths.js'
+import { readJson } from './runtimeStore.js'
 import {
   registerTimelineSource,
   getTimelineSource,
@@ -46,13 +44,22 @@ function json(res, status, body) {
  * written back. A missing or malformed file yields no candidates rather than
  * failing the whole timeline, since these are optional historical sources.
  */
+let proposalsCache = []
+let activityEventsCache = []
+
+async function refreshLegacyReads() {
+  const [proposals, events] = await Promise.all([
+    readJson('proposals.json', []),
+    readJson('activityEvents.json', []),
+  ])
+  proposalsCache = Array.isArray(proposals) ? proposals : []
+  activityEventsCache = Array.isArray(events) ? events : []
+}
+
 function readDataArray(fileName) {
-  try {
-    const parsed = JSON.parse(readFileSync(join(ensureRuntimeData(), fileName), 'utf8'))
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
-  }
+  if (fileName === 'proposals.json') return proposalsCache
+  if (fileName === 'activityEvents.json') return activityEventsCache
+  return []
 }
 
 function lookupProposalRecord(proposalId) {
@@ -174,6 +181,7 @@ export function integrationsActivitiesPlugin() {
 
   async function handle(req, res, next) {
     ensureSources()
+    await refreshLegacyReads()
     await ensureActivityPersistence()
     const url = req.url || ''
 

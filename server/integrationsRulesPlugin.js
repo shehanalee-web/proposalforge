@@ -3,9 +3,7 @@
  *
  * Not an outbox, worker, or delivery system. Never writes proposals.json.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData } from './dataPaths.js'
+import { assertStorageWritable, endJsonResponse, flushAndNext, ignoreUnavailableWrite, readJson, writeJson } from './runtimeStore.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import {
@@ -24,24 +22,7 @@ import {
 } from '../src/integrations/index.js'
 
 function json(res, status, body) {
-  const payload = JSON.stringify(body)
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Content-Length', Buffer.byteLength(payload))
-  res.end(payload)
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+  return endJsonResponse(res, status, body)
 }
 
 function readBody(req, limit = 2 * 1024 * 1024) {
@@ -102,38 +83,37 @@ function fail(res, error) {
  * Load/persist rules + runs and expose a thin studio API.
  */
 export function integrationsRulesPlugin() {
-  const dataDir = ensureRuntimeData()
-  const rulesFile = join(dataDir, 'automation-rules.json')
-  const runsFile = join(dataDir, 'automation-rule-runs.json')
   let ready = false
 
   function persistRules(bag) {
-    writeJson(rulesFile, {
+    assertStorageWritable()
+    return writeJson('automation-rules.json', {
       rules: Array.isArray(bag?.rules) ? bag.rules : [],
     })
   }
 
   function persistRuns(bag) {
-    writeJson(runsFile, {
+    assertStorageWritable()
+    return writeJson('automation-rule-runs.json', {
       runs: Array.isArray(bag?.runs) ? bag.runs : [],
     })
   }
 
-  function ensureStore() {
+  async function ensureStore() {
     if (ready) return
-    const storedRules = readJson(rulesFile, null)
-    const storedRuns = readJson(runsFile, null)
+    const storedRules = await readJson('automation-rules.json', null)
+    const storedRuns = await readJson('automation-rule-runs.json', null)
     if (storedRules && typeof storedRules === 'object') {
       replaceAutomationRules(storedRules)
     } else {
       replaceAutomationRules({ rules: [] })
-      persistRules(serializeAutomationRules())
+      await ignoreUnavailableWrite(() => persistRules(serializeAutomationRules()))
     }
     if (storedRuns && typeof storedRuns === 'object') {
       replaceAutomationRuleRuns(storedRuns)
     } else {
       replaceAutomationRuleRuns({ runs: [] })
-      persistRuns(serializeAutomationRuleRuns())
+      await ignoreUnavailableWrite(() => persistRuns(serializeAutomationRuleRuns()))
     }
     configureAutomationRulesStore({
       persistRules,
@@ -143,7 +123,7 @@ export function integrationsRulesPlugin() {
   }
 
   async function handle(req, res, next) {
-    ensureStore()
+    await ensureStore()
     const url = req.url || ''
 
     if (req.method === 'GET' && matchRoute(url, '/api/integrations/capabilities')) {
@@ -231,11 +211,11 @@ export function integrationsRulesPlugin() {
       }
     }
 
-    return next()
+    return flushAndNext(next)
   }
 
   function attach(server) {
-    ensureStore()
+    void ensureStore()
     server.middlewares.use((req, res, next) => {
       handle(req, res, next)
     })

@@ -1,8 +1,6 @@
-import { createWriteStream, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { pipeline } from 'node:stream/promises'
-import { Readable } from 'node:stream'
-import { ensureRuntimeData, resolveUploadsDir } from './dataPaths.js'
+import { mkdirSync } from 'node:fs'
+import { isServerlessRuntime, resolveUploadsDir } from './dataPaths.js'
+import { deleteBlob, putBlob, readJson, writeJson } from './runtimeStore.js'
 
 const MAX_UPLOAD_BYTES = 12 * 1024 * 1024
 
@@ -34,19 +32,6 @@ function preserveLiveShareTokens(incoming, existing, rotateIds) {
     if (!prev || rotateIds.has(row.id)) return row
     return { ...row, shareToken: prev.shareToken }
   })
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
 }
 
 function safeId(value) {
@@ -112,29 +97,18 @@ function matchRoute(url, pattern) {
 }
 
 /**
- * Persist uploaded files under `public/uploads` and JSON records under `data/`.
- * Vite serves `/uploads/...` as stable public URLs across refresh and restart.
+ * Persist uploaded files and JSON records through `runtimeStore`.
+ * Local Vite: `public/uploads` + `data/*.json`.
+ * Vercel: public Blob media + private Blob JSON.
  */
 export function localUploadsPlugin() {
-  const uploadsDir = resolveUploadsDir()
-  const dataDir = ensureRuntimeData()
-  const assetsFile = join(dataDir, 'assets.json')
-  const proposalsFile = join(dataDir, 'proposals.json')
-  const brandKitFile = join(dataDir, 'brand-kit.json')
-  const activityEventsFile = join(dataDir, 'activityEvents.json')
-  const notificationsFile = join(dataDir, 'notifications.json')
-  const templatesFile = join(dataDir, 'templates.json')
-  const servicesFile = join(dataDir, 'services.json')
-  const libraryBlocksFile = join(dataDir, 'library-blocks.json')
-  const settingsFile = join(dataDir, 'settings.json')
-
-  function loadAssets() {
-    const records = readJson(assetsFile, [])
+  async function loadAssets() {
+    const records = await readJson('assets.json', [])
     return Array.isArray(records) ? records : []
   }
 
-  function saveAssets(records) {
-    writeJson(assetsFile, records)
+  async function saveAssets(records) {
+    await writeJson('assets.json', records)
   }
 
   async function handle(req, res, next) {
@@ -143,12 +117,12 @@ export function localUploadsPlugin() {
 
     try {
       if (method === 'GET' && matchRoute(url, '/api/assets')) {
-        return json(res, 200, loadAssets())
+        return json(res, 200, await loadAssets())
       }
 
       const one = matchRoute(url, '/api/assets/:id')
       if (method === 'GET' && one) {
-        const asset = loadAssets().find((entry) => entry.id === one.id)
+        const asset = (await loadAssets()).find((entry) => entry.id === one.id)
         if (!asset) return json(res, 404, { message: 'Asset not found.' })
         return json(res, 200, asset)
       }
@@ -160,53 +134,46 @@ export function localUploadsPlugin() {
         const mimeType = String(req.headers['content-type'] || 'application/octet-stream')
         const body = await readBody(req)
         const id = `asset-${crypto.randomUUID()}`
-        const folder = join(uploadsDir, id)
-        mkdirSync(folder, { recursive: true })
-        const filePath = join(folder, name)
-        await pipeline(Readable.from(body), createWriteStream(filePath))
+        const stored = await putBlob(`uploads/${id}/${name}`, body, mimeType)
 
         const now = new Date().toISOString()
-        const publicPath = `/uploads/${id}/${name}`
         const asset = {
           id,
           name,
           kind: kindFromMime(mimeType, name),
           mimeType,
           sizeBytes: body.length,
-          url: publicPath,
-          thumbnailUrl: publicPath,
+          url: stored.url,
+          thumbnailUrl: stored.url,
           alt: '',
           caption: '',
           createdAt: now,
           updatedAt: now,
         }
 
-        saveAssets([...loadAssets(), asset])
+        await saveAssets([...(await loadAssets()), asset])
         return json(res, 201, asset)
       }
 
       const thumb = matchRoute(url, '/api/assets/:id/thumbnail')
       if (method === 'POST' && thumb) {
-        const records = loadAssets()
+        const records = await loadAssets()
         const index = records.findIndex((entry) => entry.id === thumb.id)
         if (index === -1) return json(res, 404, { message: 'Asset not found.' })
 
         const mimeType = String(req.headers['content-type'] || 'image/jpeg')
         const ext = mimeType === 'image/png' ? '.png' : mimeType === 'image/svg+xml' ? '.svg' : '.jpg'
         const body = await readBody(req)
-        const folder = join(uploadsDir, thumb.id)
-        mkdirSync(folder, { recursive: true })
         const fileName = `thumb${ext}`
-        await pipeline(Readable.from(body), createWriteStream(join(folder, fileName)))
+        const stored = await putBlob(`uploads/${thumb.id}/${fileName}`, body, mimeType)
 
-        const thumbnailUrl = `/uploads/${thumb.id}/${fileName}`
         const updated = {
           ...records[index],
-          thumbnailUrl,
+          thumbnailUrl: stored.url,
           updatedAt: new Date().toISOString(),
         }
         records[index] = updated
-        saveAssets(records)
+        await saveAssets(records)
         return json(res, 200, updated)
       }
 
@@ -220,19 +187,17 @@ export function localUploadsPlugin() {
         )
         const mimeType = String(req.headers['content-type'] || 'application/octet-stream')
         const body = await readBody(req, 48 * 1024 * 1024)
-        const folder = join(uploadsDir, 'proposals', proposalId, uploadId)
-        mkdirSync(folder, { recursive: true })
-        await pipeline(Readable.from(body), createWriteStream(join(folder, name)))
+        const storageKey = `proposals/${proposalId}/${uploadId}/${name}`
+        const stored = await putBlob(`uploads/${storageKey}`, body, mimeType)
 
-        const publicPath = `/uploads/proposals/${proposalId}/${uploadId}/${name}`
         return json(res, 201, {
           id: uploadId,
           proposalId,
           name,
           mimeType,
           sizeBytes: body.length,
-          storageKey: `proposals/${proposalId}/${uploadId}/${name}`,
-          url: publicPath,
+          storageKey,
+          url: stored.url,
         })
       }
 
@@ -241,17 +206,17 @@ export function localUploadsPlugin() {
         const proposalId = safeId(new URL(url, 'http://local').searchParams.get('proposalId'))
         const uploadId = safeId(proposalFile.id)
         if (!proposalId || !uploadId) return json(res, 400, { message: 'A proposal id is required.' })
-        const folder = join(uploadsDir, 'proposals', proposalId, uploadId)
         try {
-          rmSync(folder, { recursive: true, force: true })
-        } catch {
-          /* missing folder is fine */
+          await deleteBlob(`uploads/proposals/${proposalId}/${uploadId}`)
+        } catch (error) {
+          if (error?.status === 503) throw error
+          /* missing object is fine */
         }
         return json(res, 200, { ok: true })
       }
 
       if (method === 'GET' && matchRoute(url, '/api/proposals')) {
-        const records = readJson(proposalsFile, null)
+        const records = await readJson('proposals.json', null)
         return json(res, 200, { records })
       }
 
@@ -260,28 +225,28 @@ export function localUploadsPlugin() {
         if (!Array.isArray(body)) {
           return json(res, 400, { message: 'Expected an array of proposals.' })
         }
-        const existing = readJson(proposalsFile, [])
+        const existing = await readJson('proposals.json', [])
         const next = preserveLiveShareTokens(
           body,
           existing,
           parseRotateShareTokenIds(req),
         )
-        writeJson(proposalsFile, next)
+        await writeJson('proposals.json', next)
         return json(res, 200, { ok: true, count: next.length })
       }
 
       if (method === 'GET' && matchRoute(url, '/api/brand-kit')) {
-        return json(res, 200, { record: readJson(brandKitFile, null) })
+        return json(res, 200, { record: await readJson('brand-kit.json', null) })
       }
 
       if (method === 'PUT' && matchRoute(url, '/api/brand-kit')) {
         const body = JSON.parse((await readBody(req, 4 * 1024 * 1024)).toString('utf8') || 'null')
-        writeJson(brandKitFile, body)
+        await writeJson('brand-kit.json', body)
         return json(res, 200, { ok: true })
       }
 
       if (method === 'GET' && matchRoute(url, '/api/activity-events')) {
-        const records = readJson(activityEventsFile, [])
+        const records = await readJson('activityEvents.json', [])
         return json(res, 200, { records: Array.isArray(records) ? records : [] })
       }
 
@@ -290,12 +255,12 @@ export function localUploadsPlugin() {
         if (!Array.isArray(body)) {
           return json(res, 400, { message: 'Expected an array of activity events.' })
         }
-        writeJson(activityEventsFile, body)
+        await writeJson('activityEvents.json', body)
         return json(res, 200, { ok: true, count: body.length })
       }
 
       if (method === 'GET' && matchRoute(url, '/api/notifications')) {
-        const records = readJson(notificationsFile, [])
+        const records = await readJson('notifications.json', [])
         return json(res, 200, { records: Array.isArray(records) ? records : [] })
       }
 
@@ -304,12 +269,12 @@ export function localUploadsPlugin() {
         if (!Array.isArray(body)) {
           return json(res, 400, { message: 'Expected an array of notifications.' })
         }
-        writeJson(notificationsFile, body)
+        await writeJson('notifications.json', body)
         return json(res, 200, { ok: true, count: body.length })
       }
 
       if (method === 'GET' && matchRoute(url, '/api/templates')) {
-        const records = readJson(templatesFile, null)
+        const records = await readJson('templates.json', null)
         return json(res, 200, { records })
       }
 
@@ -318,12 +283,12 @@ export function localUploadsPlugin() {
         if (!Array.isArray(body)) {
           return json(res, 400, { message: 'Expected an array of templates.' })
         }
-        writeJson(templatesFile, body)
+        await writeJson('templates.json', body)
         return json(res, 200, { ok: true, count: body.length })
       }
 
       if (method === 'GET' && matchRoute(url, '/api/services')) {
-        const records = readJson(servicesFile, null)
+        const records = await readJson('services.json', null)
         return json(res, 200, { records })
       }
 
@@ -332,12 +297,12 @@ export function localUploadsPlugin() {
         if (!Array.isArray(body)) {
           return json(res, 400, { message: 'Expected an array of services.' })
         }
-        writeJson(servicesFile, body)
+        await writeJson('services.json', body)
         return json(res, 200, { ok: true, count: body.length })
       }
 
       if (method === 'GET' && matchRoute(url, '/api/library-blocks')) {
-        const records = readJson(libraryBlocksFile, null)
+        const records = await readJson('library-blocks.json', null)
         return json(res, 200, { records })
       }
 
@@ -346,12 +311,12 @@ export function localUploadsPlugin() {
         if (!Array.isArray(body)) {
           return json(res, 400, { message: 'Expected an array of library blocks.' })
         }
-        writeJson(libraryBlocksFile, body)
+        await writeJson('library-blocks.json', body)
         return json(res, 200, { ok: true, count: body.length })
       }
 
       if (method === 'GET' && matchRoute(url, '/api/settings')) {
-        return json(res, 200, { record: readJson(settingsFile, null) })
+        return json(res, 200, { record: await readJson('settings.json', null) })
       }
 
       if (method === 'PUT' && matchRoute(url, '/api/settings')) {
@@ -359,7 +324,7 @@ export function localUploadsPlugin() {
         if (!body || typeof body !== 'object' || Array.isArray(body)) {
           return json(res, 400, { message: 'Expected a settings object.' })
         }
-        writeJson(settingsFile, body)
+        await writeJson('settings.json', body)
         return json(res, 200, { ok: true })
       }
     } catch (error) {
@@ -373,13 +338,15 @@ export function localUploadsPlugin() {
   return {
     name: 'proposalforge-local-uploads',
     configureServer(server) {
-      mkdirSync(uploadsDir, { recursive: true })
-      mkdirSync(dataDir, { recursive: true })
+      if (!isServerlessRuntime()) {
+        mkdirSync(resolveUploadsDir(), { recursive: true })
+      }
       server.middlewares.use(handle)
     },
     configurePreviewServer(server) {
-      mkdirSync(uploadsDir, { recursive: true })
-      mkdirSync(dataDir, { recursive: true })
+      if (!isServerlessRuntime()) {
+        mkdirSync(resolveUploadsDir(), { recursive: true })
+      }
       server.middlewares.use(handle)
     },
     handle,

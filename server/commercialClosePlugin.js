@@ -1,6 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData } from './dataPaths.js'
+import { assertStorageWritable, endJsonResponse, flushAndNext, ignoreUnavailableWrite, readJson, writeJson } from './runtimeStore.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import { studioRequestIdentity } from '../src/integrations/identity/index.js'
@@ -47,24 +45,7 @@ import {
 } from '../src/commercialClose/index.js'
 
 function json(res, status, body) {
-  const payload = JSON.stringify(body)
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Content-Length', Buffer.byteLength(payload))
-  res.end(payload)
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
+  return endJsonResponse(res, status, body)
 }
 
 function readBody(req, limit = 2 * 1024 * 1024) {
@@ -126,36 +107,40 @@ function fail(res, error) {
  * H13 follow-up side-effects may write `data/followups.json`.
  */
 export function commercialClosePlugin() {
-  const dataDir = ensureRuntimeData()
-  const closesFile = join(dataDir, 'commercial-closes.json')
-  const livingFile = join(dataDir, 'living.json')
-  const livingEventsFile = join(dataDir, 'living-events.json')
-  const followupsFile = join(dataDir, 'followups.json')
-  const proposalsFile = join(dataDir, 'proposals.json')
   let ready = false
+  let proposals = []
 
   function persistCloses(records) {
-    writeJson(closesFile, records)
+    assertStorageWritable()
+    return writeJson('commercial-closes.json', records)
   }
 
   function persistSessions(records) {
-    writeJson(livingFile, records)
+    assertStorageWritable()
+    return writeJson('living.json', records)
   }
 
   function persistEvents(records) {
-    writeJson(livingEventsFile, records)
+    assertStorageWritable()
+    return writeJson('living-events.json', records)
   }
 
   function persistFollowups(records) {
-    writeJson(followupsFile, records)
+    assertStorageWritable()
+    return writeJson('followups.json', records)
   }
 
   function readProposals() {
-    const stored = readJson(proposalsFile, [])
-    return Array.isArray(stored) ? stored : []
+    return Array.isArray(proposals) ? proposals : []
   }
 
-  function ensureStore() {
+  async function refreshProposals() {
+    const stored = await readJson('proposals.json', [])
+    proposals = Array.isArray(stored) ? stored : []
+    return proposals
+  }
+
+  async function ensureStore() {
     if (ready) return
 
     // Direct dependency on living event contracts so Vite server restarts
@@ -178,33 +163,33 @@ export function commercialClosePlugin() {
       )
     }
 
-    const storedSessions = readJson(livingFile, null)
+    const storedSessions = await readJson('living.json', null)
     if (Array.isArray(storedSessions)) {
       replaceLivingSessions(storedSessions)
     }
     configureLivingStore({ persist: persistSessions })
 
-    const storedEvents = readJson(livingEventsFile, null)
+    const storedEvents = await readJson('living-events.json', null)
     if (Array.isArray(storedEvents)) {
       replaceLivingEngagementEvents(storedEvents)
     }
     configureLivingEventStore({ persist: persistEvents })
 
-    const storedFollowups = readJson(followupsFile, null)
+    const storedFollowups = await readJson('followups.json', null)
     if (Array.isArray(storedFollowups)) {
       replaceFollowupRecords(storedFollowups)
     } else {
       replaceFollowupRecords([])
-      persistFollowups(allFollowupRecords())
+      await ignoreUnavailableWrite(() => persistFollowups(allFollowupRecords()))
     }
     configureFollowupStore({ persist: persistFollowups })
 
-    const storedCloses = readJson(closesFile, null)
+    const storedCloses = await readJson('commercial-closes.json', null)
     if (Array.isArray(storedCloses)) {
       replaceCommercialCloses(storedCloses)
     } else {
       replaceCommercialCloses([])
-      persistCloses(allCommercialCloses())
+      await ignoreUnavailableWrite(() => persistCloses(allCommercialCloses()))
     }
     configureCommercialCloseStore({ persist: persistCloses })
 
@@ -229,7 +214,7 @@ export function commercialClosePlugin() {
 
   async function handle(req, res, next) {
     const url = req.url || '/'
-    if (!url.startsWith('/api/commercial-close')) return next()
+    if (!url.startsWith('/api/commercial-close')) return flushAndNext(next)
 
     const method = req.method || 'GET'
     function actorFrom(body, query) {
@@ -242,7 +227,8 @@ export function commercialClosePlugin() {
     try {
       // Hydrate inside try/catch so unknown persisted event types surface as
       // ValidationError responses instead of crashing the Vite process.
-      ensureStore()
+      await ensureStore()
+      await refreshProposals()
       if (method === 'GET' && matchRoute(url, '/api/commercial-close/capabilities')) {
         return json(res, 200, { capabilities: COMMERCIAL_CLOSE_CAPABILITIES })
       }
@@ -641,7 +627,7 @@ export function commercialClosePlugin() {
         )
       }
 
-      return next()
+      return flushAndNext(next)
     } catch (error) {
       return fail(res, error)
     }

@@ -1,6 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData } from './dataPaths.js'
+import { assertStorageWritable, endJsonResponse, flushAndNext, ignoreUnavailableWrite, readJson, writeJson } from './runtimeStore.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import { studioRequestIdentity } from '../src/integrations/identity/index.js'
@@ -30,24 +28,7 @@ import {
 } from '../src/followup/index.js'
 
 function json(res, status, body) {
-  const payload = JSON.stringify(body)
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Content-Length', Buffer.byteLength(payload))
-  res.end(payload)
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
+  return endJsonResponse(res, status, body)
 }
 
 function readBody(req, limit = 2 * 1024 * 1024) {
@@ -108,28 +89,32 @@ function fail(res, error) {
  * Never writes `data/proposals.json`.
  */
 export function followupPlugin() {
-  const dataDir = ensureRuntimeData()
-  const followupsFile = join(dataDir, 'followups.json')
-  const proposalsFile = join(dataDir, 'proposals.json')
   let ready = false
+  let proposals = []
 
   function persist(records) {
-    writeJson(followupsFile, records)
+    assertStorageWritable()
+    return writeJson('followups.json', records)
   }
 
   function readProposals() {
-    const stored = readJson(proposalsFile, [])
-    return Array.isArray(stored) ? stored : []
+    return Array.isArray(proposals) ? proposals : []
   }
 
-  function ensureStore() {
+  async function refreshProposals() {
+    const stored = await readJson('proposals.json', [])
+    proposals = Array.isArray(stored) ? stored : []
+    return proposals
+  }
+
+  async function ensureStore() {
     if (ready) return
-    const stored = readJson(followupsFile, null)
+    const stored = await readJson('followups.json', null)
     if (Array.isArray(stored)) {
       replaceFollowupRecords(stored)
     } else {
       replaceFollowupRecords([])
-      persist(allFollowupRecords())
+      await ignoreUnavailableWrite(() => persist(allFollowupRecords()))
     }
     configureFollowupStore({ persist })
     configureFollowupResolvers({
@@ -171,10 +156,11 @@ export function followupPlugin() {
 
   async function handle(req, res, next) {
     const url = req.url || '/'
-    if (!url.startsWith('/api/followups')) return next()
+    if (!url.startsWith('/api/followups')) return flushAndNext(next)
 
     const method = req.method || 'GET'
-    ensureStore()
+    await ensureStore()
+    await refreshProposals()
     function actorFrom(body, query) {
       return studioRequestIdentity(req, body, query).actor
     }
@@ -303,7 +289,7 @@ export function followupPlugin() {
         })
       }
 
-      return next()
+      return flushAndNext(next)
     } catch (error) {
       return fail(res, error)
     }
