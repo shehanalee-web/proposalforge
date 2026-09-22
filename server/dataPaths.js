@@ -1,12 +1,10 @@
-import { copyFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs'
+import { mkdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const VERCEL_DATA_DIR = join('/tmp', 'proposalforge-data')
 const VERCEL_UPLOADS_DIR = join('/tmp', 'proposalforge-uploads')
-
-let seeded = false
 
 export function projectRoot() {
   return ROOT
@@ -18,8 +16,8 @@ export function isServerlessRuntime() {
 
 /**
  * Local Vite uses `data/` in the repo.
- * Vercel serverless filesystems are read-only except `/tmp`, so production
- * copies seed JSON into `/tmp` for the lifetime of one instance.
+ * Production JSON is stored in Vercel Blob (`server/runtimeStore.js`).
+ * These paths remain for the local filesystem adapter only.
  */
 export function resolveDataDir() {
   return isServerlessRuntime() ? VERCEL_DATA_DIR : join(ROOT, 'data')
@@ -30,19 +28,9 @@ export function resolveUploadsDir() {
 }
 
 export function ensureRuntimeData() {
+  if (isServerlessRuntime()) return resolveDataDir()
   const dataDir = resolveDataDir()
   mkdirSync(dataDir, { recursive: true })
-  if (isServerlessRuntime() && !seeded) {
-    const source = join(ROOT, 'data')
-    if (existsSync(source)) {
-      for (const name of readdirSync(source)) {
-        if (!name.endsWith('.json')) continue
-        const dest = join(dataDir, name)
-        if (!existsSync(dest)) copyFileSync(join(source, name), dest)
-      }
-    }
-    seeded = true
-  }
   return dataDir
 }
 

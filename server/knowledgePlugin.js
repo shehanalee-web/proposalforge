@@ -1,6 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData } from './dataPaths.js'
+import { assertStorageWritable, endJsonResponse, flushAndNext, ignoreUnavailableWrite, readJson, writeJson } from './runtimeStore.js'
 import { NotFoundError, ValidationError } from '../src/services/errors.js'
 import {
   approveKnowledgeItem,
@@ -28,24 +26,7 @@ import {
 } from '../src/knowledge/store.js'
 
 function json(res, status, body) {
-  const payload = JSON.stringify(body)
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Content-Length', Buffer.byteLength(payload))
-  res.end(payload)
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
+  return endJsonResponse(res, status, body)
 }
 
 function readBody(req, limit = 2 * 1024 * 1024) {
@@ -103,21 +84,21 @@ function fail(res, error) {
  * Never writes `data/proposals.json`.
  */
 export function knowledgePlugin() {
-  const knowledgeFile = join(ensureRuntimeData(), 'knowledge.json')
   let ready = false
 
   function persist(records) {
-    writeJson(knowledgeFile, records)
+    assertStorageWritable()
+    return writeJson('knowledge.json', records)
   }
 
-  function ensureStore() {
+  async function ensureStore() {
     if (ready) return
-    const stored = readJson(knowledgeFile, null)
+    const stored = await readJson('knowledge.json', null)
     if (Array.isArray(stored) && stored.length > 0) {
       replaceKnowledgeRecords(stored)
     } else {
       seedKnowledgeRecords()
-      persist(allKnowledgeRecords())
+      await ignoreUnavailableWrite(() => persist(allKnowledgeRecords()))
     }
     configureKnowledgeStore({ persist })
     ready = true
@@ -125,10 +106,10 @@ export function knowledgePlugin() {
 
   async function handle(req, res, next) {
     const url = req.url || '/'
-    if (!url.startsWith('/api/knowledge')) return next()
+    if (!url.startsWith('/api/knowledge')) return flushAndNext(next)
 
     const method = req.method || 'GET'
-    ensureStore()
+    await ensureStore()
 
     try {
       if (method === 'GET' && matchRoute(url, '/api/knowledge/capabilities')) {
@@ -263,7 +244,7 @@ export function knowledgePlugin() {
         return json(res, 200, deleteKnowledgeItem({ companyId: scoped, id: one.id }))
       }
 
-      return next()
+      return flushAndNext(next)
     } catch (error) {
       return fail(res, error)
     }

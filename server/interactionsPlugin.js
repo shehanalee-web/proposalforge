@@ -1,6 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData } from './dataPaths.js'
+import { assertStorageWritable, endJsonResponse, flushAndNext, ignoreUnavailableWrite, readJson, writeJson } from './runtimeStore.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import { studioRequestIdentity } from '../src/integrations/identity/index.js'
@@ -33,24 +31,7 @@ import {
 } from '../src/interactions/index.js'
 
 function json(res, status, body) {
-  const payload = JSON.stringify(body)
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Content-Length', Buffer.byteLength(payload))
-  res.end(payload)
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
+  return endJsonResponse(res, status, body)
 }
 
 function readBody(req, limit = 2 * 1024 * 1024) {
@@ -120,53 +101,57 @@ function fail(res, error) {
  * Living share routes may ensure portal + living-event stores for H12 convergence.
  */
 export function interactionsPlugin() {
-  const dataDir = ensureRuntimeData()
-  const interactionsFile = join(dataDir, 'interactions.json')
-  const proposalsFile = join(dataDir, 'proposals.json')
-  const portalFile = join(dataDir, 'portal.json')
-  const livingEventsFile = join(dataDir, 'living-events.json')
   let ready = false
   let portalReady = false
   let livingEventsReady = false
+  let proposals = []
 
   function persist(records) {
-    writeJson(interactionsFile, records)
+    assertStorageWritable()
+    return writeJson('interactions.json', records)
   }
 
   function persistPortals(records) {
-    writeJson(portalFile, records)
+    assertStorageWritable()
+    return writeJson('portal.json', records)
   }
 
   function persistLivingEvents(records) {
-    writeJson(livingEventsFile, records)
+    assertStorageWritable()
+    return writeJson('living-events.json', records)
   }
 
   function readProposals() {
-    const stored = readJson(proposalsFile, [])
-    return Array.isArray(stored) ? stored : []
+    return Array.isArray(proposals) ? proposals : []
   }
 
-  function ensurePortalStore() {
+  async function refreshProposals() {
+    const stored = await readJson('proposals.json', [])
+    proposals = Array.isArray(stored) ? stored : []
+    return proposals
+  }
+
+  async function ensurePortalStore() {
     if (portalReady) return
-    const stored = readJson(portalFile, null)
+    const stored = await readJson('portal.json', null)
     if (Array.isArray(stored)) {
       replacePortalRecords(stored)
     } else {
       replacePortalRecords([])
-      persistPortals(allPortalRecords())
+      await ignoreUnavailableWrite(() => persistPortals(allPortalRecords()))
     }
     configurePortalStore({ persist: persistPortals })
     portalReady = true
   }
 
-  function ensureLivingEventStore() {
+  async function ensureLivingEventStore() {
     if (livingEventsReady) return
-    const stored = readJson(livingEventsFile, null)
+    const stored = await readJson('living-events.json', null)
     if (Array.isArray(stored)) {
       replaceLivingEngagementEvents(stored)
     } else {
       replaceLivingEngagementEvents([])
-      persistLivingEvents(allLivingEngagementEvents())
+      await ignoreUnavailableWrite(() => persistLivingEvents(allLivingEngagementEvents()))
     }
     configureLivingEventStore({ persist: persistLivingEvents })
     configureLivingResolvers({
@@ -187,14 +172,14 @@ export function interactionsPlugin() {
     livingEventsReady = true
   }
 
-  function ensureStore() {
+  async function ensureStore() {
     if (ready) return
-    const stored = readJson(interactionsFile, null)
+    const stored = await readJson('interactions.json', null)
     if (Array.isArray(stored)) {
       replaceInteractionRecords(stored)
     } else {
       replaceInteractionRecords([])
-      persist(allInteractionRecords())
+      await ignoreUnavailableWrite(() => persist(allInteractionRecords()))
     }
     configureInteractionStore({ persist })
     configureInteractionResolvers({
@@ -216,7 +201,7 @@ export function interactionsPlugin() {
 
   async function handle(req, res, next) {
     const url = req.url || '/'
-    if (!url.startsWith('/api/interactions')) return next()
+    if (!url.startsWith('/api/interactions')) return flushAndNext(next)
 
     const method = req.method || 'GET'
     function actorFrom(body, query) {
@@ -227,15 +212,16 @@ export function interactionsPlugin() {
     }
 
     try {
-      ensureStore()
+      await ensureStore()
+      await refreshProposals()
       if (method === 'GET' && matchRoute(url, '/api/interactions/capabilities')) {
         return json(res, 200, { capabilities: INTERACTION_CAPABILITIES })
       }
 
       const livingPublic = matchRoute(url, '/api/interactions/living/:token')
       if (livingPublic) {
-        ensurePortalStore()
-        ensureLivingEventStore()
+        await ensurePortalStore()
+        await ensureLivingEventStore()
         if (method === 'GET') {
           return json(res, 200, listLivingClientInteractions({ shareToken: livingPublic.token }))
         }
@@ -332,7 +318,7 @@ export function interactionsPlugin() {
         })
       }
 
-      return next()
+      return flushAndNext(next)
     } catch (error) {
       return fail(res, error)
     }

@@ -1,6 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData } from './dataPaths.js'
+import { assertStorageWritable, endJsonResponse, flushAndNext, ignoreUnavailableWrite, readJson, writeJson } from './runtimeStore.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import { studioRequestIdentity } from '../src/integrations/identity/index.js'
@@ -39,24 +37,7 @@ import {
 import { LIVING_CAPABILITIES } from '../src/living/types.js'
 
 function json(res, status, body) {
-  const payload = JSON.stringify(body)
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Content-Length', Buffer.byteLength(payload))
-  res.end(payload)
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
+  return endJsonResponse(res, status, body)
 }
 
 function readBody(req, limit = 2 * 1024 * 1024) {
@@ -118,67 +99,71 @@ function fail(res, error) {
  * Follow-up writes go through H13 into `data/followups.json`.
  */
 export function forgePlugin() {
-  const dataDir = ensureRuntimeData()
-  const followupsFile = join(dataDir, 'followups.json')
-  const livingFile = join(dataDir, 'living.json')
-  const livingEventsFile = join(dataDir, 'living-events.json')
-  const livingPublicationsFile = join(dataDir, 'living-publications.json')
-  const proposalsFile = join(dataDir, 'proposals.json')
   let ready = false
+  let proposals = []
 
   function persistFollowups(records) {
-    writeJson(followupsFile, records)
+    assertStorageWritable()
+    return writeJson('followups.json', records)
   }
 
   function persistSessions(records) {
-    writeJson(livingFile, records)
+    assertStorageWritable()
+    return writeJson('living.json', records)
   }
 
   function persistEvents(records) {
-    writeJson(livingEventsFile, records)
+    assertStorageWritable()
+    return writeJson('living-events.json', records)
   }
 
   function persistPublications(records) {
-    writeJson(livingPublicationsFile, records)
+    assertStorageWritable()
+    return writeJson('living-publications.json', records)
   }
 
   function readProposals() {
-    const stored = readJson(proposalsFile, [])
-    return Array.isArray(stored) ? stored : []
+    return Array.isArray(proposals) ? proposals : []
   }
 
-  function ensureStore() {
+  async function refreshProposals() {
+    const stored = await readJson('proposals.json', [])
+    proposals = Array.isArray(stored) ? stored : []
+    return proposals
+  }
+
+  async function ensureStore() {
     if (ready) return
 
-    const storedFollowups = readJson(followupsFile, null)
+    const storedFollowups = await readJson('followups.json', null)
     if (Array.isArray(storedFollowups)) replaceFollowupRecords(storedFollowups)
     else {
       replaceFollowupRecords([])
-      persistFollowups(allFollowupRecords())
+      await ignoreUnavailableWrite(() => persistFollowups(allFollowupRecords()))
     }
     configureFollowupStore({ persist: persistFollowups })
 
-    const storedSessions = readJson(livingFile, null)
+    const storedSessions = await readJson('living.json', null)
     if (Array.isArray(storedSessions)) replaceLivingSessions(storedSessions)
     else {
       replaceLivingSessions([])
-      persistSessions(allLivingSessions())
+      await ignoreUnavailableWrite(() => persistSessions(allLivingSessions()))
     }
     configureLivingStore({ persist: persistSessions })
 
-    const storedEvents = readJson(livingEventsFile, null)
+    const storedEvents = await readJson('living-events.json', null)
     if (Array.isArray(storedEvents)) replaceLivingEngagementEvents(storedEvents)
     else {
       replaceLivingEngagementEvents([])
-      persistEvents(allLivingEngagementEvents())
+      await ignoreUnavailableWrite(() => persistEvents(allLivingEngagementEvents()))
     }
     configureLivingEventStore({ persist: persistEvents })
 
-    const storedPublications = readJson(livingPublicationsFile, null)
+    const storedPublications = await readJson('living-publications.json', null)
     if (Array.isArray(storedPublications)) replaceLivingPublications(storedPublications)
     else {
       replaceLivingPublications([])
-      persistPublications(allLivingPublications())
+      await ignoreUnavailableWrite(() => persistPublications(allLivingPublications()))
     }
     configureLivingPublicationStore({ persist: persistPublications })
 
@@ -224,7 +209,7 @@ export function forgePlugin() {
 
   async function handle(req, res, next) {
     const url = req.url || '/'
-    if (!url.startsWith('/api/forge')) return next()
+    if (!url.startsWith('/api/forge')) return flushAndNext(next)
 
     const method = req.method || 'GET'
     function actorFrom(body, query) {
@@ -235,7 +220,8 @@ export function forgePlugin() {
     }
 
     try {
-      ensureStore()
+      await ensureStore()
+      await refreshProposals()
       if (url.startsWith('/api/forge/public')) {
         return clientForgeApiDenied()
       }

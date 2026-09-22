@@ -5,9 +5,7 @@
  * in-process with no network. Not an outbox, worker, or retry scheduler.
  * Never writes proposals.json or any H16.5/H16.4 store.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData } from './dataPaths.js'
+import { assertStorageWritable, endJsonResponse, flushAndNext, ignoreUnavailableWrite, readJson, writeJson } from './runtimeStore.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import {
@@ -27,24 +25,7 @@ import {
 } from '../src/integrations/index.js'
 
 function json(res, status, body) {
-  const payload = JSON.stringify(body)
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Content-Length', Buffer.byteLength(payload))
-  res.end(payload)
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
+  return endJsonResponse(res, status, body)
 }
 
 function readBody(req, limit = 512 * 1024) {
@@ -107,47 +88,46 @@ function fail(res, error) {
  * There is intentionally no HTTP route that triggers a CRM mutation.
  */
 export function integrationsCrmPlugin() {
-  const dataDir = ensureRuntimeData()
-  const connectionsFile = join(dataDir, 'crm-connections.json')
-  const outcomesFile = join(dataDir, 'crm-outcomes.json')
   let ready = false
 
   function persistConnections(bag) {
-    writeJson(connectionsFile, {
+    assertStorageWritable()
+    return writeJson('crm-connections.json', {
       connections: Array.isArray(bag?.connections) ? bag.connections : [],
     })
   }
 
   function persistOutcomes(bag) {
-    writeJson(outcomesFile, {
+    assertStorageWritable()
+    return writeJson('crm-outcomes.json', {
       outcomes: Array.isArray(bag?.outcomes) ? bag.outcomes : [],
     })
   }
 
-  function ensureStore() {
+  async function ensureStore() {
     if (ready) return
-    const storedConnections = readJson(connectionsFile, null)
+    const storedConnections = await readJson('crm-connections.json', null)
     if (storedConnections && typeof storedConnections === 'object') {
       replaceCrmConnections(storedConnections)
     } else {
       replaceCrmConnections({ connections: [] })
-      persistConnections(serializeCrmConnections())
+      await ignoreUnavailableWrite(() => persistConnections(serializeCrmConnections()))
     }
     configureCrmConnectionStore({ persist: persistConnections })
 
-    const storedOutcomes = readJson(outcomesFile, null)
+    const storedOutcomes = await readJson('crm-outcomes.json', null)
     if (storedOutcomes && typeof storedOutcomes === 'object') {
       replaceCrmOutcomes(storedOutcomes)
     } else {
       replaceCrmOutcomes({ outcomes: [] })
-      persistOutcomes(serializeCrmOutcomes())
+      await ignoreUnavailableWrite(() => persistOutcomes(serializeCrmOutcomes()))
     }
     configureCrmOutcomeStore({ persist: persistOutcomes })
     ready = true
   }
 
   async function handle(req, res, next) {
-    ensureStore()
+    await ensureStore()
     const url = req.url || ''
 
     const connections = matchRoute(url, '/api/integrations/crm/connections')
@@ -235,11 +215,11 @@ export function integrationsCrmPlugin() {
       }
     }
 
-    return next()
+    return flushAndNext(next)
   }
 
   function attach(server) {
-    ensureStore()
+    void ensureStore()
     server.middlewares.use((req, res, next) => {
       handle(req, res, next)
     })

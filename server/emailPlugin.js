@@ -1,6 +1,5 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData, projectRoot } from './dataPaths.js'
+import { projectRoot } from './dataPaths.js'
+import { readJson, writeJson } from './runtimeStore.js'
 import { ACTIVITY_EVENT_TYPE, ACTIVITY_USER, makeActivityEventRow } from '../src/models/activityEvent.js'
 import {
   EMAIL_DELIVERY_STATUS,
@@ -41,19 +40,6 @@ function json(res, status, body) {
   res.setHeader('Content-Type', 'application/json')
   res.setHeader('Content-Length', Buffer.byteLength(payload))
   res.end(payload)
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
 }
 
 function readBody(req, limit = 2 * 1024 * 1024) {
@@ -105,51 +91,47 @@ function resolveRedirect(url, req) {
 
 export function emailPlugin() {
   const root = projectRoot()
-  const dataDir = ensureRuntimeData()
-  const messagesFile = join(dataDir, 'emailMessages.json')
-  const activityFile = join(dataDir, 'activityEvents.json')
-  const proposalsFile = join(dataDir, 'proposals.json')
 
-  function loadMessages() {
-    const records = readJson(messagesFile, [])
+  async function loadMessages() {
+    const records = await readJson('emailMessages.json', [])
     return Array.isArray(records) ? records.map((row) => makeEmailMessage(row)) : []
   }
 
-  function saveMessages(records) {
-    writeJson(messagesFile, records)
+  async function saveMessages(records) {
+    await writeJson('emailMessages.json', records)
   }
 
-  function loadActivity() {
-    const records = readJson(activityFile, [])
+  async function loadActivity() {
+    const records = await readJson('activityEvents.json', [])
     return Array.isArray(records) ? records : []
   }
 
-  function saveActivity(records) {
-    writeJson(activityFile, records)
+  async function saveActivity(records) {
+    await writeJson('activityEvents.json', records)
   }
 
-  function upsertMessage(next) {
-    const records = loadMessages()
+  async function upsertMessage(next) {
+    const records = await loadMessages()
     const index = records.findIndex((row) => row.id === next.id)
     if (index >= 0) records[index] = next
     else records.push(next)
-    saveMessages(records)
+    await saveMessages(records)
     return next
   }
 
-  function findMessage(id) {
-    return loadMessages().find((row) => row.id === id) ?? null
+  async function findMessage(id) {
+    return (await loadMessages()).find((row) => row.id === id) ?? null
   }
 
-  function findByProviderId(providerMessageId) {
+  async function findByProviderId(providerMessageId) {
     if (!providerMessageId) return null
     return (
-      loadMessages().find((row) => row.providerMessageId === providerMessageId) ?? null
+      (await loadMessages()).find((row) => row.providerMessageId === providerMessageId) ?? null
     )
   }
 
-  function recordActivity(proposalId, eventType, metadata) {
-    const records = loadActivity()
+  async function recordActivity(proposalId, eventType, metadata) {
+    const records = await loadActivity()
     const messageId = metadata.emailMessageId
     if (messageId) {
       const key = emailActivityKey(messageId, eventType)
@@ -174,25 +156,25 @@ export function emailPlugin() {
       metadata,
     })
     records.push(event)
-    saveActivity(records)
+    await saveActivity(records)
     return event
   }
 
-  function applyStatus(message, status, extra = {}) {
+  async function applyStatus(message, status, extra = {}) {
     const next = makeEmailMessage({
       ...message,
       ...extra,
       status: advanceEmailStatus(message.status, status),
       updatedAt: new Date().toISOString(),
     })
-    upsertMessage(next)
-    patchProposalLastEmail(next)
+    await upsertMessage(next)
+    await patchProposalLastEmail(next)
     return next
   }
 
-  function patchProposalLastEmail(message) {
+  async function patchProposalLastEmail(message) {
     if (!message?.proposalId) return
-    const proposals = readJson(proposalsFile, [])
+    const proposals = await readJson('proposals.json', [])
     if (!Array.isArray(proposals)) return
     const index = proposals.findIndex((row) => row.id === message.proposalId)
     if (index < 0) return
@@ -205,7 +187,7 @@ export function emailPlugin() {
         ...message,
       }),
     }
-    writeJson(proposalsFile, proposals)
+    await writeJson('proposals.json', proposals)
   }
 
   async function handle(req, res, next, env) {
@@ -237,8 +219,8 @@ export function emailPlugin() {
             scheduledAt: payload.scheduledAt,
             sentAt: new Date().toISOString(),
           })
-          upsertMessage(message)
-          patchProposalLastEmail(message)
+          await upsertMessage(message)
+          await patchProposalLastEmail(message)
           return json(res, 200, {
             id: message.id,
             provider: result.provider,
@@ -261,10 +243,10 @@ export function emailPlugin() {
 
       const click = matchRoute(url, '/api/email/click/:id')
       if (method === 'GET' && click) {
-        const message = findMessage(click.id)
+        const message = await findMessage(click.id)
         if (message) {
-          applyStatus(message, EMAIL_DELIVERY_STATUS.OPENED)
-          recordActivity(message.proposalId, ACTIVITY_EVENT_TYPE.EMAIL_CLICKED, {
+          await applyStatus(message, EMAIL_DELIVERY_STATUS.OPENED)
+          await recordActivity(message.proposalId, ACTIVITY_EVENT_TYPE.EMAIL_CLICKED, {
             emailMessageId: message.id,
             clientName: message.to[0],
             description: 'Client clicked View Proposal',
@@ -279,10 +261,10 @@ export function emailPlugin() {
 
       const open = matchRoute(url, '/api/email/open/:id')
       if (method === 'GET' && open) {
-        const message = findMessage(open.id)
+        const message = await findMessage(open.id)
         if (message) {
-          applyStatus(message, EMAIL_DELIVERY_STATUS.OPENED)
-          recordActivity(message.proposalId, ACTIVITY_EVENT_TYPE.EMAIL_OPENED, {
+          await applyStatus(message, EMAIL_DELIVERY_STATUS.OPENED)
+          await recordActivity(message.proposalId, ACTIVITY_EVENT_TYPE.EMAIL_OPENED, {
             emailMessageId: message.id,
             clientName: message.to[0],
             description: 'Client opened the proposal email',
@@ -298,7 +280,7 @@ export function emailPlugin() {
       if (method === 'GET' && matchRoute(url, '/api/email/messages')) {
         const query = new URL(url, 'http://local').searchParams
         const proposalId = query.get('proposalId')
-        let records = loadMessages()
+        let records = await loadMessages()
         if (proposalId) {
           records = records.filter((row) => row.proposalId === proposalId)
         }
@@ -311,18 +293,18 @@ export function emailPlugin() {
         const data = payload.data || {}
         const status = WEBHOOK_STATUS[type]
         const providerId = data.email_id || data.id
-        let message = findByProviderId(providerId)
+        let message = await findByProviderId(providerId)
         if (!message && data.headers?.['X-Email-Message-Id']) {
-          message = findMessage(data.headers['X-Email-Message-Id'])
+          message = await findMessage(data.headers['X-Email-Message-Id'])
         }
         if (message && status) {
-          applyStatus(message, status)
+          await applyStatus(message, status)
           const eventType =
             type === 'email.clicked'
               ? ACTIVITY_EVENT_TYPE.EMAIL_CLICKED
               : WEBHOOK_ACTIVITY[status]
           if (eventType) {
-            recordActivity(message.proposalId, eventType, {
+            await recordActivity(message.proposalId, eventType, {
               emailMessageId: message.id,
               clientName: message.to[0],
               description: `Provider event: ${type}`,
@@ -340,7 +322,6 @@ export function emailPlugin() {
   }
 
   function attach(server) {
-    mkdirSync(dataDir, { recursive: true })
     server.middlewares.use((req, res, next) => {
       import('vite')
         .then(({ loadEnv }) => handle(req, res, next, loadEnv(server.config.mode, root, '')))

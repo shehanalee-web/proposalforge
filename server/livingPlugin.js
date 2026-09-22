@@ -1,6 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData } from './dataPaths.js'
+import { assertStorageWritable, endJsonResponse, flushAndNext, ignoreUnavailableWrite, readJson, writeJson } from './runtimeStore.js'
 import { ForbiddenError, NotFoundError, ValidationError } from '../src/services/errors.js'
 import { DEFAULT_COMPANY_ID } from '../src/knowledge/types.js'
 import { findWorkflowByProposal } from '../src/workflow/store.js'
@@ -40,24 +38,7 @@ import {
 } from '../src/living/index.js'
 
 function json(res, status, body) {
-  const payload = JSON.stringify(body)
-  res.statusCode = status
-  res.setHeader('Content-Type', 'application/json')
-  res.setHeader('Content-Length', Buffer.byteLength(payload))
-  res.end(payload)
-}
-
-function readJson(file, fallback) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'))
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`)
+  return endJsonResponse(res, status, body)
 }
 
 function readBody(req, limit = 2 * 1024 * 1024) {
@@ -130,44 +111,48 @@ function companyFrom(body, query) {
  * Never writes `data/proposals.json`.
  */
 export function livingPlugin() {
-  const dataDir = ensureRuntimeData()
-  const livingFile = join(dataDir, 'living.json')
-  const livingEventsFile = join(dataDir, 'living-events.json')
-  const livingPublicationsFile = join(dataDir, 'living-publications.json')
-  const followupsFile = join(dataDir, 'followups.json')
-  const proposalsFile = join(dataDir, 'proposals.json')
   let ready = false
   let followupReady = false
+  let proposals = []
 
   function persistSessions(records) {
-    writeJson(livingFile, records)
+    assertStorageWritable()
+    return writeJson('living.json', records)
   }
 
   function persistEvents(records) {
-    writeJson(livingEventsFile, records)
+    assertStorageWritable()
+    return writeJson('living-events.json', records)
   }
 
   function persistPublications(records) {
-    writeJson(livingPublicationsFile, records)
+    assertStorageWritable()
+    return writeJson('living-publications.json', records)
   }
 
   function persistFollowups(records) {
-    writeJson(followupsFile, records)
+    assertStorageWritable()
+    return writeJson('followups.json', records)
   }
 
   function readProposals() {
-    const stored = readJson(proposalsFile, [])
-    return Array.isArray(stored) ? stored : []
+    return Array.isArray(proposals) ? proposals : []
   }
 
-  function ensureFollowupStore() {
+  async function refreshProposals() {
+    const stored = await readJson('proposals.json', [])
+    proposals = Array.isArray(stored) ? stored : []
+    return proposals
+  }
+
+  async function ensureFollowupStore() {
     if (followupReady) return
-    const stored = readJson(followupsFile, null)
+    const stored = await readJson('followups.json', null)
     if (Array.isArray(stored)) {
       replaceFollowupRecords(stored)
     } else {
       replaceFollowupRecords([])
-      persistFollowups(allFollowupRecords())
+      await ignoreUnavailableWrite(() => persistFollowups(allFollowupRecords()))
     }
     configureFollowupStore({ persist: persistFollowups })
     configureFollowupResolvers({
@@ -208,32 +193,32 @@ export function livingPlugin() {
     followupReady = true
   }
 
-  function ensureStore() {
+  async function ensureStore() {
     if (ready) return
-    const storedSessions = readJson(livingFile, null)
+    const storedSessions = await readJson('living.json', null)
     if (Array.isArray(storedSessions)) {
       replaceLivingSessions(storedSessions)
     } else {
       replaceLivingSessions([])
-      persistSessions(allLivingSessions())
+      await ignoreUnavailableWrite(() => persistSessions(allLivingSessions()))
     }
     configureLivingStore({ persist: persistSessions })
 
-    const storedEvents = readJson(livingEventsFile, null)
+    const storedEvents = await readJson('living-events.json', null)
     if (Array.isArray(storedEvents)) {
       replaceLivingEngagementEvents(storedEvents)
     } else {
       replaceLivingEngagementEvents([])
-      persistEvents(allLivingEngagementEvents())
+      await ignoreUnavailableWrite(() => persistEvents(allLivingEngagementEvents()))
     }
     configureLivingEventStore({ persist: persistEvents })
 
-    const storedPublications = readJson(livingPublicationsFile, null)
+    const storedPublications = await readJson('living-publications.json', null)
     if (Array.isArray(storedPublications)) {
       replaceLivingPublications(storedPublications)
     } else {
       replaceLivingPublications([])
-      persistPublications(allLivingPublications())
+      await ignoreUnavailableWrite(() => persistPublications(allLivingPublications()))
     }
     configureLivingPublicationStore({ persist: persistPublications })
 
@@ -257,14 +242,15 @@ export function livingPlugin() {
 
   async function handle(req, res, next) {
     const url = req.url || '/'
-    if (!url.startsWith('/api/living')) return next()
+    if (!url.startsWith('/api/living')) return flushAndNext(next)
 
     const method = req.method || 'GET'
 
     try {
       // Hydrate inside try/catch so persisted close/payment event types that fail
       // schema validation return JSON errors instead of crashing the process.
-      ensureStore()
+      await ensureStore()
+      await refreshProposals()
       if (method === 'GET' && matchRoute(url, '/api/living/capabilities')) {
         return json(res, 200, { capabilities: LIVING_CAPABILITIES })
       }
@@ -418,7 +404,7 @@ export function livingPlugin() {
 
       const decisions = matchRoute(url, '/api/living/:token/decisions')
       if (method === 'POST' && decisions) {
-        ensureFollowupStore()
+        await ensureFollowupStore()
         const body = JSON.parse((await readBody(req)).toString('utf8') || '{}')
         const patch = { shareToken: decisions.token }
         if ('selectedPackageId' in body) patch.selectedPackageId = body.selectedPackageId
@@ -437,12 +423,12 @@ export function livingPlugin() {
       const client = matchRoute(url, '/api/living/:token')
       if (method === 'GET' && client) {
         if (client.token === 'proposal' || client.token === 'capabilities') {
-          return next()
+          return flushAndNext(next)
         }
         return json(res, 200, getLivingClientView({ shareToken: client.token }))
       }
 
-      return next()
+      return flushAndNext(next)
     } catch (error) {
       return fail(res, error)
     }

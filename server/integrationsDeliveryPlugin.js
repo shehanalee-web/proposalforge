@@ -8,20 +8,14 @@
  * not overwritten. Vite constructs this plugin at config load; productionApi
  * constructs it on first dispatch, same as the other integration plugins.
  */
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { ensureRuntimeData } from './dataPaths.js'
+import { readFileSync } from 'node:fs'
+import { assertStorageWritable, flushAndNext, ignoreUnavailableWrite, readJsonText, writeJson } from './runtimeStore.js'
 import {
   configureDeliveryOutcomeStore,
   parsePersistedDeliveryOutcomeSnapshot,
   replaceDeliveryOutcomes,
   serializeDeliveryOutcomes,
 } from '../src/integrations/index.js'
-
-function writeJson(file, value) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8')
-}
 
 /**
  * @param {string} file
@@ -42,38 +36,35 @@ export function readDeliveryOutcomesFile(file) {
  * Load/persist the rejected delivery outcome ledger at boot.
  */
 export function integrationsDeliveryPlugin() {
-  const dataDir = ensureRuntimeData()
-  const outcomesFile = join(dataDir, 'delivery-outcomes.json')
   let ready = false
 
   function persist(bag) {
-    writeJson(outcomesFile, {
+    assertStorageWritable()
+    return writeJson('delivery-outcomes.json', {
       outcomes: Array.isArray(bag?.outcomes) ? bag.outcomes : [],
     })
   }
 
-  function ensureStore() {
+  async function ensureStore() {
     if (ready) return
-    const stored = readDeliveryOutcomesFile(outcomesFile)
-    if (stored == null) {
+    const raw = await readJsonText('delivery-outcomes.json')
+    if (raw == null) {
       replaceDeliveryOutcomes({ outcomes: [] })
-      persist(serializeDeliveryOutcomes())
+      await ignoreUnavailableWrite(() => persist(serializeDeliveryOutcomes()))
     } else {
-      replaceDeliveryOutcomes(stored)
+      replaceDeliveryOutcomes(parsePersistedDeliveryOutcomeSnapshot(raw))
     }
     configureDeliveryOutcomeStore({ persist })
     ready = true
   }
 
-  ensureStore()
-
   async function handle(_req, _res, next) {
-    ensureStore()
-    return next()
+    await ensureStore()
+    return flushAndNext(next)
   }
 
   function attach(server) {
-    ensureStore()
+    void ensureStore()
     server.middlewares.use((req, res, next) => {
       handle(req, res, next)
     })
